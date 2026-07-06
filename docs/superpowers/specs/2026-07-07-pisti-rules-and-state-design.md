@@ -105,7 +105,7 @@ This section describes intended behavior at a conceptual level to guide the rule
 **`performMove(state, move)`:**
 1. Move the played card from the current player's hand onto `pile`.
 2. Using the pile's state *before* this play (top card and size), determine capture per the Section 1 rules.
-3. If captured: `moveAllCards(table, 'pile', captured-<player>)`, set `lastCapturedBy` to the capturing player, and add a pişti bonus to `pistiBonusPoints` if the pre-play pile size was exactly 1.
+3. If captured: `moveAllCards(table, 'pile', captured-<player>)`, set `lastCapturedBy` to the capturing player. If the pre-play pile size was exactly 1: add 20 points if that lone card was a Jack (only capturable by another Jack), or add 10 points if the played card's rank matched the lone card's rank (a non-Jack, same-rank capture) — a Jack capturing a lone non-Jack card via wildcard earns no bonus, per Section 1.
 4. Advance `currentPlayerIndex` to the other player.
 5. If both hands are now empty: redeal 4 cards to each from `stock` if any remain; otherwise, sweep any remaining `pile` cards to `captured-<lastCapturedBy>` and set `status: 'finished'`.
 
