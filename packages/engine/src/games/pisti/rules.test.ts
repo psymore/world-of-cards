@@ -344,4 +344,22 @@ describe('pistiGame performMove', () => {
     expect(next.table.zones['pile'].cards).toEqual([]);
     expect(next.table.zones['captured-p2'].cards.map((c) => c.id)).toEqual(['p1c', 'h1']);
   });
+
+  it('leaves pile cards uncaptured when the hand ends with no capture ever having happened', () => {
+    const table = createTable([
+      createZone('stock', false),
+      createZone('pile', 'top-only', [card('p1c', '9', 'clubs')]),
+      createZone('hand-p1', true, [card('h1', '5', 'spades')]),
+      createZone('hand-p2', true, []),
+      createZone('captured-p1', true),
+      createZone('captured-p2', true),
+    ]);
+    const state = makeState({ table, currentPlayerIndex: 0, lastCapturedBy: null });
+    const next = pistiGame.performMove(state, { type: 'play', cardId: 'h1' });
+
+    expect(next.status).toBe('finished');
+    expect(next.table.zones['pile'].cards.map((c) => c.id)).toEqual(['p1c', 'h1']);
+    expect(next.table.zones['captured-p1'].cards).toEqual([]);
+    expect(next.table.zones['captured-p2'].cards).toEqual([]);
+  });
 });
