@@ -53,8 +53,7 @@ export function simulateGames<TState extends GameState, TMove>(
         throw new Error(`No legal moves for player "${playerId}" but game is not over (seed ${seed})`);
       }
       const strategy = aiStrategies[playerId];
-      const moveRng = createRng(seed * 1000 + moves);
-      const move = strategy.chooseMove(state, playerId, legalMoves, moveRng);
+      const move = strategy.chooseMove(state, playerId, legalMoves, rng);
       if (!ruleEngine.validateMove(state, move, playerId)) {
         throw new Error(`AI chose an illegal move for player "${playerId}" (seed ${seed})`);
       }
