@@ -1,10 +1,15 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
 import App from './App';
+import { clearRegistry } from '@world-cards/engine';
 
 describe('App', () => {
-  it('renders the placeholder screen', async () => {
+  beforeEach(() => {
+    clearRegistry();
+  });
+
+  it('renders the Home screen inside the navigator', async () => {
     await render(<App />);
-    expect(screen.getByText('Open up App.tsx to start working on your app!')).toBeTruthy();
+    expect(screen.getByText('World Cards')).toBeTruthy();
   });
 });
