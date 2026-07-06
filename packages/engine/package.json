@@ -9,7 +9,8 @@
     "./testing": "./src/testing/index.ts"
   },
   "devDependencies": {
-    "ts-jest": "^29.2.5",
+    "@types/jest": "^30.0.0",
+    "ts-jest": "^29.4.11",
     "typescript": "~6.0.3"
   }
 }
