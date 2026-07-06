@@ -177,3 +177,171 @@ describe('pistiGame (rule engine)', () => {
     });
   });
 });
+
+describe('pistiGame performMove', () => {
+  it('captures the whole pile on a matching rank play, with no pişti bonus for a 2+ card pile', () => {
+    const table = createTable([
+      createZone('stock', false),
+      createZone('pile', 'top-only', [card('p1c', '7', 'clubs'), card('p2c', '7', 'diamonds')]),
+      createZone('hand-p1', true, [card('h1', '7', 'spades')]),
+      createZone('hand-p2', true, [card('h2', '3')]),
+      createZone('captured-p1', true),
+      createZone('captured-p2', true),
+    ]);
+    const state = makeState({ table, currentPlayerIndex: 0 });
+    const next = pistiGame.performMove(state, { type: 'play', cardId: 'h1' });
+
+    expect(next.table.zones['pile'].cards).toEqual([]);
+    expect(next.table.zones['captured-p1'].cards.map((c) => c.id)).toEqual(['p1c', 'p2c', 'h1']);
+    expect(next.lastCapturedBy).toBe('p1');
+    expect(next.pistiBonusPoints['p1']).toBe(0);
+  });
+
+  it('captures with a Jack when the pile has 2+ cards, regardless of the top card rank', () => {
+    const table = createTable([
+      createZone('stock', false),
+      createZone('pile', 'top-only', [card('p1c', '9', 'clubs'), card('p2c', '3', 'diamonds')]),
+      createZone('hand-p1', true, [card('h1', 'J', 'spades')]),
+      createZone('hand-p2', true, [card('h2', '5')]),
+      createZone('captured-p1', true),
+      createZone('captured-p2', true),
+    ]);
+    const state = makeState({ table, currentPlayerIndex: 0 });
+    const next = pistiGame.performMove(state, { type: 'play', cardId: 'h1' });
+
+    expect(next.table.zones['pile'].cards).toEqual([]);
+    expect(next.table.zones['captured-p1'].cards.map((c) => c.id)).toEqual(['p1c', 'p2c', 'h1']);
+    expect(next.lastCapturedBy).toBe('p1');
+  });
+
+  it('awards no bonus when a Jack captures a lone non-Jack card via wildcard', () => {
+    const table = createTable([
+      createZone('stock', false),
+      createZone('pile', 'top-only', [card('p1c', '7', 'clubs')]),
+      createZone('hand-p1', true, [card('h1', 'J', 'spades')]),
+      createZone('hand-p2', true, [card('h2', '3')]),
+      createZone('captured-p1', true),
+      createZone('captured-p2', true),
+    ]);
+    const state = makeState({ table, currentPlayerIndex: 0 });
+    const next = pistiGame.performMove(state, { type: 'play', cardId: 'h1' });
+
+    expect(next.table.zones['pile'].cards).toEqual([]);
+    expect(next.table.zones['captured-p1'].cards.map((c) => c.id)).toEqual(['p1c', 'h1']);
+    expect(next.lastCapturedBy).toBe('p1');
+    expect(next.pistiBonusPoints['p1']).toBe(0);
+  });
+
+  it('does not let a non-Jack capture a Jack on top of the pile', () => {
+    const table = createTable([
+      createZone('stock', false),
+      createZone('pile', 'top-only', [card('p1c', 'J', 'clubs')]),
+      createZone('hand-p1', true, [card('h1', '9', 'spades')]),
+      createZone('hand-p2', true, [card('h2', 'J', 'hearts')]),
+      createZone('captured-p1', true),
+      createZone('captured-p2', true),
+    ]);
+    const state = makeState({ table, currentPlayerIndex: 0 });
+    const next = pistiGame.performMove(state, { type: 'play', cardId: 'h1' });
+
+    expect(next.table.zones['pile'].cards.map((c) => c.id)).toEqual(['p1c', 'h1']);
+    expect(next.lastCapturedBy).toBeNull();
+    expect(next.pistiBonusPoints['p1']).toBe(0);
+  });
+
+  it('places a non-matching, non-Jack card without capturing', () => {
+    const table = createTable([
+      createZone('stock', false),
+      createZone('pile', 'top-only', [card('p1c', '9', 'clubs')]),
+      createZone('hand-p1', true, [card('h1', '5', 'spades')]),
+      createZone('hand-p2', true, [card('h2', '3')]),
+      createZone('captured-p1', true),
+      createZone('captured-p2', true),
+    ]);
+    const state = makeState({ table, currentPlayerIndex: 0 });
+    const next = pistiGame.performMove(state, { type: 'play', cardId: 'h1' });
+
+    expect(next.table.zones['pile'].cards.map((c) => c.id)).toEqual(['p1c', 'h1']);
+    expect(next.lastCapturedBy).toBeNull();
+  });
+
+  it('awards a 10-point pişti bonus for a non-Jack capturing a lone card of matching rank', () => {
+    const table = createTable([
+      createZone('stock', false),
+      createZone('pile', 'top-only', [card('p1c', '7', 'clubs')]),
+      createZone('hand-p1', true, [card('h1', '7', 'spades')]),
+      createZone('hand-p2', true, [card('h2', '3')]),
+      createZone('captured-p1', true),
+      createZone('captured-p2', true),
+    ]);
+    const state = makeState({ table, currentPlayerIndex: 0 });
+    const next = pistiGame.performMove(state, { type: 'play', cardId: 'h1' });
+
+    expect(next.pistiBonusPoints['p1']).toBe(10);
+  });
+
+  it('awards a 20-point double pişti bonus for capturing a lone Jack with another Jack', () => {
+    const table = createTable([
+      createZone('stock', false),
+      createZone('pile', 'top-only', [card('p1c', 'J', 'clubs')]),
+      createZone('hand-p1', true, [card('h1', 'J', 'spades')]),
+      createZone('hand-p2', true, [card('h2', '3')]),
+      createZone('captured-p1', true),
+      createZone('captured-p2', true),
+    ]);
+    const state = makeState({ table, currentPlayerIndex: 0 });
+    const next = pistiGame.performMove(state, { type: 'play', cardId: 'h1' });
+
+    expect(next.pistiBonusPoints['p1']).toBe(20);
+  });
+
+  it('advances currentPlayerIndex after every move', () => {
+    const table = createTable([
+      createZone('stock', false),
+      createZone('pile', 'top-only', [card('p1c', '9', 'clubs')]),
+      createZone('hand-p1', true, [card('h1', '5', 'spades')]),
+      createZone('hand-p2', true, [card('h2', '3')]),
+      createZone('captured-p1', true),
+      createZone('captured-p2', true),
+    ]);
+    const state = makeState({ table, currentPlayerIndex: 0 });
+    const next = pistiGame.performMove(state, { type: 'play', cardId: 'h1' });
+    expect(next.currentPlayerIndex).toBe(1);
+  });
+
+  it('redeals 4 cards to each hand when both hands become empty and stock remains', () => {
+    const stockCards = Array.from({ length: 8 }, (_, i) => card(`s${i}`, '4', 'clubs'));
+    const table = createTable([
+      createZone('stock', false, stockCards),
+      createZone('pile', 'top-only', [card('p1c', '9', 'clubs')]),
+      createZone('hand-p1', true, [card('h1', '5', 'spades')]),
+      createZone('hand-p2', true, []),
+      createZone('captured-p1', true),
+      createZone('captured-p2', true),
+    ]);
+    const state = makeState({ table, currentPlayerIndex: 0 });
+    const next = pistiGame.performMove(state, { type: 'play', cardId: 'h1' });
+
+    expect(next.table.zones['hand-p1'].cards).toHaveLength(4);
+    expect(next.table.zones['hand-p2'].cards).toHaveLength(4);
+    expect(next.table.zones['stock'].cards).toHaveLength(0);
+    expect(next.status).toBe('in-progress');
+  });
+
+  it('finishes the hand and sweeps remaining pile cards to the last capturer when stock and both hands are empty', () => {
+    const table = createTable([
+      createZone('stock', false),
+      createZone('pile', 'top-only', [card('p1c', '9', 'clubs')]),
+      createZone('hand-p1', true, [card('h1', '5', 'spades')]),
+      createZone('hand-p2', true, []),
+      createZone('captured-p1', true),
+      createZone('captured-p2', true),
+    ]);
+    const state = makeState({ table, currentPlayerIndex: 0, lastCapturedBy: 'p2' });
+    const next = pistiGame.performMove(state, { type: 'play', cardId: 'h1' });
+
+    expect(next.status).toBe('finished');
+    expect(next.table.zones['pile'].cards).toEqual([]);
+    expect(next.table.zones['captured-p2'].cards.map((c) => c.id)).toEqual(['p1c', 'h1']);
+  });
+});
