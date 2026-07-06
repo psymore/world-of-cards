@@ -44,6 +44,21 @@ export function moveCard(table: TableState, cardId: string, fromZoneId: string, 
   };
 }
 
+export function moveAllCards(table: TableState, fromZoneId: string, toZoneId: string): TableState {
+  const fromZone = table.zones[fromZoneId];
+  const toZone = table.zones[toZoneId];
+  if (!fromZone || !toZone) {
+    throw new Error(`moveAllCards: unknown zone "${!fromZone ? fromZoneId : toZoneId}"`);
+  }
+  return {
+    zones: {
+      ...table.zones,
+      [fromZoneId]: { ...fromZone, cards: [] },
+      [toZoneId]: { ...toZone, cards: [...toZone.cards, ...fromZone.cards] },
+    },
+  };
+}
+
 export function dealToZones(
   deck: Card[],
   table: TableState,

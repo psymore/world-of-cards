@@ -1,4 +1,4 @@
-import { createZone, createTable, moveCard, dealToZones, allCards } from './table';
+import { createZone, createTable, moveCard, moveAllCards, dealToZones, allCards } from './table';
 import { createDeck } from './deck';
 import { Card } from './types';
 
@@ -46,5 +46,30 @@ describe('table operations', () => {
       createZone('hand', true, [card('c3')]),
     ]);
     expect(allCards(table).map((c) => c.id).sort()).toEqual(['c1', 'c2', 'c3']);
+  });
+
+  it('moves all cards from one zone to another, preserving order', () => {
+    const table = createTable([
+      createZone('pile', true, [card('c1'), card('c2'), card('c3')]),
+      createZone('captured', true),
+    ]);
+    const next = moveAllCards(table, 'pile', 'captured');
+    expect(next.zones['pile'].cards).toEqual([]);
+    expect(next.zones['captured'].cards.map((c) => c.id)).toEqual(['c1', 'c2', 'c3']);
+  });
+
+  it('appends onto existing cards in the destination zone when moving all cards', () => {
+    const table = createTable([
+      createZone('pile', true, [card('c2')]),
+      createZone('captured', true, [card('c1')]),
+    ]);
+    const next = moveAllCards(table, 'pile', 'captured');
+    expect(next.zones['captured'].cards.map((c) => c.id)).toEqual(['c1', 'c2']);
+  });
+
+  it('throws when moving all cards and a zone does not exist', () => {
+    const table = createTable([createZone('pile', true, [card('c1')])]);
+    expect(() => moveAllCards(table, 'pile', 'nonexistent')).toThrow();
+    expect(() => moveAllCards(table, 'nonexistent', 'pile')).toThrow();
   });
 });
