@@ -40,10 +40,10 @@ const fakeRng: RNG = { next: () => 0.5, getState: () => ({ seed: 0 }) };
 describe('useAITurn', () => {
   beforeEach(() => {
     jest.useFakeTimers();
-    jest.spyOn(InteractionManager, 'runAfterInteractions').mockImplementation((callback: () => void) => {
+    jest.spyOn(InteractionManager, 'runAfterInteractions').mockImplementation(((callback: () => void) => {
       callback();
-      return { then: jest.fn(), done: jest.fn(), cancel: jest.fn() } as any;
-    });
+      return { then: jest.fn(), done: jest.fn(), cancel: jest.fn() };
+    }) as any);
   });
 
   afterEach(() => {
