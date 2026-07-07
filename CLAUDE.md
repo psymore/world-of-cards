@@ -24,9 +24,16 @@ Full architecture decisions live in:
 
 **Phase 1 (core architecture): complete**, merged to `master`. Validated end-to-end against an internal test-only fixture game (`cardDraftGame`, in `packages/engine/src/rules/__fixtures__/`) — not a real game, just proof the shared contracts work. No real game exists yet.
 
-**Phase 2 (Pişti): not started.** Per the project roadmap, games are built in this order: Pişti → Klondike Solitaire → Spider Solitaire → FreeCell → Hearts → Spades → Gin Rummy → Crazy Eights → Blackjack → Texas Hold'em. Each game follows: research rules → rules doc → game state design → rule engine → UI → Easy/Medium/Hard AI → tests → simulate hundreds of games → done, then move to the next game.
+**Phase 2 (Pişti): rules + state model + RuleEngine complete**, merged to `master`. UI and Easy/Medium/Hard AI not started yet. Per the project roadmap, games are built in this order: Pişti → Klondike Solitaire → Spider Solitaire → FreeCell → Hearts → Spades → Gin Rummy → Crazy Eights → Blackjack → Texas Hold'em. Each game follows: research rules → rules doc → game state design → rule engine → UI → Easy/Medium/Hard AI → tests → simulate hundreds of games → done, then move to the next game.
+
+Pişti design/plan docs so far:
+- `docs/superpowers/specs/2026-07-07-pisti-rules-and-state-design.md` — rules doc + `GameState`/`Move` data model
+- `docs/superpowers/plans/2026-07-07-pisti-state-model.md` — implemented the `moveAllCards` core primitive + `PistiState`/`PistiMove`/`PistiSetupOptions` types
+- `docs/superpowers/specs/2026-07-07-pisti-rule-engine-design.md` — `RuleEngine` file structure, `validateMove` semantics, test-coverage plan
+- `docs/superpowers/plans/2026-07-07-pisti-rule-engine.md` — implemented `pistiGame: RuleEngine<PistiState, PistiMove>` in `packages/engine/src/games/pisti/rules.ts`
+
+Pişti is not yet registered via `registerGame` — `GameDescriptor.aiStrategies` is required, so registration (and `simulateGames`-based testing) waits for the AI sub-project.
 
 Known follow-up items deferred from Phase 1 (non-blocking, noted in the final whole-branch review):
 - `RuleEngine.setup(options: unknown, ...)` loses type safety across the options-passing chain — consider a `TOptions` generic once real games multiply.
-- `GameState.rngState` exists for reproducible resume but was never exercised by mid-game randomness in the fixture — Pişti (re-dealing from stock) should be the first real test of that pattern.
-- `apps/mobile/tsconfig.json` is missing `"types": ["jest"]`, causing cosmetic `tsc --noEmit` noise on test files only (Jest itself is unaffected).
+- `GameState.rngState` exists for reproducible resume but still isn't exercised by mid-game randomness: Pişti's `setup` pre-shuffles the whole deck up front, and its mid-hand redeals just deal from the already-ordered `stock` zone, consuming no further RNG. This remains open for a future game whose mid-game randomness is genuinely re-rolled (e.g. a game that reshuffles a discard pile back into a live deck).
