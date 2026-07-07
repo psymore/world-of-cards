@@ -6,6 +6,8 @@ import { pistiEasyAI } from './ai/easy';
 import { pistiMediumAI } from './ai/medium';
 import { pistiHardAI } from './ai/hard';
 
+export * from './types';
+
 export const pistiDescriptor: GameDescriptor<PistiState, PistiMove> = {
   id: 'pisti',
   displayName: 'Pişti',
