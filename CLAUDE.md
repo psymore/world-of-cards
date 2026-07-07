@@ -36,7 +36,15 @@ Pişti design/plan docs so far:
 
 Pişti is now registered: `getGame('pisti')` returns a full `GameDescriptor` with all three AI difficulties. `simulateGames`-based tests pass (500 easy-vs-easy games with no card-conservation violations; Hard beat Easy 154/200).
 
-**Next up: the Pişti mobile UI/screen** (`apps/mobile/src/games/pisti/`) — the first Pişti sub-project touching `apps/mobile`. When wiring Hard AI into the app layer, use `InteractionManager.runAfterInteractions` + a thinking delay, and profile real on-device frame timing before calling it done (standing Phase 1 performance-risk note — Pişti's branching factor is small, but this hasn't been profiled on a device yet).
+Pişti UI design/plan docs:
+- `docs/superpowers/specs/2026-07-07-pisti-ui-design.md` — navigation, screen/component breakdown, state flow, testing plan
+- `docs/superpowers/plans/2026-07-07-pisti-ui.md` — implemented the full playable slice: `apps/mobile/src/components/{PlayingCard,GameScreenLayout,GameResultModal}.tsx` (shared, reusable by future games), `apps/mobile/src/games/pisti/{PistiSetupView,PistiTable,PistiScreen,useAITurn}.tsx`, `apps/mobile/src/games/registry.ts`, and a new `@world-cards/engine/games/pisti` subpath export
+
+Pişti is now fully playable end-to-end: Home → pick a difficulty → play a full hand against Easy/Medium/Hard AI → see the result → play again or return home. `useAITurn` uses `InteractionManager.runAfterInteractions` + a thinking delay as planned, but **frame timing has still not been profiled on a real mid-range Android device** — this remains the standing Phase 1 performance risk and should happen before Hard AI is trusted in more complex future games.
+
+Deliberately deferred from this UI sub-project (see the design doc for rationale): Reanimated/animated transitions, save/resume via `PersistenceAdapter`, `stats:<gameId>` recording, multi-hand match play, the 4-player/2v2 variant, human-vs-human pass-and-play, and lifting `useAITurn` into a shared cross-game hook (revisit once Hearts is built). `GameResultModal`'s tests also have a known, deferred `act()` warning from the Modal's fade animation — not fixed in this pass; the correct fix if revisited is `animationType="none"` instead of `"fade"`.
+
+**Next up:** manually smoke-test the Pişti screen in Expo Go / a simulator (`npm run mobile`), then profile Hard AI's frame timing on a real device. After that, Klondike Solitaire is next in the game build order.
 
 Known follow-up items deferred from Phase 1 (non-blocking, noted in the final whole-branch review):
 - `RuleEngine.setup(options: unknown, ...)` loses type safety across the options-passing chain — consider a `TOptions` generic once real games multiply.

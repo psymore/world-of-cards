@@ -1,7 +1,8 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 import App from './App';
-import { clearRegistry } from '@world-cards/engine';
+import { clearRegistry, registerGame } from '@world-cards/engine';
+import { pistiDescriptor } from '@world-cards/engine/games/pisti';
 
 describe('App', () => {
   beforeEach(() => {
@@ -11,5 +12,12 @@ describe('App', () => {
   it('renders the Home screen inside the navigator', async () => {
     await render(<App />);
     expect(screen.getByText('World Cards')).toBeTruthy();
+  });
+
+  it('navigates from Home to the Pişti setup screen when Pişti is tapped', async () => {
+    registerGame(pistiDescriptor);
+    await render(<App />);
+    fireEvent.press(screen.getByText('Pişti'));
+    expect(await screen.findByText('Choose a difficulty')).toBeTruthy();
   });
 });
