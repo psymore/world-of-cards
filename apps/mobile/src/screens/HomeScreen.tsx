@@ -1,8 +1,12 @@
 import React from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { getGames } from '@world-cards/engine';
 
-export function HomeScreen() {
+export interface HomeScreenProps {
+  onSelectGame: (gameId: string) => void;
+}
+
+export function HomeScreen({ onSelectGame }: HomeScreenProps) {
   const games = getGames();
   return (
     <View style={styles.container}>
@@ -10,7 +14,11 @@ export function HomeScreen() {
       <FlatList
         data={games}
         keyExtractor={(game) => game.id}
-        renderItem={({ item }) => <Text style={styles.gameItem}>{item.displayName}</Text>}
+        renderItem={({ item }) => (
+          <Pressable onPress={() => onSelectGame(item.id)}>
+            <Text style={styles.gameItem}>{item.displayName}</Text>
+          </Pressable>
+        )}
         ListEmptyComponent={<Text style={styles.empty}>No games installed yet</Text>}
       />
     </View>
