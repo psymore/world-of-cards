@@ -24,15 +24,19 @@ Full architecture decisions live in:
 
 **Phase 1 (core architecture): complete**, merged to `master`. Validated end-to-end against an internal test-only fixture game (`cardDraftGame`, in `packages/engine/src/rules/__fixtures__/`) — not a real game, just proof the shared contracts work. No real game exists yet.
 
-**Phase 2 (Pişti): rules + state model + RuleEngine complete**, merged to `master`. UI and Easy/Medium/Hard AI not started yet. Per the project roadmap, games are built in this order: Pişti → Klondike Solitaire → Spider Solitaire → FreeCell → Hearts → Spades → Gin Rummy → Crazy Eights → Blackjack → Texas Hold'em. Each game follows: research rules → rules doc → game state design → rule engine → UI → Easy/Medium/Hard AI → tests → simulate hundreds of games → done, then move to the next game.
+**Phase 2 (Pişti): rules + state model + RuleEngine + AI + registration all complete**, merged to `master`. Only the mobile UI/screen remains. Per the project roadmap, games are built in this order: Pişti → Klondike Solitaire → Spider Solitaire → FreeCell → Hearts → Spades → Gin Rummy → Crazy Eights → Blackjack → Texas Hold'em. Each game follows: research rules → rules doc → game state design → rule engine → UI → Easy/Medium/Hard AI → tests → simulate hundreds of games → done, then move to the next game. (Pişti deliberately did AI before UI so `simulateGames`-based testing and `registerGame` — which requires `aiStrategies` — were unlocked earlier; see the AI-strategies spec below for the rationale.)
 
 Pişti design/plan docs so far:
 - `docs/superpowers/specs/2026-07-07-pisti-rules-and-state-design.md` — rules doc + `GameState`/`Move` data model
 - `docs/superpowers/plans/2026-07-07-pisti-state-model.md` — implemented the `moveAllCards` core primitive + `PistiState`/`PistiMove`/`PistiSetupOptions` types
 - `docs/superpowers/specs/2026-07-07-pisti-rule-engine-design.md` — `RuleEngine` file structure, `validateMove` semantics, test-coverage plan
 - `docs/superpowers/plans/2026-07-07-pisti-rule-engine.md` — implemented `pistiGame: RuleEngine<PistiState, PistiMove>` in `packages/engine/src/games/pisti/rules.ts`
+- `docs/superpowers/specs/2026-07-07-pisti-ai-strategies-design.md` — Easy/Medium/Hard AI approach, registration, `simulateGames` testing plan
+- `docs/superpowers/plans/2026-07-07-pisti-ai-strategies.md` — implemented `pistiEasyAI`/`pistiMediumAI`/`pistiHardAI` (`packages/engine/src/games/pisti/ai/`), registered `pistiDescriptor` (new `'fishing'` `GameCategory`) via `packages/engine/src/games/pisti/index.ts`
 
-Pişti is not yet registered via `registerGame` — `GameDescriptor.aiStrategies` is required, so registration (and `simulateGames`-based testing) waits for the AI sub-project.
+Pişti is now registered: `getGame('pisti')` returns a full `GameDescriptor` with all three AI difficulties. `simulateGames`-based tests pass (500 easy-vs-easy games with no card-conservation violations; Hard beat Easy 154/200).
+
+**Next up: the Pişti mobile UI/screen** (`apps/mobile/src/games/pisti/`) — the first Pişti sub-project touching `apps/mobile`. When wiring Hard AI into the app layer, use `InteractionManager.runAfterInteractions` + a thinking delay, and profile real on-device frame timing before calling it done (standing Phase 1 performance-risk note — Pişti's branching factor is small, but this hasn't been profiled on a device yet).
 
 Known follow-up items deferred from Phase 1 (non-blocking, noted in the final whole-branch review):
 - `RuleEngine.setup(options: unknown, ...)` loses type safety across the options-passing chain — consider a `TOptions` generic once real games multiply.
