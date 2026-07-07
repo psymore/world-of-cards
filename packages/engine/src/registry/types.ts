@@ -1,7 +1,7 @@
 import { GameState, RuleEngine } from '../rules/types';
 import { AIStrategy, Difficulty } from '../ai/types';
 
-export type GameCategory = 'trick-taking' | 'patience' | 'betting' | 'draw-and-discard' | 'other';
+export type GameCategory = 'trick-taking' | 'patience' | 'betting' | 'draw-and-discard' | 'fishing' | 'other';
 
 export interface GameDescriptor<TState extends GameState = GameState, TMove = unknown> {
   id: string;
