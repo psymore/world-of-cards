@@ -12,33 +12,36 @@ function cardPoints(card: Card): number {
   return 0;
 }
 
-function makeEmptyTable(p0: PlayerId, p1: PlayerId): TableState {
+function makeEmptyTable(players: PlayerId[]): TableState {
   return createTable([
     createZone('stock', false),
     createZone('pile', 'top-only'),
-    createZone(`hand-${p0}`, true),
-    createZone(`hand-${p1}`, true),
-    createZone(`captured-${p0}`, true),
-    createZone(`captured-${p1}`, true),
+    ...players.map((p) => createZone(`hand-${p}`, true)),
+    ...players.map((p) => createZone(`captured-${p}`, true)),
   ]);
+}
+
+function handDealTargets(players: PlayerId[]): { zoneId: string; count: number }[] {
+  return players.map((p) => ({ zoneId: `hand-${p}`, count: 4 }));
 }
 
 export const pistiGame: RuleEngine<PistiState, PistiMove> = {
   setup(options: unknown, rng: RNG): PistiState {
     const opts = options as PistiSetupOptions;
-    const [p0, p1] = opts.players;
+    const { players } = opts;
 
     let deck = shuffle(createDeck({ deckCount: 1, includeJokers: false }), rng);
-    let dealt = dealToZones(deck, makeEmptyTable(p0, p1), [{ zoneId: 'pile', count: 4 }]);
+    let dealt = dealToZones(deck, makeEmptyTable(players), [{ zoneId: 'pile', count: 4 }]);
     while (dealt.table.zones['pile'].cards.some((c) => c.rank === 'J')) {
       deck = shuffle(createDeck({ deckCount: 1, includeJokers: false }), rng);
-      dealt = dealToZones(deck, makeEmptyTable(p0, p1), [{ zoneId: 'pile', count: 4 }]);
+      dealt = dealToZones(deck, makeEmptyTable(players), [{ zoneId: 'pile', count: 4 }]);
     }
 
-    const { table: tableWithHands, remainingDeck } = dealToZones(dealt.remainingDeck, dealt.table, [
-      { zoneId: `hand-${p0}`, count: 4 },
-      { zoneId: `hand-${p1}`, count: 4 },
-    ]);
+    const { table: tableWithHands, remainingDeck } = dealToZones(
+      dealt.remainingDeck,
+      dealt.table,
+      handDealTargets(players)
+    );
 
     const table: TableState = {
       ...tableWithHands,
@@ -50,13 +53,14 @@ export const pistiGame: RuleEngine<PistiState, PistiMove> = {
 
     return {
       gameId: 'pisti',
-      players: [p0, p1],
+      players,
       currentPlayerIndex: 0,
       table,
       rngState: rng.getState(),
       status: 'in-progress',
       lastCapturedBy: null,
-      pistiBonusPoints: { [p0]: 0, [p1]: 0 },
+      pistiBonusPoints: Object.fromEntries(players.map((p) => [p, 0])),
+      teams: opts.teams ?? null,
     };
   },
 
@@ -106,18 +110,13 @@ export const pistiGame: RuleEngine<PistiState, PistiMove> = {
     }
 
     const nextIndex = (state.currentPlayerIndex + 1) % state.players.length;
-    const [p0, p1] = state.players;
-    const bothHandsEmpty =
-      table.zones[`hand-${p0}`].cards.length === 0 && table.zones[`hand-${p1}`].cards.length === 0;
+    const allHandsEmpty = state.players.every((p) => table.zones[`hand-${p}`].cards.length === 0);
 
     let status = state.status;
-    if (bothHandsEmpty) {
+    if (allHandsEmpty) {
       const stock = table.zones['stock'].cards;
       if (stock.length > 0) {
-        const dealt = dealToZones(stock, table, [
-          { zoneId: `hand-${p0}`, count: 4 },
-          { zoneId: `hand-${p1}`, count: 4 },
-        ]);
+        const dealt = dealToZones(stock, table, handDealTargets(state.players));
         table = {
           ...dealt.table,
           zones: { ...dealt.table.zones, stock: { ...dealt.table.zones['stock'], cards: dealt.remainingDeck } },
@@ -146,19 +145,35 @@ export const pistiGame: RuleEngine<PistiState, PistiMove> = {
   },
 
   calculateScore(state: PistiState): ScoreBoard {
-    const score: ScoreBoard = {};
-    const [p0, p1] = state.players;
-    const captured0 = state.table.zones[`captured-${p0}`].cards;
-    const captured1 = state.table.zones[`captured-${p1}`].cards;
+    // Scoring is computed per "unit" — a team's pooled members in partnership mode, or a lone
+    // player in free-for-all — so both modes share one code path. For free-for-all, each unit
+    // is a single-player array, which reduces to exactly the old per-player computation.
+    const units: PlayerId[][] = state.teams ?? state.players.map((p) => [p]);
 
-    score[p0] = captured0.reduce((sum, c) => sum + cardPoints(c), 0) + state.pistiBonusPoints[p0];
-    score[p1] = captured1.reduce((sum, c) => sum + cardPoints(c), 0) + state.pistiBonusPoints[p1];
+    const unitCapturedCounts = units.map((unit) =>
+      unit.reduce((sum, p) => sum + state.table.zones[`captured-${p}`].cards.length, 0)
+    );
+    const unitTotals = units.map((unit) =>
+      unit.reduce((sum, p) => {
+        const captured = state.table.zones[`captured-${p}`].cards;
+        return sum + captured.reduce((s, c) => s + cardPoints(c), 0) + state.pistiBonusPoints[p];
+      }, 0)
+    );
 
-    if (captured0.length > captured1.length) {
-      score[p0] += 3;
-    } else if (captured1.length > captured0.length) {
-      score[p1] += 3;
+    // Majority-capture bonus: only awarded when exactly one unit holds the most cards,
+    // matching the original 2-player rule of no bonus on a tie.
+    const maxCaptured = Math.max(...unitCapturedCounts);
+    const leaderCount = unitCapturedCounts.filter((count) => count === maxCaptured).length;
+    if (leaderCount === 1) {
+      unitTotals[unitCapturedCounts.indexOf(maxCaptured)] += 3;
     }
+
+    const score: ScoreBoard = {};
+    units.forEach((unit, i) => {
+      for (const p of unit) {
+        score[p] = unitTotals[i];
+      }
+    });
 
     return score;
   },

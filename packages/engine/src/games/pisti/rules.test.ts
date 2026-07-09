@@ -15,6 +15,7 @@ function makeState(overrides: Partial<PistiState> & { table: PistiState['table']
     status: 'in-progress',
     lastCapturedBy: null,
     pistiBonusPoints: { p1: 0, p2: 0 },
+    teams: null,
     ...overrides,
   };
 }
@@ -57,6 +58,18 @@ describe('pistiGame (rule engine)', () => {
       expect(state.pistiBonusPoints).toEqual({ p1: 0, p2: 0 });
       expect(state.table.zones['captured-p1'].cards).toEqual([]);
       expect(state.table.zones['captured-p2'].cards).toEqual([]);
+    });
+
+    it('deals 4 cards to the pile, 4 to each of 4 hands, and the remaining 32 to stock', () => {
+      const fourPlayerOptions: PistiSetupOptions = { players: ['p1', 'p2', 'p3', 'p4'] };
+      const state = pistiGame.setup(fourPlayerOptions, createRng(1));
+      expect(state.table.zones['pile'].cards).toHaveLength(4);
+      for (const p of ['p1', 'p2', 'p3', 'p4']) {
+        expect(state.table.zones[`hand-${p}`].cards).toHaveLength(4);
+        expect(state.table.zones[`captured-${p}`].cards).toEqual([]);
+      }
+      expect(state.table.zones['stock'].cards).toHaveLength(32);
+      expect(state.pistiBonusPoints).toEqual({ p1: 0, p2: 0, p3: 0, p4: 0 });
     });
   });
 
@@ -121,6 +134,118 @@ describe('pistiGame (rule engine)', () => {
       expect(score['p2']).toBe(0);
     });
 
+    it('with 4 players, awards the majority bonus only to the sole leader', () => {
+      const table = createTable([
+        createZone('stock', false),
+        createZone('pile', 'top-only'),
+        createZone('hand-p1', true),
+        createZone('hand-p2', true),
+        createZone('hand-p3', true),
+        createZone('hand-p4', true),
+        createZone('captured-p1', true, [card('a', '3'), card('b', '3'), card('c', '3')]),
+        createZone('captured-p2', true, [card('d', '3'), card('e', '3')]),
+        createZone('captured-p3', true, [card('f', '3')]),
+        createZone('captured-p4', true, []),
+      ]);
+      const state = makeState({
+        table,
+        status: 'finished',
+        players: ['p1', 'p2', 'p3', 'p4'],
+        pistiBonusPoints: { p1: 0, p2: 0, p3: 0, p4: 0 },
+      });
+      const score = pistiGame.calculateScore(state);
+      expect(score['p1']).toBe(3);
+      expect(score['p2']).toBe(0);
+      expect(score['p3']).toBe(0);
+      expect(score['p4']).toBe(0);
+    });
+
+    it('with 4 players, awards no majority bonus when two players tie for the most captured cards', () => {
+      const table = createTable([
+        createZone('stock', false),
+        createZone('pile', 'top-only'),
+        createZone('hand-p1', true),
+        createZone('hand-p2', true),
+        createZone('hand-p3', true),
+        createZone('hand-p4', true),
+        createZone('captured-p1', true, [card('a', '3'), card('b', '3')]),
+        createZone('captured-p2', true, [card('c', '3'), card('d', '3')]),
+        createZone('captured-p3', true, [card('e', '3')]),
+        createZone('captured-p4', true, []),
+      ]);
+      const state = makeState({
+        table,
+        status: 'finished',
+        players: ['p1', 'p2', 'p3', 'p4'],
+        pistiBonusPoints: { p1: 0, p2: 0, p3: 0, p4: 0 },
+      });
+      const score = pistiGame.calculateScore(state);
+      expect(score['p1']).toBe(0);
+      expect(score['p2']).toBe(0);
+    });
+
+    it('pools captured cards and pişti bonuses per team, comparing team totals for the majority bonus', () => {
+      const table = createTable([
+        createZone('stock', false),
+        createZone('pile', 'top-only'),
+        createZone('hand-p1', true),
+        createZone('hand-p2', true),
+        createZone('hand-p3', true),
+        createZone('hand-p4', true),
+        // Team A (p1+p2) individually has one big leader (p1, 5 cards) but a smaller team total.
+        createZone('captured-p1', true, [card('a', 'A'), card('b', '3'), card('c', '3'), card('d', '3'), card('e', '3')]),
+        createZone('captured-p2', true, []),
+        // Team B (p3+p4) has no single leader, but the larger combined team total (7 vs 5).
+        createZone('captured-p3', true, [card('f', '3'), card('g', '3'), card('h', '3'), card('i', '3')]),
+        createZone('captured-p4', true, [card('j', '3'), card('k', '3'), card('l', '3')]),
+      ]);
+      const state = makeState({
+        table,
+        status: 'finished',
+        players: ['p1', 'p2', 'p3', 'p4'],
+        pistiBonusPoints: { p1: 0, p2: 0, p3: 0, p4: 0 },
+        teams: [
+          ['p1', 'p2'],
+          ['p3', 'p4'],
+        ],
+      });
+      const score = pistiGame.calculateScore(state);
+      // Team A: 1 (Ace) card point, no majority bonus (team B has more captured cards).
+      expect(score['p1']).toBe(1);
+      expect(score['p2']).toBe(1);
+      // Team B: 0 card points (all 3s) + 3 majority bonus, split identically to both members.
+      expect(score['p3']).toBe(3);
+      expect(score['p4']).toBe(3);
+    });
+
+    it('awards no majority bonus when teams tie on total captured cards', () => {
+      const table = createTable([
+        createZone('stock', false),
+        createZone('pile', 'top-only'),
+        createZone('hand-p1', true),
+        createZone('hand-p2', true),
+        createZone('hand-p3', true),
+        createZone('hand-p4', true),
+        createZone('captured-p1', true, [card('a', '3')]),
+        createZone('captured-p2', true, [card('b', '3')]),
+        createZone('captured-p3', true, [card('c', '3'), card('d', '3')]),
+        createZone('captured-p4', true, []),
+      ]);
+      const state = makeState({
+        table,
+        status: 'finished',
+        players: ['p1', 'p2', 'p3', 'p4'],
+        pistiBonusPoints: { p1: 0, p2: 0, p3: 0, p4: 0 },
+        teams: [
+          ['p1', 'p2'],
+          ['p3', 'p4'],
+        ],
+      });
+      const score = pistiGame.calculateScore(state);
+      expect(score['p1']).toBe(0);
+      expect(score['p3']).toBe(0);
+    });
+
     it('includes accumulated pişti bonus points', () => {
       const table = createTable([
         createZone('stock', false),
@@ -165,6 +290,32 @@ describe('pistiGame (rule engine)', () => {
         createZone('captured-p2', true),
       ]);
       const state = makeState({ table, status: 'finished' });
+      expect(pistiGame.determineWinner(state)).toEqual(['p1', 'p2']);
+    });
+
+    it('with teams, returns both members of the winning team since they share a pooled score', () => {
+      const table = createTable([
+        createZone('stock', false),
+        createZone('pile', 'top-only'),
+        createZone('hand-p1', true),
+        createZone('hand-p2', true),
+        createZone('hand-p3', true),
+        createZone('hand-p4', true),
+        createZone('captured-p1', true, [card('a', 'A')]),
+        createZone('captured-p2', true, []),
+        createZone('captured-p3', true, []),
+        createZone('captured-p4', true, []),
+      ]);
+      const state = makeState({
+        table,
+        status: 'finished',
+        players: ['p1', 'p2', 'p3', 'p4'],
+        pistiBonusPoints: { p1: 0, p2: 0, p3: 0, p4: 0 },
+        teams: [
+          ['p1', 'p2'],
+          ['p3', 'p4'],
+        ],
+      });
       expect(pistiGame.determineWinner(state)).toEqual(['p1', 'p2']);
     });
   });
@@ -326,6 +477,63 @@ describe('pistiGame performMove', () => {
     expect(next.table.zones['hand-p2'].cards).toHaveLength(4);
     expect(next.table.zones['stock'].cards).toHaveLength(0);
     expect(next.status).toBe('in-progress');
+  });
+
+  it('with 4 players, redeals 4 cards to each hand when all hands become empty and stock remains', () => {
+    const stockCards = Array.from({ length: 16 }, (_, i) => card(`s${i}`, '4', 'clubs'));
+    const table = createTable([
+      createZone('stock', false, stockCards),
+      createZone('pile', 'top-only', [card('p1c', '9', 'clubs')]),
+      createZone('hand-p1', true, [card('h1', '5', 'spades')]),
+      createZone('hand-p2', true, []),
+      createZone('hand-p3', true, []),
+      createZone('hand-p4', true, []),
+      createZone('captured-p1', true),
+      createZone('captured-p2', true),
+      createZone('captured-p3', true),
+      createZone('captured-p4', true),
+    ]);
+    const state = makeState({
+      table,
+      currentPlayerIndex: 0,
+      players: ['p1', 'p2', 'p3', 'p4'],
+      pistiBonusPoints: { p1: 0, p2: 0, p3: 0, p4: 0 },
+    });
+    const next = pistiGame.performMove(state, { type: 'play', cardId: 'h1' });
+
+    for (const p of ['p1', 'p2', 'p3', 'p4']) {
+      expect(next.table.zones[`hand-${p}`].cards).toHaveLength(4);
+    }
+    expect(next.table.zones['stock'].cards).toHaveLength(0);
+    expect(next.status).toBe('in-progress');
+    expect(next.currentPlayerIndex).toBe(1);
+  });
+
+  it('with 4 players, finishes the hand and sweeps remaining pile cards to the last capturer when stock and all hands are empty', () => {
+    const table = createTable([
+      createZone('stock', false),
+      createZone('pile', 'top-only', [card('p1c', '9', 'clubs')]),
+      createZone('hand-p1', true, [card('h1', '5', 'spades')]),
+      createZone('hand-p2', true, []),
+      createZone('hand-p3', true, []),
+      createZone('hand-p4', true, []),
+      createZone('captured-p1', true),
+      createZone('captured-p2', true),
+      createZone('captured-p3', true),
+      createZone('captured-p4', true),
+    ]);
+    const state = makeState({
+      table,
+      currentPlayerIndex: 0,
+      players: ['p1', 'p2', 'p3', 'p4'],
+      pistiBonusPoints: { p1: 0, p2: 0, p3: 0, p4: 0 },
+      lastCapturedBy: 'p3',
+    });
+    const next = pistiGame.performMove(state, { type: 'play', cardId: 'h1' });
+
+    expect(next.status).toBe('finished');
+    expect(next.table.zones['pile'].cards).toEqual([]);
+    expect(next.table.zones['captured-p3'].cards.map((c) => c.id)).toEqual(['p1c', 'h1']);
   });
 
   it('finishes the hand and sweeps remaining pile cards to the last capturer when stock and both hands are empty', () => {

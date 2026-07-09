@@ -16,6 +16,7 @@ function makeState(table: PistiState['table']): PistiState {
     status: 'in-progress',
     lastCapturedBy: null,
     pistiBonusPoints: { p1: 0, p2: 0 },
+    teams: null,
     table,
   };
 }

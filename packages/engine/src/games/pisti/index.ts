@@ -13,7 +13,7 @@ export const pistiDescriptor: GameDescriptor<PistiState, PistiMove> = {
   displayName: 'Pişti',
   category: 'fishing',
   minPlayers: 2,
-  maxPlayers: 2,
+  maxPlayers: 4,
   ruleEngine: pistiGame,
   aiStrategies: {
     easy: pistiEasyAI,
