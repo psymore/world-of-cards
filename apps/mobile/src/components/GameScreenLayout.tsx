@@ -5,9 +5,11 @@ export interface GameScreenLayoutProps {
   title: string;
   onExit: () => void;
   children: React.ReactNode;
+  backgroundColor?: string;
+  titleColor?: string;
 }
 
-export function GameScreenLayout({ title, onExit, children }: GameScreenLayoutProps) {
+export function GameScreenLayout({ title, onExit, children, backgroundColor, titleColor }: GameScreenLayoutProps) {
   function handleExitPress() {
     Alert.alert('Discard this game?', 'Your progress in this hand will be lost.', [
       { text: 'Cancel', style: 'cancel' },
@@ -16,9 +18,9 @@ export function GameScreenLayout({ title, onExit, children }: GameScreenLayoutPr
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, backgroundColor ? { backgroundColor } : null]}>
       <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={[styles.title, titleColor ? { color: titleColor } : null]}>{title}</Text>
         <Pressable onPress={handleExitPress} accessibilityRole="button">
           <Text style={styles.exit}>Exit</Text>
         </Pressable>

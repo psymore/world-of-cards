@@ -1,5 +1,4 @@
 import React, { act } from 'react';
-import { InteractionManager } from 'react-native';
 import { render, screen, fireEvent, within } from '@testing-library/react-native';
 import { PistiScreen } from './PistiScreen';
 import { useSettingsStore, defaultSettings } from '../../state/settingsStore';
@@ -8,10 +7,6 @@ describe('PistiScreen', () => {
   beforeEach(() => {
     useSettingsStore.setState(defaultSettings);
     jest.useFakeTimers();
-    jest.spyOn(InteractionManager, 'runAfterInteractions').mockImplementation(((callback: () => void) => {
-      callback();
-      return { then: jest.fn(), done: jest.fn(), cancel: jest.fn() };
-    }) as any);
   });
 
   afterEach(() => {
@@ -39,12 +34,15 @@ describe('PistiScreen', () => {
     expect(humanHand()).toHaveLength(4);
 
     await fireEvent.press(humanHand()[0]);
-    expect(humanHand()).toHaveLength(3);
+    expect(humanHand()).toHaveLength(4); // first tap only selects the card
+    await fireEvent.press(humanHand()[0]);
+    expect(humanHand()).toHaveLength(3); // second tap on the same card plays it
 
     await act(async () => {
       await jest.advanceTimersByTimeAsync(2000);
     });
 
+    await fireEvent.press(humanHand()[0]);
     await fireEvent.press(humanHand()[0]);
     expect(humanHand()).toHaveLength(2);
   });

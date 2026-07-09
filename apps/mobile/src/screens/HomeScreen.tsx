@@ -15,7 +15,7 @@ export function HomeScreen({ onSelectGame }: HomeScreenProps) {
         data={games}
         keyExtractor={(game) => game.id}
         renderItem={({ item }) => (
-          <Pressable onPress={() => onSelectGame(item.id)}>
+          <Pressable style={styles.gameCard} onPress={() => onSelectGame(item.id)}>
             <Text style={styles.gameItem}>{item.displayName}</Text>
           </Pressable>
         )}
@@ -26,8 +26,25 @@ export function HomeScreen({ onSelectGame }: HomeScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 48, paddingHorizontal: 16 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
-  gameItem: { fontSize: 18, paddingVertical: 8 },
+  container: { flex: 1, paddingTop: 48, paddingHorizontal: 16, backgroundColor: '#12121f' },
+  title: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#f4c542',
+    letterSpacing: 1,
+    textShadowColor: '#7a5c00',
+    textShadowRadius: 6,
+  },
+  gameCard: {
+    backgroundColor: '#1e1e33',
+    borderWidth: 1,
+    borderColor: '#f4c542',
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  gameItem: { fontSize: 18, fontWeight: '600', color: '#eee' },
   empty: { fontSize: 16, color: '#888' },
 });

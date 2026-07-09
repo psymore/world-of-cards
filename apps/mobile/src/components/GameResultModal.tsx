@@ -9,6 +9,16 @@ export interface GameResultModalProps {
   humanPlayerId: PlayerId;
   onPlayAgain: () => void;
   onBackHome: () => void;
+  // Partnerships, if this game has any (e.g. 4-player "with a partner" mode). When two
+  // teammates both win, they share one pooled score and both appear in `winners` — that's a
+  // clean win for their team, not a tie, so tie detection needs to count distinct *teams*
+  // among the winners rather than just the number of winning player ids.
+  teams?: PlayerId[][];
+}
+
+function teamKey(playerId: PlayerId, teams: PlayerId[][] | undefined): string {
+  const team = teams?.find((t) => t.includes(playerId));
+  return team ? team.slice().sort().join('+') : playerId;
 }
 
 export function GameResultModal({
@@ -18,8 +28,10 @@ export function GameResultModal({
   humanPlayerId,
   onPlayAgain,
   onBackHome,
+  teams,
 }: GameResultModalProps) {
-  const isTie = winners.length > 1;
+  const winningTeamKeys = new Set(winners.map((w) => teamKey(w, teams)));
+  const isTie = winningTeamKeys.size > 1;
   const humanWon = !isTie && winners.includes(humanPlayerId);
   const headline = isTie ? "It's a tie!" : humanWon ? 'You win!' : 'You lose';
 

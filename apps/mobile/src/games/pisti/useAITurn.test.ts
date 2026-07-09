@@ -1,5 +1,4 @@
 import { renderHook } from '@testing-library/react-native';
-import { InteractionManager } from 'react-native';
 import { useAITurn } from './useAITurn';
 import type { GameState, RuleEngine, AIStrategy, RNG } from '@world-cards/engine';
 
@@ -40,10 +39,6 @@ const fakeRng: RNG = { next: () => 0.5, getState: () => ({ seed: 0 }) };
 describe('useAITurn', () => {
   beforeEach(() => {
     jest.useFakeTimers();
-    jest.spyOn(InteractionManager, 'runAfterInteractions').mockImplementation(((callback: () => void) => {
-      callback();
-      return { then: jest.fn(), done: jest.fn(), cancel: jest.fn() };
-    }) as any);
   });
 
   afterEach(() => {
@@ -56,7 +51,7 @@ describe('useAITurn', () => {
     renderHook(() =>
       useAITurn({
         state: makeState(1),
-        aiPlayerId: 'ai',
+        aiPlayerIds: ['ai'],
         aiStrategy: fakeAIStrategy,
         ruleEngine: fakeRuleEngine,
         rng: fakeRng,
@@ -67,7 +62,7 @@ describe('useAITurn', () => {
 
     expect(onMove).not.toHaveBeenCalled();
     await jest.advanceTimersByTimeAsync(600);
-    expect(onMove).toHaveBeenCalledWith({ type: 'noop' });
+    expect(onMove).toHaveBeenCalledWith({ type: 'noop' }, 'ai');
   });
 
   it('does not schedule a move when it is the human turn', async () => {
@@ -75,7 +70,7 @@ describe('useAITurn', () => {
     renderHook(() =>
       useAITurn({
         state: makeState(0),
-        aiPlayerId: 'ai',
+        aiPlayerIds: ['ai'],
         aiStrategy: fakeAIStrategy,
         ruleEngine: fakeRuleEngine,
         rng: fakeRng,
@@ -92,7 +87,7 @@ describe('useAITurn', () => {
     renderHook(() =>
       useAITurn({
         state: makeState(1, 'finished'),
-        aiPlayerId: 'ai',
+        aiPlayerIds: ['ai'],
         aiStrategy: fakeAIStrategy,
         ruleEngine: fakeRuleEngine,
         rng: fakeRng,

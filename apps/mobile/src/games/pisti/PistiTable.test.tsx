@@ -3,6 +3,8 @@ import { render, screen, fireEvent, within } from '@testing-library/react-native
 import { PistiTable } from './PistiTable';
 import type { PistiState } from '@world-cards/engine/games/pisti';
 
+const PLAYER_NAMES = { human: 'You', ai: 'Computer' };
+
 function makeState(currentPlayerIndex: number): PistiState {
   return {
     gameId: 'pisti',
@@ -12,6 +14,7 @@ function makeState(currentPlayerIndex: number): PistiState {
     rngState: { seed: 0 },
     lastCapturedBy: null,
     pistiBonusPoints: { human: 0, ai: 0 },
+    teams: null,
     table: {
       zones: {
         stock: { id: 'stock', faceUp: false, cards: [] },
@@ -41,28 +44,47 @@ function makeState(currentPlayerIndex: number): PistiState {
 
 describe('PistiTable', () => {
   it('renders the pile top card and count', async () => {
-    await render(<PistiTable state={makeState(0)} humanPlayerId="human" aiPlayerId="ai" onPlayCard={() => {}} />);
+    await render(<PistiTable state={makeState(0)} humanPlayerId="human" opponentPlayerIds={['ai']} playerNames={PLAYER_NAMES}onPlayCard={() => {}} />);
     expect(screen.getByText('7')).toBeTruthy();
     expect(screen.getByText('1 card')).toBeTruthy();
   });
 
   it('renders the opponent hand as face-down cards only', async () => {
-    await render(<PistiTable state={makeState(0)} humanPlayerId="human" aiPlayerId="ai" onPlayCard={() => {}} />);
-    expect(within(screen.getByTestId('opponent-hand')).getAllByTestId('playing-card-back')).toHaveLength(2);
+    await render(<PistiTable state={makeState(0)} humanPlayerId="human" opponentPlayerIds={['ai']} playerNames={PLAYER_NAMES}onPlayCard={() => {}} />);
+    expect(within(screen.getByTestId('opponent-hand-ai')).getAllByTestId('playing-card-back')).toHaveLength(2);
     expect(screen.queryByText('3')).toBeNull();
   });
 
-  it('calls onPlayCard when a hand card is tapped during the human turn', async () => {
+  it('does not call onPlayCard on the first tap, only selects the card', async () => {
     const onPlayCard = jest.fn();
-    await render(<PistiTable state={makeState(0)} humanPlayerId="human" aiPlayerId="ai" onPlayCard={onPlayCard} />);
-    fireEvent.press(screen.getByText('9'));
+    await render(<PistiTable state={makeState(0)} humanPlayerId="human" opponentPlayerIds={['ai']} playerNames={PLAYER_NAMES}onPlayCard={onPlayCard} />);
+    await fireEvent.press(screen.getByText('9'));
+    expect(onPlayCard).not.toHaveBeenCalled();
+  });
+
+  it('calls onPlayCard when the already-selected card is tapped again', async () => {
+    const onPlayCard = jest.fn();
+    await render(<PistiTable state={makeState(0)} humanPlayerId="human" opponentPlayerIds={['ai']} playerNames={PLAYER_NAMES}onPlayCard={onPlayCard} />);
+    await fireEvent.press(screen.getByText('9'));
+    await fireEvent.press(screen.getByText('9'));
     expect(onPlayCard).toHaveBeenCalledWith('h1');
+  });
+
+  it('selecting a different card deselects the previous one instead of playing it', async () => {
+    const onPlayCard = jest.fn();
+    await render(<PistiTable state={makeState(0)} humanPlayerId="human" opponentPlayerIds={['ai']} playerNames={PLAYER_NAMES}onPlayCard={onPlayCard} />);
+    await fireEvent.press(screen.getByText('9'));
+    await fireEvent.press(screen.getByText('K'));
+    expect(onPlayCard).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByText('K'));
+    expect(onPlayCard).toHaveBeenCalledWith('h2');
   });
 
   it('does not call onPlayCard when tapped during the AI turn', async () => {
     const onPlayCard = jest.fn();
-    await render(<PistiTable state={makeState(1)} humanPlayerId="human" aiPlayerId="ai" onPlayCard={onPlayCard} />);
-    fireEvent.press(screen.getByText('9'));
+    await render(<PistiTable state={makeState(1)} humanPlayerId="human" opponentPlayerIds={['ai']} playerNames={PLAYER_NAMES}onPlayCard={onPlayCard} />);
+    await fireEvent.press(screen.getByText('9'));
+    await fireEvent.press(screen.getByText('9'));
     expect(onPlayCard).not.toHaveBeenCalled();
   });
 
@@ -71,7 +93,8 @@ describe('PistiTable', () => {
       <PistiTable
         state={makeState(0)}
         humanPlayerId="human"
-        aiPlayerId="ai"
+        opponentPlayerIds={['ai']}
+        playerNames={PLAYER_NAMES}
         onPlayCard={() => {}}
         bannerText="Pişti! +10"
       />
