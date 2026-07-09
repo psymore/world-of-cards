@@ -4,6 +4,41 @@ World Cards is an ambitious open-source project aiming to become the largest col
 
 Rather than building individual card game apps, the goal is to create a reusable platform where every game shares a common engine while implementing only its own rules.
 
+---
+
+## Getting Started on Windows
+
+### Prerequisites
+
+- **Git for Windows** — [git-scm.com/download/win](https://git-scm.com/download/win)
+- **Node.js** — `react-native@0.86` requires `^22.13.0`, `^24.3.0`, or `>=25.0.0`. Install via [nvm-windows](https://github.com/coreybutler/nvm-windows) so you can switch versions easily, then run `nvm install 22.13.0 && nvm use 22.13.0` (or a newer LTS).
+- **Expo Go** app on your phone ([iOS](https://apps.apple.com/app/expo-go/id982107779) / [Android](https://play.google.com/store/apps/details?id=host.exp.exponent)) — the fastest way to run the app without installing Android Studio or Xcode.
+
+### Setup
+
+```powershell
+git clone https://github.com/<your-org>/world-cards.git
+cd world-cards
+npm install
+npm run mobile
+```
+
+This starts the Expo dev server for `apps/mobile`. Scan the printed QR code with Expo Go (same Wi-Fi network as your PC) to run the app on your phone, or press `w` in the terminal to open it in a browser.
+
+### Windows-specific notes
+
+- **Long paths**: this is an npm-workspaces monorepo, so `node_modules` nesting can exceed Windows' default 260-character path limit. Enable long path support once, as Administrator:
+  ```powershell
+  git config --system core.longpaths true
+  New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -PropertyType DWord -Value 1 -Force
+  ```
+- **Antivirus/Defender**: real-time scanning can noticeably slow down `npm install` and Metro's file watching. Consider excluding the repo folder in Windows Security if installs feel sluggish.
+- **Terminal**: PowerShell or Git Bash both work fine for the commands in this repo. If a command block above shows `bash`/POSIX syntax elsewhere in the docs, translate `&&` to `;` and env vars (`FOO=bar cmd`) to `$env:FOO='bar'; cmd` in PowerShell.
+- **Watchman is not needed** — Metro's built-in file watcher works fine on Windows without it.
+- Run `npm test` from the repo root at any time to run the full Jest suite (engine + mobile) as a sanity check that setup worked.
+
+---
+
 ## Vision
 
 Build a production-quality, cross-platform mobile application that includes classic card games from many countries in a single experience.
