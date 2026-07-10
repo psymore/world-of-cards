@@ -79,16 +79,20 @@ function PlayerBadge({
   capturedCount,
   active,
   isHuman,
+  compact,
 }: {
   name: string;
   capturedCount: number;
   active: boolean;
   isHuman: boolean;
+  // Width-constrained seats (the 64dp side seats in a 4-player table) need a smaller avatar and
+  // tighter spacing so the name/capture-count text still fits without wrapping onto several lines.
+  compact?: boolean;
 }) {
   return (
-    <View style={[styles.badge, active && styles.badgeActive]}>
-      <PlayerAvatar accent={isHuman} />
-      <Text style={styles.playerLabel}>{`${name} · 🂠 ${capturedCount}`}</Text>
+    <View style={[styles.badge, compact && styles.badgeCompact, active && styles.badgeActive]}>
+      <PlayerAvatar accent={isHuman} size={compact ? 'small' : 'normal'} />
+      <Text style={[styles.playerLabel, compact && styles.playerLabelCompact]}>{`${name} · 🂠 ${capturedCount}`}</Text>
     </View>
   );
 }
@@ -111,7 +115,13 @@ function OpponentSeat({ seat, state, playerNames, revealCard }: OpponentSeatProp
 
   return (
     <View style={[styles.opponentArea, isSide && styles.opponentAreaSide, isCurrentTurn && styles.activeArea]}>
-      <PlayerBadge name={playerNames[playerId] ?? playerId} capturedCount={capturedCount} active={isCurrentTurn} isHuman={false} />
+      <PlayerBadge
+        name={playerNames[playerId] ?? playerId}
+        capturedCount={capturedCount}
+        active={isCurrentTurn}
+        isHuman={false}
+        compact={isSide}
+      />
       <View style={isSide ? styles.opponentColumn : styles.opponentRow} testID={`opponent-hand-${playerId}`}>
         {Array.from({ length: count }).map((_, i, arr) =>
           isSide ? (
@@ -274,7 +284,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(34, 197, 94, 0.2)',
     ...glowShadow('#4ade80', 8),
   },
+  // The 64dp side seats have too little room for the default gap/padding plus a full-size
+  // avatar without the name/capture-count text wrapping onto several cramped lines.
+  badgeCompact: { gap: 3, paddingHorizontal: 5 },
   playerLabel: { fontSize: 13, fontWeight: '700', color: '#f5f0e6', textAlign: 'center' },
+  playerLabelCompact: { fontSize: 11 },
   opponentRow: { flexDirection: 'row', justifyContent: 'center' },
   opponentColumn: { flexDirection: 'column', alignItems: 'center' },
   pileArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
