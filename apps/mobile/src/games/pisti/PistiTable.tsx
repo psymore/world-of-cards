@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import type { Card } from '@world-cards/engine';
 import type { PistiState } from '@world-cards/engine/games/pisti';
 import { PlayingCard } from '../../components/PlayingCard';
@@ -9,8 +9,16 @@ import { TableFelt } from '../../components/TableFelt';
 import { TableWoodCorners } from '../../components/TableWoodCorners';
 import { PlayerAvatar } from '../../components/PlayerAvatar';
 import { glowShadow } from '../../components/glowShadow';
-import { assignSeats, fanCurveY, fanRotationDeg, OPPONENT_CARD_OVERLAP, SIDE_CARD_STYLES } from './pistiSeating';
-import type { Seat } from './pistiSeating';
+import {
+  assignSeats,
+  fanCurveY,
+  fanRotationDeg,
+  OPPONENT_CARD_OVERLAP,
+  resolveRevealOrigin,
+  revealOriginOffset,
+  SIDE_CARD_STYLES,
+} from './pistiSeating';
+import type { RevealOrigin, Seat } from './pistiSeating';
 
 export interface PistiRevealCard {
   card: Card;
@@ -40,16 +48,30 @@ const PILE_CARD_OFFSETS = Array.from({ length: MAX_STACKED_PILE_CARDS + 1 }, (_,
   y: i * -3,
 }));
 
-function RevealCard({ revealCard, label }: { revealCard: PistiRevealCard; label: string }) {
+function RevealCard({
+  revealCard,
+  label,
+  originDirection,
+}: {
+  revealCard: PistiRevealCard;
+  label: string;
+  originDirection: RevealOrigin;
+}) {
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     anim.setValue(0);
-    Animated.timing(anim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    Animated.timing(anim, {
+      toValue: 1,
+      duration: 530,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revealCard.card.id]);
 
   const offset = PILE_CARD_OFFSETS[MAX_STACKED_PILE_CARDS];
+  const origin = revealOriginOffset(originDirection);
 
   return (
     <>
@@ -61,8 +83,18 @@ function RevealCard({ revealCard, label }: { revealCard: PistiRevealCard; label:
             zIndex: MAX_STACKED_PILE_CARDS + 1,
             opacity: anim,
             transform: [
-              { translateX: offset.x },
-              { translateY: offset.y },
+              {
+                translateX: anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [offset.x + origin.x, offset.x],
+                }),
+              },
+              {
+                translateY: anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [offset.y + origin.y, offset.y],
+                }),
+              },
               { scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) },
             ],
           },
@@ -228,6 +260,7 @@ export function PistiTable({
                       ? 'You played'
                       : `${playerNames[revealCard.playerId] ?? revealCard.playerId} played`
                   }
+                  originDirection={resolveRevealOrigin(revealCard.playerId, humanPlayerId, seats)}
                 />
               )}
             </View>

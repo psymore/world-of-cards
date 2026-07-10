@@ -67,3 +67,31 @@ export const SIDE_CARD_STYLES: ({ marginTop: number } | undefined)[] = Array.fro
   { length: MAX_SIDE_STACK_CARDS },
   (_, i) => (i > 0 ? { marginTop: -SIDE_CARD_OVERLAP } : undefined)
 );
+
+// The reveal-motion origin a played card travels in from: an opponent seat's position, or
+// 'bottom' for the human (who isn't part of the Seat[] array — always rendered separately).
+export type RevealOrigin = SeatPosition | 'bottom';
+
+// Fixed direction-based travel offsets for the trick-reveal motion (see
+// docs/superpowers/specs/2026-07-10-pisti-trick-reveal-motion-design.md). Deliberately not
+// measured from real seat layout (no onLayout) — a fixed offset per direction reads clearly as
+// "came from that side" without needing new layout-measurement plumbing.
+const REVEAL_ORIGIN_OFFSETS: Record<RevealOrigin, { x: number; y: number }> = {
+  top: { x: 0, y: -130 },
+  bottom: { x: 0, y: 130 },
+  left: { x: -110, y: 0 },
+  right: { x: 110, y: 0 },
+};
+
+export function revealOriginOffset(origin: RevealOrigin): { x: number; y: number } {
+  return REVEAL_ORIGIN_OFFSETS[origin];
+}
+
+// Resolves which direction a given play travels in from: the human is always 'bottom' (not part
+// of `seats`); an AI seat not found in `seats` (shouldn't happen — every opponentPlayerId gets a
+// seat) falls back to 'top', matching assignSeats' own single-opponent fallback.
+export function resolveRevealOrigin(playerId: string, humanPlayerId: string, seats: Seat[]): RevealOrigin {
+  if (playerId === humanPlayerId) return 'bottom';
+  const seat = seats.find((s) => s.playerId === playerId);
+  return seat ? seat.position : 'top';
+}
