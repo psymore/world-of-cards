@@ -9,6 +9,7 @@ import { TableFelt } from '../../components/TableFelt';
 import { TableWoodCorners } from '../../components/TableWoodCorners';
 import { PlayerAvatar } from '../../components/PlayerAvatar';
 import { glowShadow } from '../../components/glowShadow';
+import { useReducedMotion } from '../../components/useReducedMotion';
 import {
   assignSeats,
   fanCurveY,
@@ -58,8 +59,15 @@ function RevealCard({
   originDirection: RevealOrigin;
 }) {
   const anim = useRef(new Animated.Value(0)).current;
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
+    // With reduce-motion on, the card appears already at rest instead of traveling in — an
+    // instant transition rather than the full directional-travel effect.
+    if (reducedMotion) {
+      anim.setValue(1);
+      return;
+    }
     anim.setValue(0);
     Animated.timing(anim, {
       toValue: 1,
@@ -68,7 +76,7 @@ function RevealCard({
       useNativeDriver: true,
     }).start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [revealCard.card.id]);
+  }, [revealCard.card.id, reducedMotion]);
 
   const offset = PILE_CARD_OFFSETS[MAX_STACKED_PILE_CARDS];
   const origin = revealOriginOffset(originDirection);

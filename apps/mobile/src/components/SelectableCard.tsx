@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable } from 'react-native';
 import { PlayingCard, PlayingCardProps } from './PlayingCard';
+import { useReducedMotion } from './useReducedMotion';
 
 export interface SelectableCardProps extends PlayingCardProps {
   selected?: boolean;
@@ -24,14 +25,16 @@ export function SelectableCard({
   ...cardProps
 }: SelectableCardProps) {
   const lift = useRef(new Animated.Value(selected ? -liftDistance : 0)).current;
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     // Selecting snaps instantly: a fast player taps once to select and immediately taps again to
     // play, and a 150ms rise would still be mid-flight when that second tap lands. Deselecting
     // (picking a different card, or the selected card unmounting once played) has no such urgency,
-    // so it keeps the smooth animated drop for polish.
-    if (selected) {
-      lift.setValue(-liftDistance);
+    // so it keeps the smooth animated drop for polish — unless the user has reduce-motion enabled,
+    // in which case both directions snap instantly.
+    if (selected || reducedMotion) {
+      lift.setValue(selected ? -liftDistance : 0);
     } else {
       Animated.timing(lift, {
         toValue: 0,
@@ -39,7 +42,7 @@ export function SelectableCard({
         useNativeDriver: true,
       }).start();
     }
-  }, [selected, liftDistance, lift]);
+  }, [selected, liftDistance, lift, reducedMotion]);
 
   return (
     <Animated.View
