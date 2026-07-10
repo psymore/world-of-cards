@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "world-cards",
-    "slug": "world-cards",
+    "slug": "world-of-cards",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,6 +10,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.worldcards.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -20,6 +21,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "fab04012-38d3-42ba-92df-e91772e35c27"
+      }
+    },
+    "owner": "ragedapes-team"
   }
 }
