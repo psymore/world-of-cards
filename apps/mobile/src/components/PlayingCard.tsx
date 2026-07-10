@@ -58,7 +58,7 @@ function PlayingCardComponent({ card, faceDown, size = 'normal', style, highligh
             suit={card.suit}
             size={isSmall ? WATERMARK_ICON_SIZE.small : WATERMARK_ICON_SIZE.normal}
             color={suitColor}
-            opacity={0.16}
+            opacity={1}
           />
         )}
       </View>
