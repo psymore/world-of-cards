@@ -49,13 +49,13 @@ export function fanCurveY(index: number, count: number): number {
   return Math.pow(Math.abs(index - mid), 2) * OPPONENT_FAN_CURVE;
 }
 
-export const OPPONENT_CARD_OVERLAP = 14;
+export const OPPONENT_CARD_OVERLAP = 21;
 
 // Side seats (left/right, 4-player mode) stack their face-down cards vertically instead of
 // fanning horizontally — a horizontal fan rotated 90° would keep its unrotated (wide) footprint
 // reserved in the layout since RN transforms don't affect sizing, which risks overflowing a
 // phone-width row. A vertical stack sidesteps that entirely.
-export const SIDE_CARD_OVERLAP = 30;
+export const SIDE_CARD_OVERLAP = 45;
 
 // Precomputed per-index style for the side stack, mirroring PistiTable's PILE_CARD_OFFSETS
 // pattern — a stable object reference per index (instead of a fresh `{marginTop: ...}` literal
@@ -77,10 +77,10 @@ export type RevealOrigin = SeatPosition | 'bottom';
 // measured from real seat layout (no onLayout) — a fixed offset per direction reads clearly as
 // "came from that side" without needing new layout-measurement plumbing.
 const REVEAL_ORIGIN_OFFSETS: Record<RevealOrigin, { x: number; y: number }> = {
-  top: { x: 0, y: -130 },
-  bottom: { x: 0, y: 130 },
-  left: { x: -110, y: 0 },
-  right: { x: 110, y: 0 },
+  top: { x: 0, y: -195 },
+  bottom: { x: 0, y: 195 },
+  left: { x: -165, y: 0 },
+  right: { x: 165, y: 0 },
 };
 
 export function revealOriginOffset(origin: RevealOrigin): { x: number; y: number } {

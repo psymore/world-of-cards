@@ -17,9 +17,47 @@ export interface PlayingCardProps {
 
 const RED_SUITS: Suit[] = ['hearts', 'diamonds'];
 const SUIT_COLOR = { red: '#c0392b', black: '#111' };
-const CORNER_ICON_SIZE = { normal: 12, small: 8 };
-const WATERMARK_ICON_SIZE = { normal: 42, small: 26 };
-const CARD_DIMS = { normal: { width: 56, height: 80 }, small: { width: 36, height: 52 } };
+const CORNER_ICON_SIZE = { normal: 18, small: 12 };
+const WATERMARK_ICON_SIZE = { normal: 63, small: 39 };
+const CARD_DIMS = { normal: { width: 84, height: 120 }, small: { width: 54, height: 78 } };
+
+function CornerIndex({
+  rank,
+  suit,
+  isSmall,
+  suitColor,
+  isRed,
+  mirrored,
+}: {
+  rank: string;
+  suit: Suit | undefined;
+  isSmall: boolean;
+  suitColor: string;
+  isRed: boolean;
+  mirrored?: boolean;
+}) {
+  const containerStyle = mirrored
+    ? isSmall
+      ? styles.cornerSmallMirrored
+      : styles.cornerNormalMirrored
+    : isSmall
+      ? styles.cornerSmall
+      : styles.cornerNormal;
+
+  return (
+    <View style={containerStyle}>
+      <Text style={[isSmall ? styles.cornerRankSmall : styles.cornerRankNormal, isRed && styles.red]}>{rank}</Text>
+      {suit != null && (
+        <SuitIcon
+          testID={mirrored ? `corner-suit-mirror-${suit}` : `corner-suit-${suit}`}
+          suit={suit}
+          size={isSmall ? CORNER_ICON_SIZE.small : CORNER_ICON_SIZE.normal}
+          color={suitColor}
+        />
+      )}
+    </View>
+  );
+}
 
 function PlayingCardComponent({ card, faceDown, size = 'normal', style, highlighted }: PlayingCardProps) {
   const isSmall = size === 'small';
@@ -39,19 +77,8 @@ function PlayingCardComponent({ card, faceDown, size = 'normal', style, highligh
 
   return (
     <View testID="playing-card-face" style={[styles.card, dims, highlighted && styles.highlighted, style]}>
-      <View style={isSmall ? styles.cornerSmall : styles.cornerNormal}>
-        <Text style={[isSmall ? styles.cornerRankSmall : styles.cornerRankNormal, isRed && styles.red]}>
-          {card.rank}
-        </Text>
-        {card.suit != null && (
-          <SuitIcon
-            testID={`corner-suit-${card.suit}`}
-            suit={card.suit}
-            size={isSmall ? CORNER_ICON_SIZE.small : CORNER_ICON_SIZE.normal}
-            color={suitColor}
-          />
-        )}
-      </View>
+      <CornerIndex rank={card.rank} suit={card.suit} isSmall={isSmall} suitColor={suitColor} isRed={isRed} />
+      <CornerIndex rank={card.rank} suit={card.suit} isSmall={isSmall} suitColor={suitColor} isRed={isRed} mirrored />
       <View testID="playing-card-center-art" style={styles.centerArt}>
         {card.suit != null && (
           <SuitIcon
@@ -79,18 +106,20 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#fff',
   },
-  normal: { width: 56, height: 80 },
-  small: { width: 36, height: 52 },
+  normal: { width: 84, height: 120 },
+  small: { width: 54, height: 78 },
   back: { backgroundColor: '#1c2451', borderColor: '#0f1638', overflow: 'hidden' },
   highlighted: {
     borderColor: '#f4c542',
     borderWidth: 2,
     ...glowShadow('#f4c542', 6),
   },
-  cornerNormal: { position: 'absolute', top: 3, left: 4, alignItems: 'center' },
-  cornerSmall: { position: 'absolute', top: 2, left: 2, alignItems: 'center' },
-  cornerRankNormal: { fontSize: 13, fontWeight: 'bold', color: '#111', lineHeight: 14 },
-  cornerRankSmall: { fontSize: 9, fontWeight: 'bold', color: '#111', lineHeight: 10 },
+  cornerNormal: { position: 'absolute', top: 5, left: 6, alignItems: 'center' },
+  cornerSmall: { position: 'absolute', top: 3, left: 3, alignItems: 'center' },
+  cornerNormalMirrored: { position: 'absolute', bottom: 5, right: 6, alignItems: 'center', transform: [{ rotate: '180deg' }] },
+  cornerSmallMirrored: { position: 'absolute', bottom: 3, right: 3, alignItems: 'center', transform: [{ rotate: '180deg' }] },
+  cornerRankNormal: { fontSize: 20, fontWeight: 'bold', color: '#111', lineHeight: 21 },
+  cornerRankSmall: { fontSize: 14, fontWeight: 'bold', color: '#111', lineHeight: 15 },
   centerArt: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   red: { color: '#c0392b' },
 });
