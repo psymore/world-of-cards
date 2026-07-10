@@ -6,6 +6,7 @@ import { PlayingCard } from '../../components/PlayingCard';
 import { SelectableCard } from '../../components/SelectableCard';
 import { useCardSelection } from '../../components/useCardSelection';
 import { TableFelt } from '../../components/TableFelt';
+import { TableWoodCorners } from '../../components/TableWoodCorners';
 import { glowShadow } from '../../components/glowShadow';
 import { assignSeats, fanCurveY, fanRotationDeg, OPPONENT_CARD_OVERLAP, SIDE_CARD_STYLES } from './pistiSeating';
 import type { Seat } from './pistiSeating';
@@ -174,6 +175,7 @@ export function PistiTable({
   return (
     <View style={styles.container}>
       <TableFelt />
+      <TableWoodCorners />
       <OpponentSeatGroup position="top" seats={seats} state={state} playerNames={playerNames} revealCard={revealCard} />
 
       <View style={styles.middleRow}>
