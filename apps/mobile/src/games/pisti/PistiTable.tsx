@@ -92,7 +92,7 @@ function PlayerBadge({
   return (
     <View style={[styles.badge, compact && styles.badgeCompact, active && styles.badgeActive]}>
       <PlayerAvatar accent={isHuman} size={compact ? 'small' : 'normal'} />
-      <Text style={[styles.playerLabel, compact && styles.playerLabelCompact]}>{`${name} · 🂠 ${capturedCount}`}</Text>
+      <Text style={[styles.playerLabel, compact && styles.playerLabelCompact]} numberOfLines={1}>{`${name} · 🂠 ${capturedCount}`}</Text>
     </View>
   );
 }
