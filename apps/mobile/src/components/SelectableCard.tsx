@@ -26,11 +26,19 @@ export function SelectableCard({
   const lift = useRef(new Animated.Value(selected ? -liftDistance : 0)).current;
 
   useEffect(() => {
-    Animated.timing(lift, {
-      toValue: selected ? -liftDistance : 0,
-      duration: LIFT_ANIM_DURATION_MS,
-      useNativeDriver: true,
-    }).start();
+    // Selecting snaps instantly: a fast player taps once to select and immediately taps again to
+    // play, and a 150ms rise would still be mid-flight when that second tap lands. Deselecting
+    // (picking a different card, or the selected card unmounting once played) has no such urgency,
+    // so it keeps the smooth animated drop for polish.
+    if (selected) {
+      lift.setValue(-liftDistance);
+    } else {
+      Animated.timing(lift, {
+        toValue: 0,
+        duration: LIFT_ANIM_DURATION_MS,
+        useNativeDriver: true,
+      }).start();
+    }
   }, [selected, liftDistance, lift]);
 
   return (
