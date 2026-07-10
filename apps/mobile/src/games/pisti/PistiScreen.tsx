@@ -48,11 +48,11 @@ function buildPlayerNames(aiIds: PlayerId[], teams: PlayerId[][] | undefined): R
   return names;
 }
 
-// Extra pause after the AI "decides" its move (see useAITurn's thinkingDelayMs) during which the
-// chosen card is shown highlighted before it's actually committed to game state. Without this,
-// the AI's hand shrinking and the pile updating happen in the same instant, with no readable
-// moment showing which card was played.
-const AI_REVEAL_DELAY_MS = 550;
+// Pause between a move being chosen (AI, via useAITurn's separate thinkingDelayMs, or the human,
+// on tap) and it actually being committed to game state, during which the chosen card is shown
+// traveling to the pile. Without this, the hand shrinking and the pile updating would happen in
+// the same instant, with no readable moment showing which card was played or by whom.
+const REVEAL_DELAY_MS = 550;
 
 export interface PistiScreenProps {
   onExitToHome: () => void;
@@ -177,12 +177,22 @@ function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgai
       revealTimeoutRef.current = setTimeout(() => {
         applyMove(move, playerId);
         setRevealedMove(null);
-      }, AI_REVEAL_DELAY_MS);
+      }, REVEAL_DELAY_MS);
     },
   });
 
   function handlePlayCard(cardId: string) {
-    applyMove({ type: 'play', cardId }, HUMAN_ID);
+    const move: PistiMove = { type: 'play', cardId };
+    const playedCard = state.table.zones[`hand-${HUMAN_ID}`].cards.find((c) => c.id === cardId);
+    if (!playedCard) {
+      applyMove(move, HUMAN_ID);
+      return;
+    }
+    setRevealedMove({ move, card: playedCard, playerId: HUMAN_ID });
+    revealTimeoutRef.current = setTimeout(() => {
+      applyMove(move, HUMAN_ID);
+      setRevealedMove(null);
+    }, REVEAL_DELAY_MS);
   }
 
   const gameOver = pistiDescriptor.ruleEngine.gameOver(state);

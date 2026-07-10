@@ -214,7 +214,15 @@ export function PistiTable({
   revealCard,
 }: PistiTableProps) {
   const isHumanTurn = state.players[state.currentPlayerIndex] === humanPlayerId;
-  const humanHand = state.table.zones[`hand-${humanPlayerId}`].cards;
+  // While the human's own play is revealing (traveling to the pile), the engine state hasn't
+  // committed the move yet, so `isHumanTurn` alone would still say it's their turn. Hide the
+  // in-flight card from the hand row (it's already rendered by RevealCard at the pile) and treat
+  // the hand as non-interactive until the move actually commits.
+  const isHumanRevealing = revealCard != null && revealCard.playerId === humanPlayerId;
+  const isHumanInteractive = isHumanTurn && !isHumanRevealing;
+  const humanHand = state.table.zones[`hand-${humanPlayerId}`].cards.filter(
+    (card) => !(isHumanRevealing && card.id === revealCard!.card.id)
+  );
   const pile = state.table.zones['pile'].cards;
   const stackedPile = pile.slice(-MAX_STACKED_PILE_CARDS);
   const capturedHuman = state.table.zones[`captured-${humanPlayerId}`].cards.length;
@@ -273,14 +281,14 @@ export function PistiTable({
 
       <View style={styles.bannerArea}>{bannerText ? <Text style={styles.banner}>{bannerText}</Text> : null}</View>
 
-      <View style={[styles.handArea, isHumanTurn && styles.activeArea]}>
+      <View style={[styles.handArea, isHumanInteractive && styles.activeArea]}>
         <View style={styles.handRow} testID="human-hand">
           {humanHand.map((card) => (
-            <View key={card.id} style={!isHumanTurn && styles.disabledCard}>
+            <View key={card.id} style={!isHumanInteractive && styles.disabledCard}>
               <SelectableCard
                 card={card}
                 selected={selectedCardId === card.id}
-                disabled={!isHumanTurn}
+                disabled={!isHumanInteractive}
                 onPress={() => selectCard(card.id)}
               />
             </View>
