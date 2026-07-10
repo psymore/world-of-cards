@@ -7,6 +7,7 @@ import { SelectableCard } from '../../components/SelectableCard';
 import { useCardSelection } from '../../components/useCardSelection';
 import { TableFelt } from '../../components/TableFelt';
 import { TableWoodCorners } from '../../components/TableWoodCorners';
+import { PlayerAvatar } from '../../components/PlayerAvatar';
 import { glowShadow } from '../../components/glowShadow';
 import { assignSeats, fanCurveY, fanRotationDeg, OPPONENT_CARD_OVERLAP, SIDE_CARD_STYLES } from './pistiSeating';
 import type { Seat } from './pistiSeating';
@@ -73,9 +74,20 @@ function RevealCard({ revealCard, label }: { revealCard: PistiRevealCard; label:
   );
 }
 
-function PlayerBadge({ name, capturedCount, active }: { name: string; capturedCount: number; active: boolean }) {
+function PlayerBadge({
+  name,
+  capturedCount,
+  active,
+  isHuman,
+}: {
+  name: string;
+  capturedCount: number;
+  active: boolean;
+  isHuman: boolean;
+}) {
   return (
     <View style={[styles.badge, active && styles.badgeActive]}>
+      <PlayerAvatar accent={isHuman} />
       <Text style={styles.playerLabel}>{`${name} · 🂠 ${capturedCount}`}</Text>
     </View>
   );
@@ -99,7 +111,7 @@ function OpponentSeat({ seat, state, playerNames, revealCard }: OpponentSeatProp
 
   return (
     <View style={[styles.opponentArea, isSide && styles.opponentAreaSide, isCurrentTurn && styles.activeArea]}>
-      <PlayerBadge name={playerNames[playerId] ?? playerId} capturedCount={capturedCount} active={isCurrentTurn} />
+      <PlayerBadge name={playerNames[playerId] ?? playerId} capturedCount={capturedCount} active={isCurrentTurn} isHuman={false} />
       <View style={isSide ? styles.opponentColumn : styles.opponentRow} testID={`opponent-hand-${playerId}`}>
         {Array.from({ length: count }).map((_, i, arr) =>
           isSide ? (
@@ -231,7 +243,7 @@ export function PistiTable({
             </View>
           ))}
         </View>
-        <PlayerBadge name={playerNames[humanPlayerId] ?? 'You'} capturedCount={capturedHuman} active={isHumanTurn} />
+        <PlayerBadge name={playerNames[humanPlayerId] ?? 'You'} capturedCount={capturedHuman} active={isHumanTurn} isHuman />
       </View>
     </View>
   );
@@ -245,6 +257,9 @@ const styles = StyleSheet.create({
   activeArea: { backgroundColor: 'rgba(244, 197, 66, 0.14)' },
   middleRow: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     alignSelf: 'center',
     marginVertical: 4,
     paddingHorizontal: 10,
