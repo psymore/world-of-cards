@@ -25,6 +25,13 @@ function handDealTargets(players: PlayerId[]): { zoneId: string; count: number }
   return players.map((p) => ({ zoneId: `hand-${p}`, count: 4 }));
 }
 
+function withStock(table: TableState, remainingDeck: Card[]): TableState {
+  return {
+    ...table,
+    zones: { ...table.zones, stock: { ...table.zones['stock'], cards: remainingDeck } },
+  };
+}
+
 export const pistiGame: RuleEngine<PistiState, PistiMove> = {
   setup(options: unknown, rng: RNG): PistiState {
     const opts = options as PistiSetupOptions;
@@ -43,13 +50,7 @@ export const pistiGame: RuleEngine<PistiState, PistiMove> = {
       handDealTargets(players)
     );
 
-    const table: TableState = {
-      ...tableWithHands,
-      zones: {
-        ...tableWithHands.zones,
-        stock: { ...tableWithHands.zones['stock'], cards: remainingDeck },
-      },
-    };
+    const table: TableState = withStock(tableWithHands, remainingDeck);
 
     return {
       gameId: 'pisti',
@@ -117,10 +118,7 @@ export const pistiGame: RuleEngine<PistiState, PistiMove> = {
       const stock = table.zones['stock'].cards;
       if (stock.length > 0) {
         const dealt = dealToZones(stock, table, handDealTargets(state.players));
-        table = {
-          ...dealt.table,
-          zones: { ...dealt.table.zones, stock: { ...dealt.table.zones['stock'], cards: dealt.remainingDeck } },
-        };
+        table = withStock(dealt.table, dealt.remainingDeck);
       } else {
         if (table.zones['pile'].cards.length > 0 && lastCapturedBy) {
           table = moveAllCards(table, 'pile', `captured-${lastCapturedBy}`);
