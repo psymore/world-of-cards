@@ -161,38 +161,32 @@ function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgai
     }
   }
 
+  // Shared by both AI and human plays: show the chosen card traveling to the pile before actually
+  // committing the move to engine state (see REVEAL_DELAY_MS above for why the pause exists).
+  function revealThenCommit(move: PistiMove, playerId: PlayerId) {
+    const playedCard = state.table.zones[`hand-${playerId}`].cards.find((c) => c.id === move.cardId);
+    if (!playedCard) {
+      applyMove(move, playerId);
+      return;
+    }
+    setRevealedMove({ move, card: playedCard, playerId });
+    revealTimeoutRef.current = setTimeout(() => {
+      applyMove(move, playerId);
+      setRevealedMove(null);
+    }, REVEAL_DELAY_MS);
+  }
+
   useAITurn({
     state,
     aiPlayerIds: aiIds,
     aiStrategy,
     ruleEngine: pistiDescriptor.ruleEngine,
     rng,
-    onMove: (move, playerId) => {
-      const playedCard = state.table.zones[`hand-${playerId}`].cards.find((c) => c.id === move.cardId);
-      if (!playedCard) {
-        applyMove(move, playerId);
-        return;
-      }
-      setRevealedMove({ move, card: playedCard, playerId });
-      revealTimeoutRef.current = setTimeout(() => {
-        applyMove(move, playerId);
-        setRevealedMove(null);
-      }, REVEAL_DELAY_MS);
-    },
+    onMove: revealThenCommit,
   });
 
   function handlePlayCard(cardId: string) {
-    const move: PistiMove = { type: 'play', cardId };
-    const playedCard = state.table.zones[`hand-${HUMAN_ID}`].cards.find((c) => c.id === cardId);
-    if (!playedCard) {
-      applyMove(move, HUMAN_ID);
-      return;
-    }
-    setRevealedMove({ move, card: playedCard, playerId: HUMAN_ID });
-    revealTimeoutRef.current = setTimeout(() => {
-      applyMove(move, HUMAN_ID);
-      setRevealedMove(null);
-    }, REVEAL_DELAY_MS);
+    revealThenCommit({ type: 'play', cardId }, HUMAN_ID);
   }
 
   const gameOver = pistiDescriptor.ruleEngine.gameOver(state);
