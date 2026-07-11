@@ -45,8 +45,8 @@ const MAX_STACKED_PILE_CARDS = 5;
 
 // Precomputed per-index offsets so stacking cost is a plain array lookup, not per-render math.
 const PILE_CARD_OFFSETS = Array.from({ length: MAX_STACKED_PILE_CARDS + 1 }, (_, i) => ({
-  x: i * 4,
-  y: i * -3,
+  x: i * 6,
+  y: i * -4.5,
 }));
 
 function RevealCard({
@@ -125,7 +125,7 @@ function PlayerBadge({
   capturedCount: number;
   active: boolean;
   isHuman: boolean;
-  // Width-constrained seats (the 64dp side seats in a 4-player table) need a smaller avatar and
+  // Width-constrained seats (the 96dp side seats in a 4-player table) need a smaller avatar and
   // tighter spacing so the name/capture-count text still fits without wrapping onto several lines.
   compact?: boolean;
 }) {
@@ -310,9 +310,9 @@ export function PistiTable({
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingVertical: 12 },
-  opponentArea: { minHeight: 90, justifyContent: 'center', alignItems: 'center', borderRadius: 12, paddingVertical: 4 },
-  opponentAreaSide: { minHeight: 0, width: 64, paddingVertical: 4 },
-  handArea: { minHeight: 118, justifyContent: 'center', borderRadius: 12, paddingVertical: 4 },
+  opponentArea: { minHeight: 135, justifyContent: 'center', alignItems: 'center', borderRadius: 12, paddingVertical: 4 },
+  opponentAreaSide: { minHeight: 0, width: 96, paddingVertical: 4 },
+  handArea: { minHeight: 177, justifyContent: 'center', borderRadius: 12, paddingVertical: 4 },
   activeArea: { backgroundColor: 'rgba(244, 197, 66, 0.14)' },
   middleRow: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   badge: {
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(34, 197, 94, 0.2)',
     ...glowShadow('#4ade80', 8),
   },
-  // The 64dp side seats have too little room for the default gap/padding plus a full-size
+  // The 96dp side seats have too little room for the default gap/padding plus a full-size
   // avatar without the name/capture-count text wrapping onto several cramped lines.
   badgeCompact: { gap: 3, paddingHorizontal: 5 },
   playerLabel: { fontSize: 13, fontWeight: '700', color: '#f5f0e6', textAlign: 'center' },
@@ -342,14 +342,14 @@ const styles = StyleSheet.create({
   opponentColumn: { flexDirection: 'column', alignItems: 'center' },
   pileArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   pileMat: {
-    width: 130,
-    height: 150,
-    borderRadius: 65,
+    width: 195,
+    height: 225,
+    borderRadius: 98,
     backgroundColor: 'rgba(0, 0, 0, 0.16)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pileStack: { width: 76, height: 96 },
+  pileStack: { width: 114, height: 144 },
   pileCardSlot: { position: 'absolute', left: 0, bottom: 0 },
   revealLabel: {
     position: 'absolute',
