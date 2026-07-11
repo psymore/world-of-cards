@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, Line, LinearGradient, Path, Pattern, Stop } from 'react-native-svg';
 import { AbsoluteOverlay } from './AbsoluteOverlay';
 
-const WEDGE_SIZE = 56;
+const WEDGE_SIZE = 140; // 2.5x the original 56dp
 const TRIM_COLOR = '#ffd966';
 const WOOD_LIGHT = '#5c2a1e';
 const WOOD_DARK = '#331209';
