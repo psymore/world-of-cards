@@ -7,6 +7,7 @@
   ],
   "scripts": {
     "mobile": "npm run start --workspace=world-cards-mobile",
+    "playground": "npm run start --workspace=world-cards-playground",
     "test": "jest"
   },
   "devDependencies": {
