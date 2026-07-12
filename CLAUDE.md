@@ -22,6 +22,14 @@ Full architecture decisions live in:
 
 **Testing policy (as of 2026-07-07, supersedes the general TDD default until revisited):** writing tests up front adds too much time to this project's pace. Default to *not* writing new tests, especially for mobile UI components/screens — ask before adding one. The exception is the engine core (Card Engine, `RuleEngine`/AI implementations, `simulateGames`-based invariant checks) — that stays test-covered by default, since correctness there is load-bearing for every game. Existing tests should still be run for regression-checking; this policy is about not writing new ones proactively.
 
+## Card Playground (`apps/playground`)
+
+A separate, isolated Expo app (sibling to `apps/mobile` in the same npm workspace) for prototyping card and table visual designs — border radius/color + overlay image per card group (number/face/ace), plus felt/wood-corner color for the table. Full rationale and data model: `docs/superpowers/specs/2026-07-12-card-playground-design.md`.
+
+**Isolation is deliberate and load-bearing, not incidental:** `apps/playground` shares only `packages/engine` (pure TS, zero RN dependency) with the rest of the repo. It never imports from `apps/mobile` — no `PlayingCard`, `TableFelt`, `TableWoodCorners`, `SuitIcon`, etc. — and `apps/mobile` never imports from or links to it, in development or production. Playground-only dependencies (file/image pickers, sliders) must only ever be added to `apps/playground/package.json`, never to `apps/mobile/package.json`.
+
+**Standing rule: whenever a change is made to how cards or the table look in `apps/mobile` (or vice versa — a deliberate update to the playground's look), treat that as a trigger to explicitly discuss with the user whether/how the other side should be updated to match or extend.** Do not silently skip this conversation, and do not auto-mirror changes either — there is no automation or lint enforcing this, it is a reminder for every future session to raise it. The one exception is `packages/engine`: since `apps/playground` genuinely depends on it, breaking changes there must be checked against both `apps/mobile` and `apps/playground` as a normal correctness matter, not a discussion trigger.
+
 ## Status
 
 **Phase 1 (core architecture): complete**, merged to `master`. Validated end-to-end against an internal test-only fixture game (`cardDraftGame`, in `packages/engine/src/rules/__fixtures__/`) — not a real game, just proof the shared contracts work. No real game exists yet.
