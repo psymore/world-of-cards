@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Slider from '@react-native-community/slider';
 import type { Card } from '@world-cards/engine';
 import type { CardGroup } from '../types';
+import { MAX_CARD_BORDERS } from '../types';
 import { usePlaygroundStore } from '../state/playgroundStore';
 import { PlaygroundCard } from './PlaygroundCard';
 import { ColorPicker } from './ColorPicker';
@@ -26,7 +27,10 @@ export function CardTemplateEditor() {
   const [selectedGroup, setSelectedGroup] = useState<CardGroup>('number');
   const template = usePlaygroundStore((state) => state.templates[selectedGroup]);
   const setBorderRadius = usePlaygroundStore((state) => state.setBorderRadius);
+  const setBorderWidth = usePlaygroundStore((state) => state.setBorderWidth);
   const setBorderColor = usePlaygroundStore((state) => state.setBorderColor);
+  const addBorder = usePlaygroundStore((state) => state.addBorder);
+  const removeBorder = usePlaygroundStore((state) => state.removeBorder);
   const setCardImage = usePlaygroundStore((state) => state.setCardImage);
   const updateCardImage = usePlaygroundStore((state) => state.updateCardImage);
   const clearCardImage = usePlaygroundStore((state) => state.clearCardImage);
@@ -68,11 +72,42 @@ export function CardTemplateEditor() {
             onValueChange={(value) => setBorderRadius(selectedGroup, value)}
           />
 
-          <ColorPicker
-            label="Border color"
-            color={template.borderColor}
-            onChange={(color) => setBorderColor(selectedGroup, color)}
-          />
+          {template.borders.map((border, index) => (
+            <View key={index} style={styles.borderLayer}>
+              <View style={styles.borderLayerHeader}>
+                <Text style={styles.controlLabel}>Border {index + 1}</Text>
+                {template.borders.length > 1 && (
+                  <Pressable
+                    testID={`remove-border-${index}`}
+                    onPress={() => removeBorder(selectedGroup, index)}
+                    style={styles.removeBorderButton}
+                  >
+                    <Text style={styles.removeBorderButtonLabel}>Remove</Text>
+                  </Pressable>
+                )}
+              </View>
+              <Text style={styles.controlLabel}>Size: {border.width}</Text>
+              <Slider
+                testID={`border-width-slider-${index}`}
+                minimumValue={1}
+                maximumValue={12}
+                step={1}
+                value={border.width}
+                onValueChange={(value) => setBorderWidth(selectedGroup, index, value)}
+              />
+              <ColorPicker
+                label="Color"
+                color={border.color}
+                onChange={(color) => setBorderColor(selectedGroup, index, color)}
+              />
+            </View>
+          ))}
+
+          {template.borders.length < MAX_CARD_BORDERS && (
+            <Pressable testID="add-border-button" onPress={() => addBorder(selectedGroup)} style={styles.actionButton}>
+              <Text style={styles.actionButtonLabel}>+ Add Border</Text>
+            </Pressable>
+          )}
 
           {template.image == null ? (
             <Pressable testID="add-image-button" onPress={handleAddImage} style={styles.actionButton}>
@@ -138,7 +173,11 @@ const styles = StyleSheet.create({
   groupTabLabel: { fontWeight: 'bold' },
   editorBody: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
   controls: { flex: 1 },
-  controlLabel: { marginTop: 8, marginBottom: 2 },
+  controlLabel: { marginTop: 8, marginBottom: 2, color: '#eeeeee' },
+  borderLayer: { borderWidth: 1, borderColor: '#ffffff33', borderRadius: 8, padding: 10, marginTop: 8 },
+  borderLayerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  removeBorderButton: { backgroundColor: '#c0392b', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 6 },
+  removeBorderButtonLabel: { color: '#ffffff', fontWeight: 'bold', fontSize: 12 },
   actionButton: { backgroundColor: '#1c2451', padding: 10, borderRadius: 6, alignItems: 'center', marginTop: 8 },
   resetButton: { backgroundColor: '#c0392b', padding: 10, borderRadius: 6, alignItems: 'center', marginTop: 16 },
   actionButtonLabel: { color: '#ffffff', fontWeight: 'bold' },

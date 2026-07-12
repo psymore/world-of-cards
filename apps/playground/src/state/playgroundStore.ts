@@ -2,13 +2,16 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { CardGroup, CardImage, CardTemplate, TableTemplate } from '../types';
-import { DEFAULT_CARD_TEMPLATE, DEFAULT_TABLE_TEMPLATE, DEFAULT_TEMPLATES } from '../types';
+import { DEFAULT_CARD_BORDER, DEFAULT_CARD_TEMPLATE, DEFAULT_TABLE_TEMPLATE, DEFAULT_TEMPLATES, MAX_CARD_BORDERS } from '../types';
 
 interface PlaygroundState {
   templates: Record<CardGroup, CardTemplate>;
   table: TableTemplate;
   setBorderRadius: (group: CardGroup, radius: number) => void;
-  setBorderColor: (group: CardGroup, color: string) => void;
+  setBorderWidth: (group: CardGroup, index: number, width: number) => void;
+  setBorderColor: (group: CardGroup, index: number, color: string) => void;
+  addBorder: (group: CardGroup) => void;
+  removeBorder: (group: CardGroup, index: number) => void;
   setCardImage: (group: CardGroup, image: CardImage) => void;
   updateCardImage: (group: CardGroup, patch: Partial<Pick<CardImage, 'scale' | 'offsetX' | 'offsetY'>>) => void;
   clearCardImage: (group: CardGroup) => void;
@@ -29,10 +32,37 @@ export const usePlaygroundStore = create<PlaygroundState>()(
           templates: { ...state.templates, [group]: { ...state.templates[group], borderRadius: radius } },
         })),
 
-      setBorderColor: (group, color) =>
-        set((state) => ({
-          templates: { ...state.templates, [group]: { ...state.templates[group], borderColor: color } },
-        })),
+      setBorderWidth: (group, index, width) =>
+        set((state) => {
+          const borders = state.templates[group].borders.map((border, i) =>
+            i === index ? { ...border, width } : border
+          );
+          return { templates: { ...state.templates, [group]: { ...state.templates[group], borders } } };
+        }),
+
+      setBorderColor: (group, index, color) =>
+        set((state) => {
+          const borders = state.templates[group].borders.map((border, i) =>
+            i === index ? { ...border, color } : border
+          );
+          return { templates: { ...state.templates, [group]: { ...state.templates[group], borders } } };
+        }),
+
+      addBorder: (group) =>
+        set((state) => {
+          const current = state.templates[group].borders;
+          if (current.length >= MAX_CARD_BORDERS) return state;
+          const borders = [...current, { ...DEFAULT_CARD_BORDER }];
+          return { templates: { ...state.templates, [group]: { ...state.templates[group], borders } } };
+        }),
+
+      removeBorder: (group, index) =>
+        set((state) => {
+          const current = state.templates[group].borders;
+          if (current.length <= 1) return state;
+          const borders = current.filter((_, i) => i !== index);
+          return { templates: { ...state.templates, [group]: { ...state.templates[group], borders } } };
+        }),
 
       setCardImage: (group, image) =>
         set((state) => ({
@@ -68,6 +98,27 @@ export const usePlaygroundStore = create<PlaygroundState>()(
     {
       name: 'card-playground-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      // v2 replaced CardTemplate.borderColor (a single string) with borders: CardBorder[].
+      // Local saves from before that change would otherwise rehydrate with no `borders`
+      // array at all and crash the card renderer, so upgrade them in place here.
+      version: 2,
+      migrate: (persistedState) => {
+        const state = persistedState as { templates?: Record<string, Record<string, unknown>> } | undefined;
+        const templates = state?.templates;
+        if (templates != null) {
+          for (const group of Object.keys(templates)) {
+            const template = templates[group];
+            if (template != null && !Array.isArray(template.borders)) {
+              const legacyColor = template.borderColor;
+              delete template.borderColor;
+              template.borders = [
+                { ...DEFAULT_CARD_BORDER, ...(typeof legacyColor === 'string' ? { color: legacyColor } : {}) },
+              ];
+            }
+          }
+        }
+        return state as unknown as PlaygroundState;
+      },
     }
   )
 );

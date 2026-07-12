@@ -47,8 +47,11 @@ export function CardGallery() {
 }
 
 const styles = StyleSheet.create({
-  backdrop: { padding: 12 },
+  backdrop: { padding: 14 },
   suitSection: { marginBottom: 16 },
-  suitLabel: { color: '#ffffff', fontWeight: 'bold', marginBottom: 6 },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  suitLabel: { color: '#ffffff', fontWeight: 'bold', marginBottom: 8 },
+  // columnGap is deliberately small (not the shared `gap`) — the grid card's 22% width in
+  // PlaygroundCard.tsx already assumes a tight, fixed column gap so exactly 4 fit per row
+  // even on a narrow phone viewport; a larger gap here would push the 4th card to wrap.
+  row: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 6, rowGap: 12 },
 });

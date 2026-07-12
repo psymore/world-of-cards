@@ -56,9 +56,17 @@ export function ColorPicker({ label, color, onChange }: ColorPickerProps) {
 
 const styles = StyleSheet.create({
   container: { marginVertical: 8 },
-  label: { fontWeight: 'bold', marginBottom: 4 },
+  label: { fontWeight: 'bold', marginBottom: 4, color: '#eeeeee' },
   swatchRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
   swatch: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: '#00000033' },
-  swatchSelected: { borderWidth: 3, borderColor: '#000000' },
-  hexInput: { borderWidth: 1, borderColor: '#cccccc', borderRadius: 4, padding: 6, width: 100 },
+  swatchSelected: { borderWidth: 3, borderColor: '#f4c542' },
+  hexInput: {
+    borderWidth: 1,
+    borderColor: '#cccccc',
+    borderRadius: 4,
+    padding: 6,
+    width: 100,
+    backgroundColor: '#ffffff',
+    color: '#111111',
+  },
 });

@@ -9,9 +9,14 @@ export interface CardImage {
   offsetY: number;
 }
 
+export interface CardBorder {
+  width: number;
+  color: string;
+}
+
 export interface CardTemplate {
   borderRadius: number;
-  borderColor: string;
+  borders: CardBorder[];
   image: CardImage | null;
 }
 
@@ -22,9 +27,13 @@ export interface TableTemplate {
 
 export type PlaygroundTemplates = Record<CardGroup, CardTemplate>;
 
+export const MAX_CARD_BORDERS = 3;
+
+export const DEFAULT_CARD_BORDER: CardBorder = { width: 2, color: '#333333' };
+
 export const DEFAULT_CARD_TEMPLATE: CardTemplate = {
   borderRadius: 6,
-  borderColor: '#333333',
+  borders: [{ ...DEFAULT_CARD_BORDER }],
   image: null,
 };
 
