@@ -5,6 +5,7 @@ import { SuitIcon } from './SuitIcon';
 import { CardBackPattern } from './CardBackPattern';
 import { glowShadow } from './glowShadow';
 import { COURT_CARD_ART } from './courtCardArt';
+import { CARD_RANK_FONT_FAMILY } from '../theme/fonts';
 
 export type PlayingCardSize = 'normal' | 'small';
 
@@ -156,8 +157,8 @@ const styles = StyleSheet.create({
   cornerSmall: { position: 'absolute', top: 3, left: 3, alignItems: 'center', zIndex: 1 },
   cornerNormalMirrored: { position: 'absolute', bottom: 5, right: 6, alignItems: 'center', transform: [{ rotate: '180deg' }], zIndex: 1 },
   cornerSmallMirrored: { position: 'absolute', bottom: 3, right: 3, alignItems: 'center', transform: [{ rotate: '180deg' }], zIndex: 1 },
-  cornerRankNormal: { fontSize: 24, fontWeight: 'bold', color: '#111', lineHeight: 25 },
-  cornerRankSmall: { fontSize: 17, fontWeight: 'bold', color: '#111', lineHeight: 18 },
+  cornerRankNormal: { fontSize: 24, fontFamily: CARD_RANK_FONT_FAMILY, color: '#111', lineHeight: 25 },
+  cornerRankSmall: { fontSize: 17, fontFamily: CARD_RANK_FONT_FAMILY, color: '#111', lineHeight: 18 },
   centerArt: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   courtArtFrame: { width: '90%', height: '95%', borderWidth: 1, borderColor: '#000', alignItems: 'center', justifyContent: 'center' },
   courtArtImage: { width: '70%', height: '70%' },
