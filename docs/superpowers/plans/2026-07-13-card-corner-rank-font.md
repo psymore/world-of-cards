@@ -67,9 +67,10 @@ git commit -m "Add expo-font and expo-splash-screen dependencies"
 Run:
 ```bash
 mkdir -p apps/mobile/assets/fonts
-curl -sL -o apps/mobile/assets/fonts/PTSerif-Bold.ttf https://raw.githubusercontent.com/google/fonts/main/ofl/ptserif/PTSerif-Bold.ttf
-curl -sL -o apps/mobile/assets/fonts/PTSerif-Regular.ttf https://raw.githubusercontent.com/google/fonts/main/ofl/ptserif/PTSerif-Regular.ttf
+curl -sL -o apps/mobile/assets/fonts/PTSerif-Bold.ttf https://raw.githubusercontent.com/google/fonts/main/ofl/ptserif/PT_Serif-Web-Bold.ttf
+curl -sL -o apps/mobile/assets/fonts/PTSerif-Regular.ttf https://raw.githubusercontent.com/google/fonts/main/ofl/ptserif/PT_Serif-Web-Regular.ttf
 ```
+(Note: the upstream repo's actual filenames are `PT_Serif-Web-Bold.ttf`/`PT_Serif-Web-Regular.ttf` — verified via `curl -w "HTTP:%{http_code}"` returning 200 and `file` reporting real TrueType data. They are saved locally as `PTSerif-Bold.ttf`/`PTSerif-Regular.ttf` to match the `theme/fonts.ts` keys below.)
 Expected: both commands exit 0.
 
 - [ ] **Step 2: Verify both files downloaded correctly (not an HTML error page)**
