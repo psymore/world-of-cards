@@ -27,6 +27,10 @@
         "projectId": "fab04012-38d3-42ba-92df-e91772e35c27"
       }
     },
-    "owner": "ragedapes-team"
+    "owner": "ragedapes-team",
+    "plugins": [
+      "expo-font",
+      "expo-splash-screen"
+    ]
   }
 }

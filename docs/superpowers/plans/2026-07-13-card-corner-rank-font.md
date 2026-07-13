@@ -67,9 +67,10 @@ git commit -m "Add expo-font and expo-splash-screen dependencies"
 Run:
 ```bash
 mkdir -p apps/mobile/assets/fonts
-curl -sL -o apps/mobile/assets/fonts/PTSerif-Bold.ttf https://raw.githubusercontent.com/google/fonts/main/ofl/ptserif/PTSerif-Bold.ttf
-curl -sL -o apps/mobile/assets/fonts/PTSerif-Regular.ttf https://raw.githubusercontent.com/google/fonts/main/ofl/ptserif/PTSerif-Regular.ttf
+curl -sL -o apps/mobile/assets/fonts/PTSerif-Bold.ttf https://raw.githubusercontent.com/google/fonts/main/ofl/ptserif/PT_Serif-Web-Bold.ttf
+curl -sL -o apps/mobile/assets/fonts/PTSerif-Regular.ttf https://raw.githubusercontent.com/google/fonts/main/ofl/ptserif/PT_Serif-Web-Regular.ttf
 ```
+(Note: the upstream repo's actual filenames are `PT_Serif-Web-Bold.ttf`/`PT_Serif-Web-Regular.ttf` — verified via `curl -w "HTTP:%{http_code}"` returning 200 and `file` reporting real TrueType data. They are saved locally as `PTSerif-Bold.ttf`/`PTSerif-Regular.ttf` to match the `theme/fonts.ts` keys below.)
 Expected: both commands exit 0.
 
 - [ ] **Step 2: Verify both files downloaded correctly (not an HTML error page)**
@@ -160,7 +161,12 @@ Run:
 ```bash
 cd apps/mobile && npx tsc --noEmit
 ```
-Expected: no errors.
+Expected: exactly two **pre-existing** errors, unrelated to this task and already present on `master` before this branch existed:
+```
+src/components/PlayingCard.tsx(109,37): error TS2322: Type 'Suit | null' is not assignable to type 'Suit | undefined'.
+src/components/PlayingCard.tsx(110,37): error TS2322: Type 'Suit | null' is not assignable to type 'Suit | undefined'.
+```
+Do not fix these — out of scope for this task. Confirm only that `App.tsx` itself introduces no new errors.
 
 - [ ] **Step 3: Commit**
 
@@ -223,7 +229,12 @@ Run:
 cd apps/mobile && npx tsc --noEmit
 cd ../../packages/engine && npx tsc --noEmit
 ```
-Expected: no errors in either package.
+Expected: `packages/engine` has no errors. `apps/mobile` has exactly two **pre-existing** errors, unrelated to this task and already present on `master` before this branch existed:
+```
+src/components/PlayingCard.tsx(109,37): error TS2322: Type 'Suit | null' is not assignable to type 'Suit | undefined'.
+src/components/PlayingCard.tsx(110,37): error TS2322: Type 'Suit | null' is not assignable to type 'Suit | undefined'.
+```
+Do not fix these — they're out of scope for this task (a `Suit | null` vs `Suit | undefined` mismatch introduced by an earlier, unrelated commit). Confirm only that no *new* errors appear beyond these two.
 
 - [ ] **Step 6: Commit**
 
