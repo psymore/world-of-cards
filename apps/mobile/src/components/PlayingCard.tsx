@@ -19,7 +19,7 @@ export interface PlayingCardProps {
 const RED_SUITS: Suit[] = ['hearts', 'diamonds'];
 const SUIT_COLOR = { red: '#c0392b', black: '#111' };
 const CORNER_ICON_SIZE = { normal: 18, small: 12 };
-const WATERMARK_ICON_SIZE = { normal: 63, small: 39 };
+const WATERMARK_ICON_SIZE = { normal: 50, small: 31 };
 const CARD_DIMS = { normal: { width: 84, height: 120 }, small: { width: 54, height: 78 } };
 
 function CornerIndex({
@@ -60,6 +60,33 @@ function CornerIndex({
   );
 }
 
+// Renders the card's white/grey frame as two concentric 1px rings nested inside the fixed-size
+// outer box (rather than adding a single border on top of it), so the card's overall width/height
+// never changes as the frame is added — only the innermost face shrinks by 2px to make room.
+function CardFrame({
+  testID,
+  dims,
+  backgroundColor,
+  highlighted,
+  style,
+  children,
+}: {
+  testID: string;
+  dims: StyleProp<ViewStyle>;
+  backgroundColor: string;
+  highlighted?: boolean;
+  style?: StyleProp<ViewStyle>;
+  children: React.ReactNode;
+}) {
+  return (
+    <View testID={testID} style={[styles.cardOuter, dims, highlighted && styles.highlighted, style]}>
+      <View style={styles.frameOuterRing}>
+        <View style={[styles.frameInnerRing, { backgroundColor }]}>{children}</View>
+      </View>
+    </View>
+  );
+}
+
 function PlayingCardComponent({ card, faceDown, size = 'normal', style, highlighted }: PlayingCardProps) {
   const isSmall = size === 'small';
   const dims = isSmall ? styles.small : styles.normal;
@@ -67,9 +94,9 @@ function PlayingCardComponent({ card, faceDown, size = 'normal', style, highligh
   if (faceDown || !card) {
     const pixelDims = isSmall ? CARD_DIMS.small : CARD_DIMS.normal;
     return (
-      <View testID="playing-card-back" style={[styles.card, styles.back, dims, highlighted && styles.highlighted, style]}>
+      <CardFrame testID="playing-card-back" dims={dims} backgroundColor="#1c2451" highlighted={highlighted} style={style}>
         <CardBackPattern width={pixelDims.width} height={pixelDims.height} />
-      </View>
+      </CardFrame>
     );
   }
 
@@ -78,12 +105,14 @@ function PlayingCardComponent({ card, faceDown, size = 'normal', style, highligh
   const courtArt = card.suit != null ? COURT_CARD_ART[`${card.rank}-${card.suit}`] : undefined;
 
   return (
-    <View testID="playing-card-face" style={[styles.card, dims, highlighted && styles.highlighted, style]}>
+    <CardFrame testID="playing-card-face" dims={dims} backgroundColor="#fff" highlighted={highlighted} style={style}>
       <CornerIndex rank={card.rank} suit={card.suit} isSmall={isSmall} suitColor={suitColor} isRed={isRed} />
       <CornerIndex rank={card.rank} suit={card.suit} isSmall={isSmall} suitColor={suitColor} isRed={isRed} mirrored />
       <View testID="playing-card-center-art" style={styles.centerArt}>
         {courtArt != null ? (
-          <Image testID="court-card-art" source={courtArt} style={styles.courtArtImage} resizeMode="contain" />
+          <View style={styles.courtArtFrame}>
+            <Image testID="court-card-art" source={courtArt} style={styles.courtArtImage} resizeMode="contain" />
+          </View>
         ) : (
           card.suit != null && (
             <SuitIcon
@@ -95,7 +124,7 @@ function PlayingCardComponent({ card, faceDown, size = 'normal', style, highligh
           )
         )}
       </View>
-    </View>
+    </CardFrame>
   );
 }
 
@@ -105,16 +134,15 @@ function PlayingCardComponent({ card, faceDown, size = 'normal', style, highligh
 // other ~20+ cards on the table for each single move.
 export const PlayingCard = React.memo(PlayingCardComponent);
 
+const CARD_RADIUS = 6;
+
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderColor: '#333',
-    borderRadius: 6,
-    backgroundColor: '#fff',
-  },
+  cardOuter: { borderRadius: CARD_RADIUS, overflow: 'hidden' },
+  // Concentric 1px rings (white outer, grey inner) — see the CardFrame comment above.
+  frameOuterRing: { flex: 1, borderWidth: 1, borderColor: '#fff', borderRadius: CARD_RADIUS, overflow: 'hidden' },
+  frameInnerRing: { flex: 1, borderWidth: 1, borderColor: '#999', borderRadius: CARD_RADIUS - 1, overflow: 'hidden' },
   normal: { width: 84, height: 120 },
   small: { width: 54, height: 78 },
-  back: { backgroundColor: '#1c2451', borderColor: '#0f1638', overflow: 'hidden' },
   highlighted: {
     borderColor: '#f4c542',
     borderWidth: 2,
@@ -128,9 +156,10 @@ const styles = StyleSheet.create({
   cornerSmall: { position: 'absolute', top: 3, left: 3, alignItems: 'center', zIndex: 1 },
   cornerNormalMirrored: { position: 'absolute', bottom: 5, right: 6, alignItems: 'center', transform: [{ rotate: '180deg' }], zIndex: 1 },
   cornerSmallMirrored: { position: 'absolute', bottom: 3, right: 3, alignItems: 'center', transform: [{ rotate: '180deg' }], zIndex: 1 },
-  cornerRankNormal: { fontSize: 20, fontWeight: 'bold', color: '#111', lineHeight: 21 },
-  cornerRankSmall: { fontSize: 14, fontWeight: 'bold', color: '#111', lineHeight: 15 },
+  cornerRankNormal: { fontSize: 24, fontWeight: 'bold', color: '#111', lineHeight: 25 },
+  cornerRankSmall: { fontSize: 17, fontWeight: 'bold', color: '#111', lineHeight: 18 },
   centerArt: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  courtArtImage: { width: '100%', height: '100%' },
+  courtArtFrame: { width: '90%', height: '95%', borderWidth: 1, borderColor: '#000', alignItems: 'center', justifyContent: 'center' },
+  courtArtImage: { width: '70%', height: '70%' },
   red: { color: '#c0392b' },
 });

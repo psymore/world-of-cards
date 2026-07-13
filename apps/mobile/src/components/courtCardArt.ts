@@ -1,25 +1,26 @@
 import type { ImageSourcePropType } from 'react-native';
 import type { Rank, Suit } from '@world-cards/engine';
 
-const KING_OF_SPADES = require('../../assets/card-art/processed/king-of-spades.png');
-const KING_OF_HEARTS = require('../../assets/card-art/processed/king-of-hearts.png');
-const KING_OF_CLUBS = require('../../assets/card-art/processed/king-of-clubs.png');
-const KING_OF_DIAMONDS = require('../../assets/card-art/processed/king-of-diamonds.png');
-
-// Demo-scope coverage: illustrated art exists for K/Q/J only (Aces stay plain), and only
-// Spades has an exact match for all three face ranks. Suits lacking exact art reuse their
-// King's art across Q/J — see docs/superpowers/specs/2026-07-11-court-card-art-pipeline-design.md.
+// Full AI-generated art set (docs/superpowers/specs/2026-07-11-court-card-art-pipeline-design.md
+// predates this set — it covered demo-scope K/Q/J-with-reuse only). This set has dedicated K/Q/J
+// art for all four suits plus Aces where art exists (hearts and spades only — clubs/diamonds
+// aces fall back to the plain suit watermark, same as every other non-court rank).
 export const COURT_CARD_ART: Partial<Record<`${Rank}-${Suit}`, ImageSourcePropType>> = {
-  'K-spades': KING_OF_SPADES,
-  'Q-spades': require('../../assets/card-art/processed/queen-of-spades.png'),
-  'J-spades': require('../../assets/card-art/processed/jack-of-spades.png'),
-  'K-hearts': KING_OF_HEARTS,
-  'Q-hearts': KING_OF_HEARTS,
-  'J-hearts': KING_OF_HEARTS,
-  'K-clubs': KING_OF_CLUBS,
-  'Q-clubs': KING_OF_CLUBS,
-  'J-clubs': KING_OF_CLUBS,
-  'K-diamonds': KING_OF_DIAMONDS,
-  'Q-diamonds': KING_OF_DIAMONDS,
-  'J-diamonds': KING_OF_DIAMONDS,
+  'A-hearts': require('../../assets/card-art/processed/ai-generated/hearts-nobg/ace-of-hearts-Photoroom.png'),
+  'K-hearts': require('../../assets/card-art/processed/ai-generated/hearts-nobg/king-of-hearts-Photoroom.png'),
+  'Q-hearts': require('../../assets/card-art/processed/ai-generated/hearts-nobg/queen-of-hearts-Photoroom.png'),
+  'J-hearts': require('../../assets/card-art/processed/ai-generated/hearts-nobg/jack-of-hearts-Photoroom.png'),
+
+  'A-spades': require('../../assets/card-art/processed/ai-generated/spades-nobg/ace-of-spades.png'),
+  'K-spades': require('../../assets/card-art/processed/ai-generated/spades-nobg/king-of-spades-Photoroom.png'),
+  'Q-spades': require('../../assets/card-art/processed/ai-generated/spades-nobg/queen-of-spades-Photoroom.png'),
+  'J-spades': require('../../assets/card-art/processed/ai-generated/spades-nobg/jack-of-spades-Photoroom.png'),
+
+  'K-clubs': require('../../assets/card-art/processed/ai-generated/clubs-nobg/king-of-clubs-Photoroom.png'),
+  'Q-clubs': require('../../assets/card-art/processed/ai-generated/clubs-nobg/queen_of_clubs-Photoroom.png'),
+  'J-clubs': require('../../assets/card-art/processed/ai-generated/clubs-nobg/jack_of_clubs-Photoroom.png'),
+
+  'K-diamonds': require('../../assets/card-art/processed/ai-generated/diamonds-nobg/king-of-diamonds-Photoroom.png'),
+  'Q-diamonds': require('../../assets/card-art/processed/ai-generated/diamonds-nobg/queen-of-diamonds-Photoroom.png'),
+  'J-diamonds': require('../../assets/card-art/processed/ai-generated/diamonds-nobg/jack-of-diamonds-Photoroom.png'),
 };
