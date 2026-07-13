@@ -161,7 +161,12 @@ Run:
 ```bash
 cd apps/mobile && npx tsc --noEmit
 ```
-Expected: no errors.
+Expected: exactly two **pre-existing** errors, unrelated to this task and already present on `master` before this branch existed:
+```
+src/components/PlayingCard.tsx(109,37): error TS2322: Type 'Suit | null' is not assignable to type 'Suit | undefined'.
+src/components/PlayingCard.tsx(110,37): error TS2322: Type 'Suit | null' is not assignable to type 'Suit | undefined'.
+```
+Do not fix these — out of scope for this task. Confirm only that `App.tsx` itself introduces no new errors.
 
 - [ ] **Step 3: Commit**
 
@@ -224,7 +229,12 @@ Run:
 cd apps/mobile && npx tsc --noEmit
 cd ../../packages/engine && npx tsc --noEmit
 ```
-Expected: no errors in either package.
+Expected: `packages/engine` has no errors. `apps/mobile` has exactly two **pre-existing** errors, unrelated to this task and already present on `master` before this branch existed:
+```
+src/components/PlayingCard.tsx(109,37): error TS2322: Type 'Suit | null' is not assignable to type 'Suit | undefined'.
+src/components/PlayingCard.tsx(110,37): error TS2322: Type 'Suit | null' is not assignable to type 'Suit | undefined'.
+```
+Do not fix these — they're out of scope for this task (a `Suit | null` vs `Suit | undefined` mismatch introduced by an earlier, unrelated commit). Confirm only that no *new* errors appear beyond these two.
 
 - [ ] **Step 6: Commit**
 
