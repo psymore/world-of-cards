@@ -5,7 +5,7 @@ import { SuitIcon } from './SuitIcon';
 import { CardBackPattern } from './CardBackPattern';
 import { glowShadow } from './glowShadow';
 import { COURT_CARD_ART } from './courtCardArt';
-import { CARD_RANK_FONT_FAMILY } from '../theme/fonts';
+import { CARD_RANK_FONT_FAMILY } from './fonts';
 
 export type PlayingCardSize = 'normal' | 'small';
 

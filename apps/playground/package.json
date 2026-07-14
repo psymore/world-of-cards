@@ -11,6 +11,7 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/slider": "5.2.0",
     "@world-cards/engine": "*",
+    "@world-cards/ui": "*",
     "expo": "~57.0.2",
     "expo-document-picker": "~57.0.0",
     "expo-file-system": "~57.0.0",
