@@ -67,7 +67,7 @@ function playingLegalMoves(state: BatakState, playerId: PlayerId): BatakMove[] {
   return hand.map((c) => ({ type: 'play', cardId: c.id }));
 }
 
-function trickWinnerIndex(trick: Card[], trumpSuit: Suit): number {
+export function trickWinnerIndex(trick: Card[], trumpSuit: Suit): number {
   const ledSuit = trick[0].suit;
   const trumps = trick.filter((c) => c.suit === trumpSuit);
   const candidates = trumps.length > 0 ? trumps : trick.filter((c) => c.suit === ledSuit);
