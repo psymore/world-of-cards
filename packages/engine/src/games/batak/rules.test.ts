@@ -498,6 +498,33 @@ describe('batakGame performMove — play', () => {
     expect(next.tricksWon['p4']).toBe(1);
   });
 
+  it('resolves a trick to the highest trump even when it was not the first or last card played', () => {
+    const table = batakTable({
+      'hand-p4': [card('s4', '3', 'spades')],
+      trick: [card('s1', '2', 'spades'), card('s2', 'K', 'spades'), card('h3', '5', 'hearts')],
+    });
+    const state = makeState({
+      table,
+      phase: 'playing',
+      trumpSuit: 'spades',
+      currentPlayerIndex: 3,
+      trickLeader: 'p1',
+      currentTrick: [
+        { playerId: 'p1', cardId: 's1' }, // First card: low trump (2 of spades)
+        { playerId: 'p2', cardId: 's2' }, // Second card: HIGHEST trump (K of spades) — in the middle
+        { playerId: 'p3', cardId: 'h3' }, // Third card: non-trump (5 of hearts)
+      ],
+    });
+    const next = batakGame.performMove(state, { type: 'play', cardId: 's4' });
+    // p2 played the highest-ranked trump (K) and should win, NOT p1 (who played first) or p4 (who played last)
+    expect(next.trickLeader).toBe('p2');
+    expect(next.tricksWon['p2']).toBe(1);
+    // Verify that no other player won the trick
+    expect(next.tricksWon['p1']).toBe(0);
+    expect(next.tricksWon['p3']).toBe(0);
+    expect(next.tricksWon['p4']).toBe(0);
+  });
+
   it('finishes the hand once the 13th trick completes', () => {
     const table = batakTable({
       'hand-p1': [],
