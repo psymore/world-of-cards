@@ -282,3 +282,76 @@ describe('batakGame (rule engine)', () => {
     });
   });
 });
+
+describe('batakGame performMove — bidding and trump selection', () => {
+  const setupOptions: BatakSetupOptions = { players: ['p1', 'p2', 'p3', 'p4'] };
+
+  it('records a bid, updates highestBid, and advances to the next active player', () => {
+    const state = batakGame.setup(setupOptions, createRng(1));
+    const next = batakGame.performMove(state, { type: 'bid', amount: 5 });
+    expect(next.bids['p1']).toBe(5);
+    expect(next.highestBid).toBe(5);
+    expect(next.currentPlayerIndex).toBe(1);
+    expect(next.phase).toBe('bidding');
+  });
+
+  it('skips passed players when advancing the turn', () => {
+    let state = batakGame.setup(setupOptions, createRng(1));
+    state = batakGame.performMove(state, { type: 'bid', amount: 5 }); // p1
+    state = batakGame.performMove(state, { type: 'pass' }); // p2 passes
+    expect(state.currentPlayerIndex).toBe(2); // p3
+    state = batakGame.performMove(state, { type: 'pass' }); // p3 passes
+    expect(state.currentPlayerIndex).toBe(3); // p4
+  });
+
+  it('closes the auction the moment only one active bidder remains, using their latest bid as the contract', () => {
+    let state = batakGame.setup(setupOptions, createRng(1));
+    state = batakGame.performMove(state, { type: 'bid', amount: 5 }); // p1
+    state = batakGame.performMove(state, { type: 'bid', amount: 6 }); // p2
+    state = batakGame.performMove(state, { type: 'pass' }); // p3
+    state = batakGame.performMove(state, { type: 'pass' }); // p4
+    state = batakGame.performMove(state, { type: 'pass' }); // p1 passes; only p2 remains active
+    expect(state.phase).toBe('trump-selection');
+    expect(state.bidWinner).toBe('p2');
+    expect(state.contract).toBe(6);
+    expect(state.currentPlayerIndex).toBe(1);
+  });
+
+  it('forces a contract of 4 to player 0 when every player passes', () => {
+    let state = batakGame.setup(setupOptions, createRng(1));
+    state = batakGame.performMove(state, { type: 'pass' }); // p1
+    state = batakGame.performMove(state, { type: 'pass' }); // p2
+    state = batakGame.performMove(state, { type: 'pass' }); // p3
+    state = batakGame.performMove(state, { type: 'pass' }); // p4
+    expect(state.phase).toBe('trump-selection');
+    expect(state.bidWinner).toBe('p1');
+    expect(state.contract).toBe(4);
+    expect(state.currentPlayerIndex).toBe(0);
+  });
+
+  it('selecting trump moves to the playing phase and sets the bid winner as trick leader and current player', () => {
+    const state = {
+      ...batakGame.setup(setupOptions, createRng(1)),
+      phase: 'trump-selection' as const,
+      bidWinner: 'p3',
+      contract: 5,
+      currentPlayerIndex: 2,
+    };
+    const next = batakGame.performMove(state, { type: 'selectTrump', suit: 'spades' });
+    expect(next.trumpSuit).toBe('spades');
+    expect(next.phase).toBe('playing');
+    expect(next.trickLeader).toBe('p3');
+    expect(next.currentPlayerIndex).toBe(2);
+  });
+
+  it('still throws for an unimplemented play move', () => {
+    const state = {
+      ...batakGame.setup(setupOptions, createRng(1)),
+      phase: 'playing' as const,
+      trumpSuit: 'hearts' as const,
+      currentPlayerIndex: 0,
+    };
+    const cardId = state.table.zones['hand-p1'].cards[0].id;
+    expect(() => batakGame.performMove(state, { type: 'play', cardId })).toThrow();
+  });
+});

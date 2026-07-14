@@ -30,6 +30,15 @@ function trumpSelectionLegalMoves(state: BatakState, playerId: PlayerId): BatakM
   return SUITS.map((suit) => ({ type: 'selectTrump', suit }));
 }
 
+function nextActivePlayerIndex(state: BatakState, fromIndex: number): number {
+  const n = state.players.length;
+  for (let step = 1; step <= n; step++) {
+    const idx = (fromIndex + step) % n;
+    if (state.bids[state.players[idx]] !== 'pass') return idx;
+  }
+  return fromIndex;
+}
+
 export const batakGame: RuleEngine<BatakState, BatakMove> = {
   setup(options: unknown, rng: RNG): BatakState {
     const opts = options as BatakSetupOptions;
@@ -86,8 +95,64 @@ export const batakGame: RuleEngine<BatakState, BatakMove> = {
     }
   },
 
-  performMove(): BatakState {
-    throw new Error('batakGame.performMove: not yet implemented');
+  performMove(state: BatakState, move: BatakMove): BatakState {
+    const playerId = state.players[state.currentPlayerIndex];
+
+    if (move.type === 'bid' || move.type === 'pass') {
+      const bids = { ...state.bids, [playerId]: move.type === 'bid' ? move.amount : ('pass' as const) };
+      const highestBid = move.type === 'bid' ? move.amount : state.highestBid;
+      const activePlayers = state.players.filter((p) => bids[p] !== 'pass');
+
+      // Closing early (activePlayers.length === 1) is only correct once that sole remaining
+      // player has actually placed a bid. If they haven't acted yet (bids[player] === null),
+      // they still need their own turn — falling through to the "advance turn" branch below
+      // gives it to them, rather than crowning them winner on a bid of 0 they never made.
+      if (activePlayers.length === 1 && typeof bids[activePlayers[0]] === 'number') {
+        const winner = activePlayers[0];
+        const contract = bids[winner] as number;
+        return {
+          ...state,
+          bids,
+          highestBid,
+          contract,
+          bidWinner: winner,
+          phase: 'trump-selection',
+          currentPlayerIndex: state.players.indexOf(winner),
+        };
+      }
+
+      if (activePlayers.length === 0) {
+        return {
+          ...state,
+          bids,
+          highestBid,
+          contract: 4,
+          bidWinner: state.players[0],
+          phase: 'trump-selection',
+          currentPlayerIndex: 0,
+        };
+      }
+
+      return {
+        ...state,
+        bids,
+        highestBid,
+        currentPlayerIndex: nextActivePlayerIndex({ ...state, bids }, state.currentPlayerIndex),
+      };
+    }
+
+    if (move.type === 'selectTrump') {
+      const winner = state.bidWinner!;
+      return {
+        ...state,
+        trumpSuit: move.suit,
+        phase: 'playing',
+        trickLeader: winner,
+        currentPlayerIndex: state.players.indexOf(winner),
+      };
+    }
+
+    throw new Error('batakGame.performMove: play not yet implemented');
   },
 
   getLegalMoves(state: BatakState, playerId: PlayerId): BatakMove[] {
