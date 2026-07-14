@@ -7,6 +7,10 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "dependencies": {
+    "@world-cards/engine": "*",
+    "expo": "~57.0.2"
+  },
   "devDependencies": {
     "@testing-library/react-native": "^14.0.1",
     "@types/jest": "^30.0.0",
