@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable } from 'react-native';
-import { PlayingCard, PlayingCardProps } from './PlayingCard';
+import { PlayingCard, PlayingCardProps } from '@world-cards/ui';
 import { useReducedMotion } from './useReducedMotion';
 
 export interface SelectableCardProps extends PlayingCardProps {

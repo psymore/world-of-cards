@@ -2,13 +2,10 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import type { Card } from '@world-cards/engine';
 import type { PistiState } from '@world-cards/engine/games/pisti';
-import { PlayingCard } from '../../components/PlayingCard';
+import { PlayingCard, TableFelt, TableWoodCorners, glowShadow } from '@world-cards/ui';
 import { SelectableCard } from '../../components/SelectableCard';
 import { useCardSelection } from '../../components/useCardSelection';
-import { TableFelt } from '../../components/TableFelt';
-import { TableWoodCorners } from '../../components/TableWoodCorners';
 import { PlayerAvatar } from '../../components/PlayerAvatar';
-import { glowShadow } from '../../components/glowShadow';
 import { useReducedMotion } from '../../components/useReducedMotion';
 import {
   assignSeats,
