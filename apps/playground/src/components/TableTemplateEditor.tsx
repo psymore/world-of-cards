@@ -3,9 +3,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { usePlaygroundStore } from '../state/playgroundStore';
 import { ColorPicker } from './ColorPicker';
 
-// No standalone preview swatch here on purpose: the CardGallery below is the one real
-// table (full felt + wood-corner treatment), and it already reads table color state live
-// from the same store — a second, smaller table rendering here would look like a
+// No standalone preview swatch here on purpose: the CardGallery above now renders the real
+// TableFelt/TableWoodCorners components (not a duplicate), and it already reads table color
+// state live from the same store — a second, smaller table rendering here would look like a
 // different, "redesigned" table instead of the genuine one.
 export function TableTemplateEditor() {
   const table = usePlaygroundStore((state) => state.table);

@@ -5,7 +5,8 @@ import type { Card } from '@world-cards/engine';
 import type { CardGroup } from '../types';
 import { MAX_CARD_BORDERS } from '../types';
 import { usePlaygroundStore } from '../state/playgroundStore';
-import { PlaygroundCard } from './PlaygroundCard';
+import { PlayingCard } from '@world-cards/ui';
+import { toPlayingCardOverrides } from '../utils/toPlayingCardOverrides';
 import { ColorPicker } from './ColorPicker';
 import { pickCardImage, buildCardImage } from '../utils/imagePicker';
 
@@ -59,7 +60,7 @@ export function CardTemplateEditor() {
       </View>
 
       <View style={styles.editorBody}>
-        <PlaygroundCard card={GROUP_PREVIEW_CARD[selectedGroup]} template={template} size="large" />
+        <PlayingCard card={GROUP_PREVIEW_CARD[selectedGroup]} size="normal" {...toPlayingCardOverrides(template)} />
 
         <View style={styles.controls}>
           <Text style={styles.controlLabel}>Border radius: {template.borderRadius}</Text>
