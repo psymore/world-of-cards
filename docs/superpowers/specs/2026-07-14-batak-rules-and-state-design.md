@@ -84,9 +84,9 @@ interface BatakSetupOptions {
 }
 ```
 
-## 3. New Shared Core Primitive Required
+## 3. Rank Comparison
 
-`packages/engine/src/core/types.ts` currently has no rank-order/comparison helper — Pişti never needed one, since it only ever matched ranks for equality, never compared them. Batak needs "is rank X higher than rank Y" for both the mandatory-raise rule and trick-winner determination. This should be added as a small, generic utility (e.g. `RANK_ORDER`/`compareRanks`) in `packages/engine/src/core/`, not duplicated inside `games/batak/`, since every other trick-taking game still on the roadmap (Hearts, Spades, Gin Rummy) will need the same comparison.
+Batak needs "is rank X higher than rank Y" for both the mandatory-raise rule and trick-winner determination. `packages/engine/src/core/ranking.ts` already has exactly this, as a generic, unused-until-now Phase 1 primitive: `createRankComparator(order: Rank[]): (a: Rank, b: Rank) => number`. No new shared core primitive is needed — `games/batak/` just calls `createRankComparator` with an explicit ace-high rank order array (`['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2']`).
 
 ## 4. Algorithm Summary
 
