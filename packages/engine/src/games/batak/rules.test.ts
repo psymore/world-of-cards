@@ -322,6 +322,11 @@ describe('batakGame performMove — bidding and trump selection', () => {
     state = batakGame.performMove(state, { type: 'pass' }); // p1
     state = batakGame.performMove(state, { type: 'pass' }); // p2
     state = batakGame.performMove(state, { type: 'pass' }); // p3
+    // After p3 passes, only p4 remains active but hasn't acted yet. The guard must prevent
+    // early close and give p4 their own turn — if the guard is removed, p4 would wrongly be
+    // crowned winner with a bid of null/0 they never made.
+    expect(state.phase).toBe('bidding'); // NOT 'trump-selection' yet
+    expect(state.currentPlayerIndex).toBe(3); // p4's turn (not skipped with wrong early close)
     state = batakGame.performMove(state, { type: 'pass' }); // p4
     expect(state.phase).toBe('trump-selection');
     expect(state.bidWinner).toBe('p1');
