@@ -58,7 +58,7 @@ function CornerIndex({
   mirrored,
 }: {
   rank: string;
-  suit: Suit | undefined;
+  suit: Suit | null | undefined;
   isSmall: boolean;
   suitColor: string;
   isRed: boolean;
