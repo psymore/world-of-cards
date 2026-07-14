@@ -429,6 +429,28 @@ describe('getLegalMoves during play', () => {
     });
     expect(batakGame.getLegalMoves(state, 'p1')).toHaveLength(2);
   });
+
+  it('computes the mandatory-raise threshold from the highest led-suit card played, not the first', () => {
+    const table = batakTable({
+      'hand-p3': [card('h1', '9', 'hearts'), card('h2', '3', 'hearts'), card('c1', '2', 'clubs')],
+      trick: [card('t1', '5', 'hearts'), card('t2', 'K', 'hearts')],
+    });
+    const state = makeState({
+      table,
+      phase: 'playing',
+      trumpSuit: 'spades',
+      currentPlayerIndex: 2,
+      currentTrick: [
+        { playerId: 'p1', cardId: 't1' },
+        { playerId: 'p2', cardId: 't2' },
+      ],
+    });
+    const moves = batakGame.getLegalMoves(state, 'p3');
+    expect(moves).toHaveLength(2);
+    expect(moves).toEqual(
+      expect.arrayContaining([{ type: 'play', cardId: 'h1' }, { type: 'play', cardId: 'h2' }])
+    );
+  });
 });
 
 describe('batakGame performMove — play', () => {
