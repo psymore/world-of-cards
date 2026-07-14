@@ -348,15 +348,196 @@ describe('batakGame performMove — bidding and trump selection', () => {
     expect(next.trickLeader).toBe('p3');
     expect(next.currentPlayerIndex).toBe(2);
   });
+});
 
-  it('still throws for an unimplemented play move', () => {
-    const state = {
-      ...batakGame.setup(setupOptions, createRng(1)),
-      phase: 'playing' as const,
-      trumpSuit: 'hearts' as const,
+function batakTable(overrides: Partial<Record<string, Card[]>>): TableState {
+  return createTable([
+    ...PLAYERS.map((p) => createZone(`hand-${p}`, true, overrides[`hand-${p}`] ?? [])),
+    createZone('trick', true, overrides['trick'] ?? []),
+    ...PLAYERS.map((p) => createZone(`won-${p}`, true, overrides[`won-${p}`] ?? [])),
+  ]);
+}
+
+describe('getLegalMoves during play', () => {
+  it('excludes trump when leading and trump has not been broken', () => {
+    const table = batakTable({ 'hand-p1': [card('h1', 'K', 'hearts'), card('s1', 'Q', 'spades')] });
+    const state = makeState({ table, phase: 'playing', trumpSuit: 'spades', trumpBroken: false, currentPlayerIndex: 0 });
+    expect(batakGame.getLegalMoves(state, 'p1')).toEqual([{ type: 'play', cardId: 'h1' }]);
+  });
+
+  it('allows leading trump once trump has been broken', () => {
+    const table = batakTable({ 'hand-p1': [card('h1', 'K', 'hearts'), card('s1', 'Q', 'spades')] });
+    const state = makeState({ table, phase: 'playing', trumpSuit: 'spades', trumpBroken: true, currentPlayerIndex: 0 });
+    const moves = batakGame.getLegalMoves(state, 'p1');
+    expect(moves).toHaveLength(2);
+    expect(moves).toEqual(
+      expect.arrayContaining([{ type: 'play', cardId: 'h1' }, { type: 'play', cardId: 's1' }])
+    );
+  });
+
+  it('allows leading trump when the hand holds only trump cards, even unbroken', () => {
+    const table = batakTable({ 'hand-p1': [card('s1', 'Q', 'spades'), card('s2', 'K', 'spades')] });
+    const state = makeState({ table, phase: 'playing', trumpSuit: 'spades', trumpBroken: false, currentPlayerIndex: 0 });
+    expect(batakGame.getLegalMoves(state, 'p1')).toHaveLength(2);
+  });
+
+  it('requires a higher card of the led suit when one is held (mandatory raise)', () => {
+    const table = batakTable({
+      'hand-p1': [card('h1', 'K', 'hearts'), card('h2', '9', 'hearts'), card('c1', '2', 'clubs')],
+      trick: [card('t1', '10', 'hearts')],
+    });
+    const state = makeState({
+      table,
+      phase: 'playing',
+      trumpSuit: 'spades',
       currentPlayerIndex: 0,
-    };
-    const cardId = state.table.zones['hand-p1'].cards[0].id;
-    expect(() => batakGame.performMove(state, { type: 'play', cardId })).toThrow();
+      currentTrick: [{ playerId: 'p4', cardId: 't1' }],
+    });
+    expect(batakGame.getLegalMoves(state, 'p1')).toEqual([{ type: 'play', cardId: 'h1' }]);
+  });
+
+  it('allows any card of the led suit when no higher card is held', () => {
+    const table = batakTable({
+      'hand-p1': [card('h1', '5', 'hearts'), card('h2', '3', 'hearts'), card('c1', '2', 'clubs')],
+      trick: [card('t1', 'K', 'hearts')],
+    });
+    const state = makeState({
+      table,
+      phase: 'playing',
+      trumpSuit: 'spades',
+      currentPlayerIndex: 0,
+      currentTrick: [{ playerId: 'p4', cardId: 't1' }],
+    });
+    const moves = batakGame.getLegalMoves(state, 'p1');
+    expect(moves).toHaveLength(2);
+    expect(moves).toEqual(
+      expect.arrayContaining([{ type: 'play', cardId: 'h1' }, { type: 'play', cardId: 'h2' }])
+    );
+  });
+
+  it('allows any card, including trump, when void in the led suit', () => {
+    const table = batakTable({
+      'hand-p1': [card('c1', '5', 'clubs'), card('s1', 'Q', 'spades')],
+      trick: [card('t1', 'K', 'hearts')],
+    });
+    const state = makeState({
+      table,
+      phase: 'playing',
+      trumpSuit: 'spades',
+      currentPlayerIndex: 0,
+      currentTrick: [{ playerId: 'p4', cardId: 't1' }],
+    });
+    expect(batakGame.getLegalMoves(state, 'p1')).toHaveLength(2);
+  });
+});
+
+describe('batakGame performMove — play', () => {
+  it('adds the card to the trick, advances the turn, and sets trumpBroken when a trump is played', () => {
+    const table = batakTable({ 'hand-p1': [card('s1', 'Q', 'spades')] });
+    const state = makeState({
+      table,
+      phase: 'playing',
+      trumpSuit: 'spades',
+      trumpBroken: false,
+      currentPlayerIndex: 0,
+      trickLeader: 'p1',
+    });
+    const next = batakGame.performMove(state, { type: 'play', cardId: 's1' });
+    expect(next.table.zones['trick'].cards.map((c) => c.id)).toEqual(['s1']);
+    expect(next.currentTrick).toEqual([{ playerId: 'p1', cardId: 's1' }]);
+    expect(next.trumpBroken).toBe(true);
+    expect(next.currentPlayerIndex).toBe(1);
+    expect(next.phase).toBe('playing');
+  });
+
+  it('resolves a trick to the highest card of the led suit when no trump was played', () => {
+    const table = batakTable({
+      'hand-p4': [card('h4', '9', 'hearts')],
+      trick: [card('h1', 'K', 'hearts'), card('h2', '5', 'hearts'), card('c3', '2', 'clubs')],
+    });
+    const state = makeState({
+      table,
+      phase: 'playing',
+      trumpSuit: 'spades',
+      currentPlayerIndex: 3,
+      trickLeader: 'p1',
+      currentTrick: [
+        { playerId: 'p1', cardId: 'h1' },
+        { playerId: 'p2', cardId: 'h2' },
+        { playerId: 'p3', cardId: 'c3' },
+      ],
+    });
+    const next = batakGame.performMove(state, { type: 'play', cardId: 'h4' });
+    expect(next.table.zones['won-p1'].cards.map((c) => c.id).sort()).toEqual(['c3', 'h1', 'h2', 'h4']);
+    expect(next.tricksWon['p1']).toBe(1);
+    expect(next.trickLeader).toBe('p1');
+    expect(next.currentPlayerIndex).toBe(0);
+    expect(next.currentTrick).toEqual([]);
+    expect(next.table.zones['trick'].cards).toEqual([]);
+  });
+
+  it('resolves a trick to the highest trump, beating a higher-ranked led-suit card', () => {
+    const table = batakTable({
+      'hand-p4': [card('s4', '2', 'spades')],
+      trick: [card('h1', 'A', 'hearts'), card('h2', 'K', 'hearts'), card('h3', 'Q', 'hearts')],
+    });
+    const state = makeState({
+      table,
+      phase: 'playing',
+      trumpSuit: 'spades',
+      currentPlayerIndex: 3,
+      trickLeader: 'p1',
+      currentTrick: [
+        { playerId: 'p1', cardId: 'h1' },
+        { playerId: 'p2', cardId: 'h2' },
+        { playerId: 'p3', cardId: 'h3' },
+      ],
+    });
+    const next = batakGame.performMove(state, { type: 'play', cardId: 's4' });
+    expect(next.trickLeader).toBe('p4');
+    expect(next.tricksWon['p4']).toBe(1);
+  });
+
+  it('finishes the hand once the 13th trick completes', () => {
+    const table = batakTable({
+      'hand-p1': [],
+      'hand-p2': [],
+      'hand-p3': [],
+      'hand-p4': [card('s4', '2', 'spades')],
+      trick: [card('h1', 'A', 'hearts'), card('h2', 'K', 'hearts'), card('h3', 'Q', 'hearts')],
+    });
+    const state = makeState({
+      table,
+      phase: 'playing',
+      trumpSuit: 'spades',
+      currentPlayerIndex: 3,
+      trickLeader: 'p1',
+      currentTrick: [
+        { playerId: 'p1', cardId: 'h1' },
+        { playerId: 'p2', cardId: 'h2' },
+        { playerId: 'p3', cardId: 'h3' },
+      ],
+    });
+    const next = batakGame.performMove(state, { type: 'play', cardId: 's4' });
+    expect(next.phase).toBe('finished');
+    expect(next.status).toBe('finished');
+  });
+});
+
+describe('validateMove during play', () => {
+  it('accepts a card that getLegalMoves allows, and rejects one it does not', () => {
+    const table = batakTable({
+      'hand-p1': [card('h1', 'K', 'hearts'), card('h2', '9', 'hearts')],
+      trick: [card('t1', '10', 'hearts')],
+    });
+    const state = makeState({
+      table,
+      phase: 'playing',
+      trumpSuit: 'spades',
+      currentPlayerIndex: 0,
+      currentTrick: [{ playerId: 'p4', cardId: 't1' }],
+    });
+    expect(batakGame.validateMove(state, { type: 'play', cardId: 'h1' }, 'p1')).toBe(true);
+    expect(batakGame.validateMove(state, { type: 'play', cardId: 'h2' }, 'p1')).toBe(false);
   });
 });

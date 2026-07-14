@@ -1,9 +1,10 @@
 import { RuleEngine, PlayerId, ScoreBoard } from '../../rules/types';
 import { createDeck, shuffle } from '../../core/deck';
-import { createTable, createZone, dealToZones, TableState } from '../../core/table';
+import { createTable, createZone, dealToZones, moveCard, moveAllCards, TableState } from '../../core/table';
 import { RNG } from '../../core/rng';
-import { Suit } from '../../core/types';
+import { Card, Suit } from '../../core/types';
 import { BatakState, BatakMove, BatakSetupOptions } from './types';
+import { compareRanks } from './ranking';
 
 const SUITS: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
 
@@ -37,6 +38,41 @@ function nextActivePlayerIndex(state: BatakState, fromIndex: number): number {
     if (state.bids[state.players[idx]] !== 'pass') return idx;
   }
   return fromIndex;
+}
+
+function playingLegalMoves(state: BatakState, playerId: PlayerId): BatakMove[] {
+  const hand = state.table.zones[`hand-${playerId}`].cards;
+  const trick = state.table.zones['trick'].cards;
+  const trumpSuit = state.trumpSuit!;
+
+  if (trick.length === 0) {
+    const nonTrump = hand.filter((c) => c.suit !== trumpSuit);
+    const canLeadTrump = state.trumpBroken || nonTrump.length === 0;
+    const eligible = canLeadTrump ? hand : nonTrump;
+    return eligible.map((c) => ({ type: 'play', cardId: c.id }));
+  }
+
+  const ledSuit = trick[0].suit;
+  const ofLedSuit = hand.filter((c) => c.suit === ledSuit);
+
+  if (ofLedSuit.length > 0) {
+    const highestInTrick = trick
+      .filter((c) => c.suit === ledSuit)
+      .reduce((best, c) => (compareRanks(c.rank, best.rank) > 0 ? c : best));
+    const higher = ofLedSuit.filter((c) => compareRanks(c.rank, highestInTrick.rank) > 0);
+    const eligible = higher.length > 0 ? higher : ofLedSuit;
+    return eligible.map((c) => ({ type: 'play', cardId: c.id }));
+  }
+
+  return hand.map((c) => ({ type: 'play', cardId: c.id }));
+}
+
+function trickWinnerIndex(trick: Card[], trumpSuit: Suit): number {
+  const ledSuit = trick[0].suit;
+  const trumps = trick.filter((c) => c.suit === trumpSuit);
+  const candidates = trumps.length > 0 ? trumps : trick.filter((c) => c.suit === ledSuit);
+  const winningCard = candidates.reduce((best, c) => (compareRanks(c.rank, best.rank) > 0 ? c : best));
+  return trick.indexOf(winningCard);
 }
 
 export const batakGame: RuleEngine<BatakState, BatakMove> = {
@@ -152,7 +188,41 @@ export const batakGame: RuleEngine<BatakState, BatakMove> = {
       };
     }
 
-    throw new Error('batakGame.performMove: play not yet implemented');
+    const handZone = `hand-${playerId}`;
+    const playedCard = state.table.zones[handZone].cards.find((c) => c.id === move.cardId)!;
+    let table = moveCard(state.table, move.cardId, handZone, 'trick');
+    const currentTrick = [...state.currentTrick, { playerId, cardId: move.cardId }];
+    const trumpBroken = state.trumpBroken || playedCard.suit === state.trumpSuit;
+
+    if (currentTrick.length < state.players.length) {
+      return {
+        ...state,
+        table,
+        currentTrick,
+        trumpBroken,
+        currentPlayerIndex: (state.currentPlayerIndex + 1) % state.players.length,
+      };
+    }
+
+    const trickCards = table.zones['trick'].cards;
+    const winnerPos = trickWinnerIndex(trickCards, state.trumpSuit!);
+    const winner = currentTrick[winnerPos].playerId;
+
+    table = moveAllCards(table, 'trick', `won-${winner}`);
+    const tricksWon = { ...state.tricksWon, [winner]: state.tricksWon[winner] + 1 };
+    const handsEmpty = state.players.every((p) => table.zones[`hand-${p}`].cards.length === 0);
+
+    return {
+      ...state,
+      table,
+      currentTrick: [],
+      trumpBroken,
+      tricksWon,
+      trickLeader: winner,
+      currentPlayerIndex: state.players.indexOf(winner),
+      phase: handsEmpty ? 'finished' : state.phase,
+      status: handsEmpty ? 'finished' : state.status,
+    };
   },
 
   getLegalMoves(state: BatakState, playerId: PlayerId): BatakMove[] {
@@ -163,7 +233,7 @@ export const batakGame: RuleEngine<BatakState, BatakMove> = {
       case 'trump-selection':
         return trumpSelectionLegalMoves(state, playerId);
       case 'playing':
-        throw new Error('batakGame.getLegalMoves: playing phase not yet implemented');
+        return playingLegalMoves(state, playerId);
       case 'finished':
         return [];
     }
