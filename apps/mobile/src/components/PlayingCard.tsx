@@ -104,6 +104,7 @@ function PlayingCardComponent({ card, faceDown, size = 'normal', style, highligh
   const isRed = card.suit != null && RED_SUITS.includes(card.suit);
   const suitColor = isRed ? SUIT_COLOR.red : SUIT_COLOR.black;
   const courtArt = card.suit != null ? COURT_CARD_ART[`${card.rank}-${card.suit}`] : undefined;
+  const isFaceCard = card.rank === 'K' || card.rank === 'Q' || card.rank === 'J';
 
   return (
     <CardFrame testID="playing-card-face" dims={dims} backgroundColor="#fff" highlighted={highlighted} style={style}>
@@ -112,7 +113,12 @@ function PlayingCardComponent({ card, faceDown, size = 'normal', style, highligh
       <View testID="playing-card-center-art" style={styles.centerArt}>
         {courtArt != null ? (
           <View style={styles.courtArtFrame}>
-            <Image testID="court-card-art" source={courtArt} style={styles.courtArtImage} resizeMode="contain" />
+            <Image
+              testID="court-card-art"
+              source={courtArt}
+              style={[styles.courtArtImage, isFaceCard && styles.courtArtImageEnlarged]}
+              resizeMode="contain"
+            />
           </View>
         ) : (
           card.suit != null && (
@@ -162,5 +168,7 @@ const styles = StyleSheet.create({
   centerArt: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   courtArtFrame: { width: '90%', height: '95%', borderWidth: 1, borderColor: '#000', alignItems: 'center', justifyContent: 'center' },
   courtArtImage: { width: '70%', height: '70%' },
+  // K/Q/J art rendered 1.3x larger than the base 70% (Aces keep the base size).
+  courtArtImageEnlarged: { width: '91%', height: '91%' },
   red: { color: '#c0392b' },
 });
