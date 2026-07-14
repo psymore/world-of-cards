@@ -11,6 +11,10 @@
     "android": {
       "package": "com.worldcards.playground"
     },
-    "web": {}
+    "web": {},
+    "plugins": [
+      "expo-font",
+      "expo-splash-screen"
+    ]
   }
 }

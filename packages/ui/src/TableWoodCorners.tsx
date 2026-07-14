@@ -2,12 +2,20 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, Line, LinearGradient, Path, Pattern, Stop } from 'react-native-svg';
 import { AbsoluteOverlay } from './AbsoluteOverlay';
+import { shadeColor } from './colorUtils';
 
 const WEDGE_SIZE = 140; // 2.5x the original 56dp
 const TRIM_COLOR = '#ffd966';
-const WOOD_LIGHT = '#5c2a1e';
-const WOOD_DARK = '#331209';
+const DEFAULT_WOOD_LIGHT = '#5c2a1e';
+const DEFAULT_WOOD_DARK = '#331209';
 const GRAIN_COLOR = '#ffab6b';
+
+export interface TableWoodCornersProps {
+  // Overrides the wood gradient's base color; the light/dark two-tone gradient is derived from
+  // it via shadeColor so the existing textured-wood look is preserved under any base hue.
+  // Undefined => today's exact hardcoded mahogany look.
+  woodColor?: string;
+}
 
 type Corner = 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight';
 
@@ -48,7 +56,7 @@ const WEDGE_GEOMETRY: Record<Corner, WedgeGeometry> = {
 
 const CORNERS: Corner[] = ['topLeft', 'topRight', 'bottomLeft', 'bottomRight'];
 
-function Wedge({ corner }: { corner: Corner }) {
+function Wedge({ corner, woodLight, woodDark }: { corner: Corner; woodLight: string; woodDark: string }) {
   const { fillPath, trimPath, positionStyle } = WEDGE_GEOMETRY[corner];
   const gradId = `woodGradient-${corner}`;
   const grainId = `woodGrain-${corner}`;
@@ -57,8 +65,8 @@ function Wedge({ corner }: { corner: Corner }) {
       <Svg width={S} height={S} viewBox={`0 0 ${S} ${S}`}>
         <Defs>
           <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
-            <Stop offset="0%" stopColor={WOOD_LIGHT} />
-            <Stop offset="100%" stopColor={WOOD_DARK} />
+            <Stop offset="0%" stopColor={woodLight} />
+            <Stop offset="100%" stopColor={woodDark} />
           </LinearGradient>
           <Pattern id={grainId} width={6} height={6} patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
             <Line x1={0} y1={0} x2={0} y2={6} stroke={GRAIN_COLOR} strokeOpacity={0.1} strokeWidth={1} />
@@ -74,11 +82,13 @@ function Wedge({ corner }: { corner: Corner }) {
 
 // Zero props, output never changes — memoize so it paints once and is never redone by the
 // move-by-move re-renders that drive the rest of the table, same rule as TableFelt.
-function TableWoodCornersComponent() {
+function TableWoodCornersComponent({ woodColor }: TableWoodCornersProps) {
+  const woodLight = woodColor != null ? shadeColor(woodColor, 0.18) : DEFAULT_WOOD_LIGHT;
+  const woodDark = woodColor != null ? shadeColor(woodColor, -0.25) : DEFAULT_WOOD_DARK;
   return (
     <AbsoluteOverlay>
       {CORNERS.map((corner) => (
-        <Wedge key={corner} corner={corner} />
+        <Wedge key={corner} corner={corner} woodLight={woodLight} woodDark={woodDark} />
       ))}
     </AbsoluteOverlay>
   );

@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { RootNavigator } from './src/navigation/RootNavigator';
-import { FONTS } from './src/theme/fonts';
+import { FONTS } from '@world-cards/ui';
 
 SplashScreen.preventAutoHideAsync();
 

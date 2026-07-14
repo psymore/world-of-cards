@@ -1187,7 +1187,7 @@ cd ../ui && npx tsc --noEmit
 cd ../../apps/mobile && npx tsc --noEmit
 cd ../playground && npx tsc --noEmit
 ```
-Expected: `packages/engine`/`packages/ui`/`apps/playground` show zero errors; `apps/mobile` shows only the two known pre-existing `Suit | null` errors (now sourced from `packages/ui/src/PlayingCard.tsx` via the workspace link).
+Expected: zero errors in all four (`packages/engine`, `packages/ui`, `apps/mobile`, `apps/playground`). The `Suit | null`/`Suit | undefined` mismatch that predated this plan was fixed as an out-of-scope but verified-safe correction during Task 4 (commit `f2af125`, user-approved) — so unlike earlier tasks in this plan, no pre-existing errors are expected anywhere at this point.
 
 - [ ] **Step 2: Start playground's web build and screenshot the card gallery**
 

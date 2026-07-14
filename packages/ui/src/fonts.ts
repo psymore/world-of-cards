@@ -1,6 +1,6 @@
 export const FONTS = {
-  'PTSerif-Bold': require('../../assets/fonts/PTSerif-Bold.ttf'),
-  'PTSerif-Regular': require('../../assets/fonts/PTSerif-Regular.ttf'),
+  'PTSerif-Bold': require('../assets/fonts/PTSerif-Bold.ttf'),
+  'PTSerif-Regular': require('../assets/fonts/PTSerif-Regular.ttf'),
 };
 
 // Change this to 'PTSerif-Regular' to switch the card corner-index weight.
