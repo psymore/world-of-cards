@@ -2,17 +2,39 @@ import React, { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { Card, Suit } from '@world-cards/engine';
 import type { BatakState, BatakMove } from '@world-cards/engine/games/batak';
+import { compareRanks } from '@world-cards/engine/games/batak';
 import { PlayingCard, SuitIcon, TableFelt, TableWoodCorners, glowShadow } from '@world-cards/ui';
 import { SelectableCard } from '../../components/SelectableCard';
 import { useCardSelection } from '../../components/useCardSelection';
 import { PlayerAvatar } from '../../components/PlayerAvatar';
-import { assignSeats, fanCurveY, fanRotationDeg, OPPONENT_CARD_OVERLAP, SIDE_CARD_STYLES } from '../../table/seating';
+import {
+  assignSeats,
+  fanCurveY,
+  fanRotationDeg,
+  overlapMarginPx,
+  splitTwoRows,
+  OPPONENT_CARD_OVERLAP,
+  SIDE_CARD_STYLES,
+  HUMAN_HAND_OVERLAP_PERCENT,
+} from '../../table/seating';
 import type { Seat, SeatPosition } from '../../table/seating';
 
 const SUITS: Suit[] = ['spades', 'hearts', 'diamonds', 'clubs'];
 
 function suitColor(suit: Suit): string {
   return suit === 'hearts' || suit === 'diamonds' ? '#c0392b' : '#111';
+}
+
+const HUMAN_CARD_WIDTH = 54; // matches PlayingCard's 'small' size width
+const HUMAN_HAND_MARGIN = overlapMarginPx(HUMAN_CARD_WIDTH, HUMAN_HAND_OVERLAP_PERCENT);
+const HAND_SUIT_ORDER = ['hearts', 'spades', 'diamonds', 'clubs'] as const;
+
+function sortHandForDisplay(cards: Card[]): Card[] {
+  return [...cards].sort((a, b) => {
+    const suitDiff = HAND_SUIT_ORDER.indexOf(a.suit as Suit) - HAND_SUIT_ORDER.indexOf(b.suit as Suit);
+    if (suitDiff !== 0) return suitDiff;
+    return compareRanks(b.rank, a.rank); // descending within suit: A high ... 2 low
+  });
 }
 
 export interface PendingBatakPlay {
@@ -268,6 +290,42 @@ function BidControls({ legalMoves, onMove }: { legalMoves: BatakMove[]; onMove: 
   );
 }
 
+function HandRow({
+  cards,
+  legalCardIds,
+  isHumanInteractive,
+  selectedCardId,
+  selectCard,
+}: {
+  cards: Card[];
+  legalCardIds: Set<string>;
+  isHumanInteractive: boolean;
+  selectedCardId: string | null;
+  selectCard: (cardId: string) => void;
+}) {
+  return (
+    <View style={styles.handFanRow}>
+      {cards.map((card, i) => {
+        const interactive = isHumanInteractive && legalCardIds.has(card.id);
+        return (
+          <View key={card.id} style={!interactive && styles.disabledCard}>
+            <SelectableCard
+              card={card}
+              size="small"
+              selected={selectedCardId === card.id}
+              disabled={!interactive}
+              onPress={() => selectCard(card.id)}
+              rotateDeg={fanRotationDeg(i, cards.length)}
+              curveOffsetY={fanCurveY(i, cards.length)}
+              marginLeft={i > 0 ? HUMAN_HAND_MARGIN : undefined}
+            />
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 export function BatakTable({
   state,
   humanPlayerId,
@@ -292,6 +350,10 @@ export function BatakTable({
   }, [isHumanInteractive, clearSelection]);
 
   const humanHand = state.table.zones[`hand-${humanPlayerId}`].cards;
+  const sortedHand = sortHandForDisplay(humanHand);
+  const [topRowCount] = splitTwoRows(sortedHand.length);
+  const topRow = sortedHand.slice(0, topRowCount);
+  const bottomRow = sortedHand.slice(topRowCount);
   const legalCardIds = new Set(
     legalMoves.filter((m): m is Extract<BatakMove, { type: 'play' }> => m.type === 'play').map((m) => m.cardId)
   );
@@ -323,24 +385,23 @@ export function BatakTable({
       </View>
 
       <View style={[styles.handArea, isHumanInteractive && styles.activeArea]}>
+        <View style={styles.handFan} testID="human-hand">
+          <HandRow
+            cards={topRow}
+            legalCardIds={legalCardIds}
+            isHumanInteractive={isHumanInteractive}
+            selectedCardId={selectedCardId}
+            selectCard={selectCard}
+          />
+          <HandRow
+            cards={bottomRow}
+            legalCardIds={legalCardIds}
+            isHumanInteractive={isHumanInteractive}
+            selectedCardId={selectedCardId}
+            selectCard={selectCard}
+          />
+        </View>
         {state.phase === 'bidding' && isHumanInteractive && <BidControls legalMoves={legalMoves} onMove={onMove} />}
-        {state.phase === 'playing' && (
-          <ScrollView horizontal contentContainerStyle={styles.handRow} testID="human-hand">
-            {humanHand.map((card) => {
-              const interactive = isHumanInteractive && legalCardIds.has(card.id);
-              return (
-                <View key={card.id} style={!interactive && styles.disabledCard}>
-                  <SelectableCard
-                    card={card}
-                    selected={selectedCardId === card.id}
-                    disabled={!interactive}
-                    onPress={() => selectCard(card.id)}
-                  />
-                </View>
-              );
-            })}
-          </ScrollView>
-        )}
         <PlayerBadge
           name={playerNames[humanPlayerId] ?? 'You'}
           statusText={statusTextFor(state, humanPlayerId)}
@@ -356,7 +417,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, paddingVertical: 12 },
   opponentArea: { minHeight: 135, justifyContent: 'center', alignItems: 'center', borderRadius: 12, paddingVertical: 4 },
   opponentAreaSide: { minHeight: 0, width: 96, paddingVertical: 4 },
-  handArea: { minHeight: 177, justifyContent: 'center', borderRadius: 12, paddingVertical: 4 },
+  handArea: { minHeight: 260, justifyContent: 'center', borderRadius: 12, paddingVertical: 4, gap: 4 },
   activeArea: { backgroundColor: 'rgba(244, 197, 66, 0.14)' },
   middleRow: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   badge: {
@@ -410,6 +471,7 @@ const styles = StyleSheet.create({
   },
   passButton: { borderColor: 'rgba(192, 57, 43, 0.6)' },
   bidButtonText: { fontSize: 15, fontWeight: '700', color: '#f5f0e6' },
-  handRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: 12 },
+  handFan: { alignItems: 'center', gap: 6 },
+  handFanRow: { flexDirection: 'row', justifyContent: 'center' },
   disabledCard: { opacity: 0.5 },
 });

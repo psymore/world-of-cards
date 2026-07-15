@@ -60,3 +60,22 @@ export const SIDE_CARD_STYLES: ({ marginTop: number } | undefined)[] = Array.fro
   { length: MAX_SIDE_STACK_CARDS },
   (_, i) => (i > 0 ? { marginTop: -SIDE_CARD_OVERLAP } : undefined)
 );
+
+// The human's own hand (Batak, and any future game with a large face-up hand) splits into two
+// rows once it can't read cleanly as one — always rebalanced as the hand shrinks, rather than
+// keeping one row's size fixed, so the fan stays visually centered and full-looking at every
+// hand size.
+export function splitTwoRows(count: number): [number, number] {
+  const top = Math.ceil(count / 2);
+  return [top, count - top];
+}
+
+// Converts a percentage-based overlap (the natural way to describe "cards overlap by X%") into
+// the negative marginLeft pixel value consumers actually apply, given the specific card width
+// they're rendering at — kept generic here (not hardcoded to one PlayingCard size) since seating.ts
+// has no PlayingCard/RN dependency.
+export function overlapMarginPx(cardWidth: number, overlapPercent: number): number {
+  return -Math.round(cardWidth * (overlapPercent / 100));
+}
+
+export const HUMAN_HAND_OVERLAP_PERCENT = 16;

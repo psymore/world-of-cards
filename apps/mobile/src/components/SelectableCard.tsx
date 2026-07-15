@@ -10,6 +10,7 @@ export interface SelectableCardProps extends PlayingCardProps {
   rotateDeg?: number;
   marginLeft?: number;
   liftDistance?: number;
+  curveOffsetY?: number;
 }
 
 const DEFAULT_LIFT_DISTANCE = 16;
@@ -22,6 +23,7 @@ export function SelectableCard({
   rotateDeg = 0,
   marginLeft,
   liftDistance = DEFAULT_LIFT_DISTANCE,
+  curveOffsetY = 0,
   ...cardProps
 }: SelectableCardProps) {
   const lift = useRef(new Animated.Value(selected ? -liftDistance : 0)).current;
@@ -46,7 +48,7 @@ export function SelectableCard({
 
   return (
     <Animated.View
-      style={{ marginLeft, transform: [{ rotate: `${rotateDeg}deg` }, { translateY: lift }] }}
+      style={{ marginLeft, transform: [{ rotate: `${rotateDeg}deg` }, { translateY: Animated.add(lift, curveOffsetY) }] }}
     >
       <Pressable disabled={disabled} onPress={onPress}>
         <PlayingCard {...cardProps} highlighted={selected} />
