@@ -72,6 +72,13 @@ function kittyExchangeLegalMoves(state: BatakState, playerId: PlayerId): BatakMo
   }));
 }
 
+function sameCards(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false;
+  const sortedA = [...a].sort();
+  const sortedB = [...b].sort();
+  return sortedA.every((id, i) => id === sortedB[i]);
+}
+
 function nextActivePlayerIndex(state: BatakState, fromIndex: number): number {
   const n = state.players.length;
   for (let step = 1; step <= n; step++) {
@@ -167,6 +174,14 @@ export const batakGame: RuleEngine<BatakState, BatakMove> = {
         return state.phase === 'bidding' && state.bids[playerId] !== 'pass';
       case 'selectTrump':
         return state.phase === 'trump-selection' && playerId === state.bidWinner;
+      case 'bury':
+        return (
+          state.phase === 'kitty-exchange' &&
+          playerId === state.bidWinner &&
+          batakGame
+            .getLegalMoves(state, playerId)
+            .some((m) => m.type === 'bury' && sameCards(m.cardIds, move.cardIds))
+        );
       case 'play':
         return (
           state.phase === 'playing' &&
@@ -244,6 +259,21 @@ export const batakGame: RuleEngine<BatakState, BatakMove> = {
         phase: 'playing',
         trickLeader: winner,
         currentPlayerIndex: state.players.indexOf(winner),
+      };
+    }
+
+    if (move.type === 'bury') {
+      const bidder = state.bidWinner!;
+      let table = state.table;
+      for (const cardId of move.cardIds) {
+        table = moveCard(table, cardId, `hand-${bidder}`, 'buried');
+      }
+      return {
+        ...state,
+        table,
+        phase: 'playing',
+        trickLeader: bidder,
+        currentPlayerIndex: state.players.indexOf(bidder),
       };
     }
 

@@ -270,6 +270,80 @@ describe('batakGame (rule engine)', () => {
     });
   });
 
+  describe('validateMove — bury (3-player)', () => {
+    function kittyExchangeState() {
+      const hand = twentyCards();
+      const table = batakTable3({ 'hand-p1': hand });
+      const state = makeState({
+        table,
+        players: PLAYERS3,
+        phase: 'kitty-exchange' as const,
+        bidWinner: 'p1',
+        currentPlayerIndex: 0,
+      });
+      return { hand, state };
+    }
+
+    it("accepts a valid 4-card bury from the bidder's hand", () => {
+      const { state } = kittyExchangeState();
+      expect(batakGame.validateMove(state, { type: 'bury', cardIds: ['c0', 'c1', 'c2', 'c3'] }, 'p1')).toBe(true);
+    });
+
+    it('accepts the same 4 cards in a different order (order-insensitive)', () => {
+      const { state } = kittyExchangeState();
+      expect(batakGame.validateMove(state, { type: 'bury', cardIds: ['c3', 'c1', 'c2', 'c0'] }, 'p1')).toBe(true);
+    });
+
+    it("rejects a bury naming a card not in the bidder's hand", () => {
+      const { state } = kittyExchangeState();
+      expect(
+        batakGame.validateMove(state, { type: 'bury', cardIds: ['c0', 'c1', 'c2', 'not-in-hand'] }, 'p1')
+      ).toBe(false);
+    });
+
+    it('rejects a bury from a player other than the bidder', () => {
+      const { state } = kittyExchangeState();
+      expect(batakGame.validateMove(state, { type: 'bury', cardIds: ['c0', 'c1', 'c2', 'c3'] }, 'p2')).toBe(false);
+    });
+
+    it('rejects a bury naming fewer than 4 cards', () => {
+      const { state } = kittyExchangeState();
+      expect(
+        batakGame.validateMove(state, { type: 'bury', cardIds: ['c0', 'c1', 'c2'] as unknown as [string, string, string, string] }, 'p1')
+      ).toBe(false);
+    });
+
+    it('rejects a bury that repeats the same card id (not 4 distinct cards)', () => {
+      const { state } = kittyExchangeState();
+      expect(
+        batakGame.validateMove(state, { type: 'bury', cardIds: ['c0', 'c0', 'c1', 'c2'] }, 'p1')
+      ).toBe(false);
+    });
+  });
+
+  describe('batakGame performMove — bury', () => {
+    it('moves the 4 named cards to buried, returns hand to 16, and starts play with the bidder leading', () => {
+      const hand = twentyCards();
+      const table = batakTable3({ 'hand-p1': hand });
+      const state = makeState({
+        table,
+        players: PLAYERS3,
+        phase: 'kitty-exchange',
+        bidWinner: 'p1',
+        trumpSuit: 'spades',
+        currentPlayerIndex: 0,
+      });
+      const next = batakGame.performMove(state, { type: 'bury', cardIds: ['c0', 'c1', 'c2', 'c3'] });
+      expect(next.table.zones['hand-p1'].cards).toHaveLength(16);
+      const remainingIds = next.table.zones['hand-p1'].cards.map((c) => c.id);
+      expect(remainingIds).not.toEqual(expect.arrayContaining(['c0', 'c1', 'c2', 'c3']));
+      expect(next.table.zones['buried'].cards.map((c) => c.id).sort()).toEqual(['c0', 'c1', 'c2', 'c3']);
+      expect(next.phase).toBe('playing');
+      expect(next.trickLeader).toBe('p1');
+      expect(next.currentPlayerIndex).toBe(0);
+    });
+  });
+
   describe('validateMove', () => {
     it('rejects a move from any player other than the current one', () => {
       const state = batakGame.setup(setupOptions, createRng(1));
