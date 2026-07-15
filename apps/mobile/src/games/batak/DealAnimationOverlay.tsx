@@ -82,7 +82,7 @@ export function DealAnimationOverlay({ phase }: DealAnimationOverlayProps) {
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(11, 102, 35, 0.55)',
+    backgroundColor: 'rgba(10, 12, 30, 0.82)',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
