@@ -344,6 +344,55 @@ describe('batakGame (rule engine)', () => {
     });
   });
 
+  describe('calculateScore — bust threshold (3-player gömmeli)', () => {
+    it('scores a non-bidder -contract when they take exactly 1 trick (below the 2-trick threshold)', () => {
+      const state = makeState({
+        table: emptyTable3(),
+        players: PLAYERS3,
+        status: 'finished',
+        contract: 8,
+        bidWinner: 'p1',
+        tricksWon: { p1: 10, p2: 1, p3: 5 },
+      });
+      expect(batakGame.calculateScore(state)['p2']).toBe(-8);
+    });
+
+    it('scores a non-bidder their actual tricks once they meet the 2-trick threshold', () => {
+      const state = makeState({
+        table: emptyTable3(),
+        players: PLAYERS3,
+        status: 'finished',
+        contract: 8,
+        bidWinner: 'p1',
+        tricksWon: { p1: 8, p2: 2, p3: 6 },
+      });
+      expect(batakGame.calculateScore(state)['p2']).toBe(2);
+    });
+
+    it('still scores a non-bidder -contract at exactly 0 tricks', () => {
+      const state = makeState({
+        table: emptyTable3(),
+        players: PLAYERS3,
+        status: 'finished',
+        contract: 8,
+        bidWinner: 'p1',
+        tricksWon: { p1: 12, p2: 0, p3: 4 },
+      });
+      expect(batakGame.calculateScore(state)['p2']).toBe(-8);
+    });
+
+    it('does not regress the 4-player behavior where 1 trick is safe', () => {
+      const state = makeState({
+        table: emptyTable(),
+        status: 'finished',
+        contract: 5,
+        bidWinner: 'p1',
+        tricksWon: { p1: 5, p2: 1, p3: 4, p4: 3 },
+      });
+      expect(batakGame.calculateScore(state)['p2']).toBe(1);
+    });
+  });
+
   describe('validateMove', () => {
     it('rejects a move from any player other than the current one', () => {
       const state = batakGame.setup(setupOptions, createRng(1));

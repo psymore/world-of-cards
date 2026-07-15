@@ -333,12 +333,13 @@ export const batakGame: RuleEngine<BatakState, BatakMove> = {
   calculateScore(state: BatakState): ScoreBoard {
     const score: ScoreBoard = {};
     const contract = state.contract!;
+    const { bustThreshold } = ruleConstants(state.players.length);
     for (const p of state.players) {
       const tricks = state.tricksWon[p];
       if (p === state.bidWinner) {
         score[p] = tricks >= contract ? tricks : -contract;
       } else {
-        score[p] = tricks === 0 ? -contract : tricks;
+        score[p] = tricks < bustThreshold ? -contract : tricks;
       }
     }
     return score;
