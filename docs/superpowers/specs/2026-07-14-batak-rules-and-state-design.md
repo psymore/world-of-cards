@@ -103,7 +103,8 @@ This section describes intended behavior at a conceptual level to guide the rule
 - `'playing'`: for the current player —
   - If leading (`currentTrick` is empty): all hand cards, excluding trump-suit cards unless `trumpBroken` is `true` or the hand contains only trump cards.
   - If following and holding cards of the led suit: cards of that suit ranked higher than the trick's current-highest led-suit card, if any such cards exist (mandatory raise); otherwise, all cards of the led suit.
-  - If void in the led suit: any card in hand.
+  - If void in the led suit and holding no trump: any card in hand.
+  - If void in the led suit and holding trump: trump only (mandatory trump); if any trump has already been played to the trick, trump ranked higher than the trick's current-highest trump, if any such trump exists (mandatory overtrump/rise), otherwise any trump in hand. **Corrected 2026-07-16** — the original version of this doc said "any card in hand" when void in the led suit, which omitted the mandatory-trump/overtrump rule; fixed directly in `playingLegalMoves` (`packages/engine/src/games/batak/rules.ts`) per explicit user correction, mirroring the same "trace to a specific game rule" correction pattern as the bidding/scoring rules noted at the top of this doc.
 
 **`performMove(state, move)`:**
 1. `bid`/`pass`: record the choice in `bids` (and `highestBid` if a bid), advance `currentPlayerIndex` to the next active (non-passed) player. After recording, if exactly one active bidder remains: finalize `contract`/`bidWinner` from that player's last bid, set `phase: 'trump-selection'`. If zero remain (everyone passed): set `contract: 4`, `bidWinner: players[0]`, `phase: 'trump-selection'`.

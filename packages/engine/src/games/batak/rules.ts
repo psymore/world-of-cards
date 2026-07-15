@@ -132,7 +132,22 @@ function playingLegalMoves(state: BatakState, playerId: PlayerId): BatakMove[] {
     return eligible.map((c) => ({ type: 'play', cardId: c.id }));
   }
 
-  return hand.map((c) => ({ type: 'play', cardId: c.id }));
+  const trumpCards = hand.filter((c) => c.suit === trumpSuit);
+  if (trumpCards.length === 0) {
+    return hand.map((c) => ({ type: 'play', cardId: c.id }));
+  }
+
+  const trumpsInTrick = trick.filter((c) => c.suit === trumpSuit);
+  if (trumpsInTrick.length === 0) {
+    return trumpCards.map((c) => ({ type: 'play', cardId: c.id }));
+  }
+
+  const highestTrumpInTrick = trumpsInTrick.reduce((best, c) =>
+    compareRanks(c.rank, best.rank) > 0 ? c : best
+  );
+  const higherTrumps = trumpCards.filter((c) => compareRanks(c.rank, highestTrumpInTrick.rank) > 0);
+  const eligibleTrumps = higherTrumps.length > 0 ? higherTrumps : trumpCards;
+  return eligibleTrumps.map((c) => ({ type: 'play', cardId: c.id }));
 }
 
 export function trickWinnerIndex(trick: Card[], trumpSuit: Suit): number {

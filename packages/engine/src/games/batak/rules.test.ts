@@ -791,7 +791,22 @@ describe('getLegalMoves during play', () => {
     );
   });
 
-  it('allows any card, including trump, when void in the led suit', () => {
+  it('allows any card when void in the led suit and holding no trump', () => {
+    const table = batakTable({
+      'hand-p1': [card('c1', '5', 'clubs'), card('c2', 'Q', 'clubs')],
+      trick: [card('t1', 'K', 'hearts')],
+    });
+    const state = makeState({
+      table,
+      phase: 'playing',
+      trumpSuit: 'spades',
+      currentPlayerIndex: 0,
+      currentTrick: [{ playerId: 'p4', cardId: 't1' }],
+    });
+    expect(batakGame.getLegalMoves(state, 'p1')).toHaveLength(2);
+  });
+
+  it('requires playing trump (not a non-trump card) when void in the led suit and holding trump', () => {
     const table = batakTable({
       'hand-p1': [card('c1', '5', 'clubs'), card('s1', 'Q', 'spades')],
       trick: [card('t1', 'K', 'hearts')],
@@ -803,7 +818,88 @@ describe('getLegalMoves during play', () => {
       currentPlayerIndex: 0,
       currentTrick: [{ playerId: 'p4', cardId: 't1' }],
     });
-    expect(batakGame.getLegalMoves(state, 'p1')).toHaveLength(2);
+    expect(batakGame.getLegalMoves(state, 'p1')).toEqual([{ type: 'play', cardId: 's1' }]);
+  });
+
+  it('allows any trump when void in the led suit and no trump has been played yet', () => {
+    const table = batakTable({
+      'hand-p1': [card('s1', '4', 'spades'), card('s2', 'K', 'spades')],
+      trick: [card('t1', 'K', 'hearts')],
+    });
+    const state = makeState({
+      table,
+      phase: 'playing',
+      trumpSuit: 'spades',
+      currentPlayerIndex: 0,
+      currentTrick: [{ playerId: 'p4', cardId: 't1' }],
+    });
+    const moves = batakGame.getLegalMoves(state, 'p1');
+    expect(moves).toHaveLength(2);
+    expect(moves).toEqual(
+      expect.arrayContaining([{ type: 'play', cardId: 's1' }, { type: 'play', cardId: 's2' }])
+    );
+  });
+
+  it('requires overtrumping when void in the led suit and a lower trump has already been played (mandatory rise)', () => {
+    const table = batakTable({
+      'hand-p3': [card('s1', '4', 'spades'), card('s2', 'K', 'spades')],
+      trick: [card('t1', 'K', 'hearts'), card('t2', '7', 'spades')],
+    });
+    const state = makeState({
+      table,
+      phase: 'playing',
+      trumpSuit: 'spades',
+      currentPlayerIndex: 2,
+      currentTrick: [
+        { playerId: 'p1', cardId: 't1' },
+        { playerId: 'p2', cardId: 't2' },
+      ],
+    });
+    expect(batakGame.getLegalMoves(state, 'p3')).toEqual([{ type: 'play', cardId: 's2' }]);
+  });
+
+  it('computes the overtrump threshold from the highest trump played, not the first one played', () => {
+    const table = batakTable({
+      // s1 (7) sits strictly between the two played trumps (4 and 10); s2 (J) beats both.
+      'hand-p4': [card('s1', '7', 'spades'), card('s2', 'J', 'spades')],
+      trick: [card('t1', 'K', 'hearts'), card('t2', '4', 'spades'), card('t3', '10', 'spades')],
+    });
+    const state = makeState({
+      table,
+      phase: 'playing',
+      trumpSuit: 'spades',
+      currentPlayerIndex: 3,
+      currentTrick: [
+        { playerId: 'p1', cardId: 't1' }, // led suit
+        { playerId: 'p2', cardId: 't2' }, // low trump, played first among trumps (4)
+        { playerId: 'p3', cardId: 't3' }, // true-highest trump so far (10), played after t2
+      ],
+    });
+    // A bug that used the FIRST trump played (4) as the threshold would wrongly admit s1 (7),
+    // since 7 > 4. The real threshold is the highest trump played (10), which only s2 (J) beats.
+    expect(batakGame.getLegalMoves(state, 'p4')).toEqual([{ type: 'play', cardId: 's2' }]);
+  });
+
+  it('allows any trump when void in the led suit and unable to beat the highest trump already played', () => {
+    const table = batakTable({
+      'hand-p3': [card('s1', '4', 'spades'), card('s2', '6', 'spades')],
+      trick: [card('t1', 'K', 'hearts'), card('t2', 'A', 'spades')],
+    });
+    const state = makeState({
+      table,
+      phase: 'playing',
+      trumpSuit: 'spades',
+      currentPlayerIndex: 2,
+      currentTrick: [
+        { playerId: 'p1', cardId: 't1' },
+        { playerId: 'p2', cardId: 't2' },
+      ],
+    });
+    const moves = batakGame.getLegalMoves(state, 'p3');
+    expect(moves).toHaveLength(2);
+    expect(moves).toEqual(
+      expect.arrayContaining([{ type: 'play', cardId: 's1' }, { type: 'play', cardId: 's2' }])
+    );
   });
 
   it('computes the mandatory-raise threshold from the highest led-suit card played, not the first', () => {
