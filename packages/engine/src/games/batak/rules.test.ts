@@ -393,6 +393,62 @@ describe('batakGame (rule engine)', () => {
     });
   });
 
+  describe('trick play at a 3-player table', () => {
+    it('resolves a trick to the highest trump among 3 played cards, not the first or last played', () => {
+      const table = batakTable3({
+        'hand-p3': [card('s3', '3', 'spades')],
+        trick: [card('s1', '2', 'spades'), card('s2', 'K', 'spades')],
+      });
+      const state = makeState({
+        table,
+        players: PLAYERS3,
+        phase: 'playing',
+        trumpSuit: 'spades',
+        currentPlayerIndex: 2,
+        trickLeader: 'p1',
+        currentTrick: [
+          { playerId: 'p1', cardId: 's1' },
+          { playerId: 'p2', cardId: 's2' },
+        ],
+      });
+      const next = batakGame.performMove(state, { type: 'play', cardId: 's3' });
+      expect(next.trickLeader).toBe('p2');
+      expect(next.tricksWon['p2']).toBe(1);
+      expect(next.tricksWon['p1']).toBe(0);
+      expect(next.tricksWon['p3']).toBe(0);
+    });
+  });
+
+  describe('full-hand integration (3-player gömmeli)', () => {
+    it('plays a complete hand end to end, conserving all 52 cards throughout', () => {
+      let state = batakGame.setup({ players: PLAYERS3 }, createRng(7));
+      let guard = 0;
+      while (!batakGame.gameOver(state) && guard < 500) {
+        const currentPlayer = state.players[state.currentPlayerIndex];
+        const moves = batakGame.getLegalMoves(state, currentPlayer);
+        expect(moves.length).toBeGreaterThan(0);
+        state = batakGame.performMove(state, moves[0]);
+        guard++;
+      }
+      expect(batakGame.gameOver(state)).toBe(true);
+      expect(state.phase).toBe('finished');
+
+      const allCardIds = [
+        ...PLAYERS3.flatMap((p) => state.table.zones[`hand-${p}`].cards.map((c) => c.id)),
+        ...state.table.zones['trick'].cards.map((c) => c.id),
+        ...PLAYERS3.flatMap((p) => state.table.zones[`won-${p}`].cards.map((c) => c.id)),
+        ...state.table.zones['buried'].cards.map((c) => c.id),
+      ];
+      expect(new Set(allCardIds).size).toBe(52);
+      expect(state.table.zones['buried'].cards).toHaveLength(4);
+
+      const totalTricks = PLAYERS3.reduce((sum, p) => sum + state.tricksWon[p], 0);
+      expect(totalTricks).toBe(16);
+
+      expect(batakGame.determineWinner(state)).not.toBeNull();
+    });
+  });
+
   describe('validateMove', () => {
     it('rejects a move from any player other than the current one', () => {
       const state = batakGame.setup(setupOptions, createRng(1));
