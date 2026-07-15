@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Slider from '@react-native-community/slider';
 import type { Card } from '@world-cards/engine';
 import type { CardGroup } from '../types';
@@ -24,8 +24,91 @@ const GROUP_PREVIEW_CARD: Record<CardGroup, Card> = {
   ace: { id: 'preview-ace', suit: 'clubs', rank: 'A' },
 };
 
+// The slider's own layout height before the scaleY transform. The wrapper box reserves
+// SLIDER_BASE_HEIGHT * SLIDER_SCALE_Y of layout height so the visually-scaled slider
+// neither overlaps its neighbors nor gets clipped.
+const SLIDER_BASE_HEIGHT = 22;
+const SLIDER_SCALE_Y = 4;
+
+function formatSliderValue(value: number): string {
+  // Trims float noise (e.g. 1.1500000000000001 -> "1.15") without forcing decimals on integers.
+  return String(Number(value.toFixed(2)));
+}
+
+interface SliderWithInputProps {
+  label: string;
+  testID: string;
+  minimumValue: number;
+  maximumValue: number;
+  step: number;
+  value: number;
+  onChange: (value: number) => void;
+}
+
+// Shared slider + numeric-input control: the input mirrors the slider's value and accepts a
+// typed exact value on blur/submit (out-of-range input is clamped to the slider's range,
+// non-numeric input reverts to the last valid value — same rejection shape as
+// ColorPicker.handleHexSubmit). The slider is wrapped in a scaleY transform to render ~4x
+// thicker (track/thumb only; RN transforms don't affect layout, hence the sized wrapper box).
+function SliderWithInput({ label, testID, minimumValue, maximumValue, step, value, onChange }: SliderWithInputProps) {
+  const [text, setText] = useState(formatSliderValue(value));
+
+  // Keep the text input in sync when the value changes from outside (slider drag,
+  // preset apply, group switch, reset) — same pattern as ColorPicker's hex input.
+  useEffect(() => {
+    setText(formatSliderValue(value));
+  }, [value]);
+
+  function handleSubmit() {
+    const parsed = Number(text);
+    if (text.trim() === '' || !Number.isFinite(parsed)) {
+      setText(formatSliderValue(value));
+      return;
+    }
+    const clamped = Math.min(maximumValue, Math.max(minimumValue, parsed));
+    // Snap to the slider's own step grid so typed values land on the same values the
+    // slider itself can produce (and re-clamp in case snapping pushed past the max).
+    const snapped = Number((Math.round((clamped - minimumValue) / step) * step + minimumValue).toFixed(2));
+    const next = Math.min(maximumValue, Math.max(minimumValue, snapped));
+    onChange(next);
+    setText(formatSliderValue(next));
+  }
+
+  return (
+    <View>
+      <Text style={styles.controlLabel}>{label}</Text>
+      <View style={styles.sliderRow}>
+        <View style={styles.sliderScaleBox}>
+          <View style={styles.sliderScaler}>
+            <Slider
+              testID={testID}
+              minimumValue={minimumValue}
+              maximumValue={maximumValue}
+              step={step}
+              value={value}
+              onValueChange={onChange}
+              style={styles.slider}
+            />
+          </View>
+        </View>
+        <TextInput
+          testID={`${testID}-input`}
+          value={text}
+          onChangeText={setText}
+          onSubmitEditing={handleSubmit}
+          onBlur={handleSubmit}
+          keyboardType="numeric"
+          autoCapitalize="none"
+          style={styles.sliderValueInput}
+        />
+      </View>
+    </View>
+  );
+}
+
 export function CardTemplateEditor() {
   const [selectedGroup, setSelectedGroup] = useState<CardGroup>('number');
+  const [presetName, setPresetName] = useState('');
   const template = usePlaygroundStore((state) => state.templates[selectedGroup]);
   const setBorderRadius = usePlaygroundStore((state) => state.setBorderRadius);
   const setBorderWidth = usePlaygroundStore((state) => state.setBorderWidth);
@@ -36,6 +119,10 @@ export function CardTemplateEditor() {
   const updateCardImage = usePlaygroundStore((state) => state.updateCardImage);
   const clearCardImage = usePlaygroundStore((state) => state.clearCardImage);
   const resetCardTemplate = usePlaygroundStore((state) => state.resetCardTemplate);
+  const borderPresets = usePlaygroundStore((state) => state.borderPresets);
+  const saveBorderPreset = usePlaygroundStore((state) => state.saveBorderPreset);
+  const applyBorderPreset = usePlaygroundStore((state) => state.applyBorderPreset);
+  const deleteBorderPreset = usePlaygroundStore((state) => state.deleteBorderPreset);
 
   async function handleAddImage() {
     const picked = await pickCardImage();
@@ -44,9 +131,25 @@ export function CardTemplateEditor() {
     }
   }
 
+  function cycleGroup(delta: number) {
+    const index = GROUP_ORDER.indexOf(selectedGroup);
+    const next = (index + delta + GROUP_ORDER.length) % GROUP_ORDER.length;
+    setSelectedGroup(GROUP_ORDER[next]);
+  }
+
+  function handleSavePreset() {
+    const name = presetName.trim();
+    if (name.length === 0) return;
+    saveBorderPreset(selectedGroup, name);
+    setPresetName('');
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.groupRow}>
+        <Pressable testID="group-nav-prev" onPress={() => cycleGroup(-1)} style={styles.groupNavButton}>
+          <Text style={styles.groupNavLabel}>‹</Text>
+        </Pressable>
         {GROUP_ORDER.map((group) => (
           <Pressable
             key={group}
@@ -57,20 +160,23 @@ export function CardTemplateEditor() {
             <Text style={styles.groupTabLabel}>{GROUP_LABELS[group]}</Text>
           </Pressable>
         ))}
+        <Pressable testID="group-nav-next" onPress={() => cycleGroup(1)} style={styles.groupNavButton}>
+          <Text style={styles.groupNavLabel}>›</Text>
+        </Pressable>
       </View>
 
       <View style={styles.editorBody}>
         <PlayingCard card={GROUP_PREVIEW_CARD[selectedGroup]} size="normal" {...toPlayingCardOverrides(template)} />
 
         <View style={styles.controls}>
-          <Text style={styles.controlLabel}>Border radius: {template.borderRadius}</Text>
-          <Slider
+          <SliderWithInput
+            label="Border radius"
             testID="border-radius-slider"
             minimumValue={0}
             maximumValue={40}
             step={1}
             value={template.borderRadius}
-            onValueChange={(value) => setBorderRadius(selectedGroup, value)}
+            onChange={(value) => setBorderRadius(selectedGroup, value)}
           />
 
           {template.borders.map((border, index) => (
@@ -87,14 +193,14 @@ export function CardTemplateEditor() {
                   </Pressable>
                 )}
               </View>
-              <Text style={styles.controlLabel}>Size: {border.width}</Text>
-              <Slider
+              <SliderWithInput
+                label="Size"
                 testID={`border-width-slider-${index}`}
                 minimumValue={1}
                 maximumValue={12}
                 step={1}
                 value={border.width}
-                onValueChange={(value) => setBorderWidth(selectedGroup, index, value)}
+                onChange={(value) => setBorderWidth(selectedGroup, index, value)}
               />
               <ColorPicker
                 label="Color"
@@ -110,38 +216,75 @@ export function CardTemplateEditor() {
             </Pressable>
           )}
 
+          <View style={styles.presetSection}>
+            <Text style={styles.presetSectionTitle}>Border presets</Text>
+            {borderPresets.map((preset) => (
+              <View key={preset.id} style={styles.presetRow}>
+                <Pressable
+                  testID={`apply-border-preset-${preset.id}`}
+                  onPress={() => applyBorderPreset(selectedGroup, preset.id)}
+                  style={styles.presetApplyButton}
+                >
+                  <Text style={styles.presetName}>{preset.name}</Text>
+                </Pressable>
+                {preset.builtIn !== true && (
+                  <Pressable
+                    testID={`delete-border-preset-${preset.id}`}
+                    onPress={() => deleteBorderPreset(preset.id)}
+                    style={styles.presetDeleteButton}
+                  >
+                    <Text style={styles.presetDeleteLabel}>×</Text>
+                  </Pressable>
+                )}
+              </View>
+            ))}
+            <View style={styles.presetSaveRow}>
+              <TextInput
+                testID="preset-name-input"
+                value={presetName}
+                onChangeText={setPresetName}
+                placeholder="Preset name"
+                placeholderTextColor="#999999"
+                style={styles.presetNameInput}
+              />
+              <Pressable testID="save-border-preset-button" onPress={handleSavePreset} style={styles.presetSaveButton}>
+                <Text style={styles.actionButtonLabel}>Save current as preset</Text>
+              </Pressable>
+            </View>
+          </View>
+
           {template.image == null ? (
             <Pressable testID="add-image-button" onPress={handleAddImage} style={styles.actionButton}>
               <Text style={styles.actionButtonLabel}>Add Image</Text>
             </Pressable>
           ) : (
             <View>
-              <Text style={styles.controlLabel}>Scale: {template.image.scale.toFixed(2)}</Text>
-              <Slider
+              <SliderWithInput
+                label="Scale"
                 testID="image-scale-slider"
                 minimumValue={0.3}
                 maximumValue={2.5}
                 step={0.05}
                 value={template.image.scale}
-                onValueChange={(value) => updateCardImage(selectedGroup, { scale: value })}
+                onChange={(value) => updateCardImage(selectedGroup, { scale: value })}
               />
-              <Text style={styles.controlLabel}>Horizontal offset: {template.image.offsetX}</Text>
-              <Slider
+              <SliderWithInput
+                label="Horizontal offset"
                 testID="image-offset-x-slider"
                 minimumValue={-60}
                 maximumValue={60}
                 step={1}
                 value={template.image.offsetX}
-                onValueChange={(value) => updateCardImage(selectedGroup, { offsetX: value })}
+                onChange={(value) => updateCardImage(selectedGroup, { offsetX: value })}
               />
-              <Text style={styles.controlLabel}>Vertical offset: {template.image.offsetY}</Text>
-              <Slider
+              <SliderWithInput
+                label="Vertical offset"
                 testID="image-offset-y-slider"
                 minimumValue={-60}
                 maximumValue={60}
                 step={1}
                 value={template.image.offsetY}
-                onValueChange={(value) => updateCardImage(selectedGroup, { offsetY: value })}
+                onChange={(value) => updateCardImage(selectedGroup, { offsetY: value })}
               />
               <Pressable
                 testID="remove-image-button"
@@ -168,13 +311,40 @@ export function CardTemplateEditor() {
 
 const styles = StyleSheet.create({
   container: { padding: 16 },
-  groupRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  groupRow: { flexDirection: 'row', gap: 8, marginBottom: 16, alignItems: 'center' },
   groupTab: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8, backgroundColor: '#eeeeee' },
   groupTabActive: { backgroundColor: '#f4c542' },
   groupTabLabel: { fontWeight: 'bold' },
+  groupNavButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#1c2451',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  groupNavLabel: { color: '#ffffff', fontSize: 22, fontWeight: 'bold', lineHeight: 24 },
   editorBody: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
   controls: { flex: 1 },
   controlLabel: { marginTop: 8, marginBottom: 2, color: '#eeeeee' },
+  sliderRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sliderScaleBox: {
+    flex: 1,
+    height: SLIDER_BASE_HEIGHT * SLIDER_SCALE_Y,
+    justifyContent: 'center',
+  },
+  sliderScaler: { transform: [{ scaleY: SLIDER_SCALE_Y }] },
+  slider: { height: SLIDER_BASE_HEIGHT },
+  sliderValueInput: {
+    borderWidth: 1,
+    borderColor: '#cccccc',
+    borderRadius: 4,
+    padding: 6,
+    width: 64,
+    textAlign: 'center',
+    backgroundColor: '#ffffff',
+    color: '#111111',
+  },
   borderLayer: { borderWidth: 1, borderColor: '#ffffff33', borderRadius: 8, padding: 10, marginTop: 8 },
   borderLayerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   removeBorderButton: { backgroundColor: '#c0392b', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 6 },
@@ -182,4 +352,41 @@ const styles = StyleSheet.create({
   actionButton: { backgroundColor: '#1c2451', padding: 10, borderRadius: 6, alignItems: 'center', marginTop: 8 },
   resetButton: { backgroundColor: '#c0392b', padding: 10, borderRadius: 6, alignItems: 'center', marginTop: 16 },
   actionButtonLabel: { color: '#ffffff', fontWeight: 'bold' },
+  presetSection: {
+    borderWidth: 1,
+    borderColor: '#ffffff33',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 12,
+  },
+  presetSectionTitle: { fontWeight: 'bold', color: '#eeeeee', marginBottom: 6 },
+  presetRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  presetApplyButton: {
+    flex: 1,
+    backgroundColor: '#eeeeee',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  presetName: { fontWeight: 'bold', color: '#111111' },
+  presetDeleteButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#c0392b',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  presetDeleteLabel: { color: '#ffffff', fontWeight: 'bold', fontSize: 16, lineHeight: 18 },
+  presetSaveRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  presetNameInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#cccccc',
+    borderRadius: 4,
+    padding: 6,
+    backgroundColor: '#ffffff',
+    color: '#111111',
+  },
+  presetSaveButton: { backgroundColor: '#1c2451', padding: 10, borderRadius: 6, alignItems: 'center' },
 });

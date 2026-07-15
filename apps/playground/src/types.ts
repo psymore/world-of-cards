@@ -48,6 +48,38 @@ export const DEFAULT_TEMPLATES: PlaygroundTemplates = {
   ace: { ...DEFAULT_CARD_TEMPLATE },
 };
 
+export interface BorderPreset {
+  id: string;
+  name: string;
+  borderRadius: number;
+  borders: CardBorder[];
+  // Built-in presets can't be deleted from the UI.
+  builtIn?: boolean;
+}
+
+// The real game's actual border spec, mirrored from @world-cards/ui's PlayingCard defaults
+// (CARD_RADIUS = 6, DEFAULT_BORDERS = 1px #fff + 1px #999). Kept as data here rather than
+// imported because the shared package doesn't export those constants.
+export const CURRENT_GAME_BORDER_PRESET: BorderPreset = {
+  id: 'current-game',
+  name: 'Current Game',
+  borderRadius: 6,
+  borders: [
+    { width: 1, color: '#fff' },
+    { width: 1, color: '#999' },
+  ],
+  builtIn: true,
+};
+
+export function defaultBorderPresets(): BorderPreset[] {
+  return [
+    {
+      ...CURRENT_GAME_BORDER_PRESET,
+      borders: CURRENT_GAME_BORDER_PRESET.borders.map((border) => ({ ...border })),
+    },
+  ];
+}
+
 export const PRESET_COLORS: string[] = [
   '#f4c542',
   '#c0392b',
