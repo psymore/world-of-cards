@@ -7,7 +7,7 @@ import { GameScreenLayout } from '../../components/GameScreenLayout';
 import { GameResultModal } from '../../components/GameResultModal';
 import { PistiSetupView, PistiPlayerCount, PistiFourPlayerMode } from './PistiSetupView';
 import { PistiTable } from './PistiTable';
-import { useAITurn } from './useAITurn';
+import { useAITurn } from '../../hooks/useAITurn';
 import { PARTNER_SEAT_INDEX } from './pistiSeating';
 
 const HUMAN_ID: PlayerId = 'human';
