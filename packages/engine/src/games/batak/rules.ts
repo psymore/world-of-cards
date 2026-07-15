@@ -2,11 +2,31 @@ import { RuleEngine, PlayerId, ScoreBoard } from '../../rules/types';
 import { createDeck, shuffle } from '../../core/deck';
 import { createTable, createZone, dealToZones, moveCard, moveAllCards, TableState } from '../../core/table';
 import { RNG } from '../../core/rng';
-import { Card, Suit } from '../../core/types';
+import { Card, Suit, Rank } from '../../core/types';
 import { BatakState, BatakMove, BatakSetupOptions } from './types';
 import { compareRanks } from './ranking';
 
 const SUITS: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
+const HIGH_RANKS: Rank[] = ['A', 'Q', 'J', '10'];
+const MAX_STRONG_HAND_DEAL_ATTEMPTS = 10_000;
+
+function meetsHonorRequirement(hand: Card[]): boolean {
+  const aces = hand.filter((c) => c.rank === 'A').length;
+  const kings = hand.filter((c) => c.rank === 'K').length;
+  return aces >= 2 || kings >= 3 || (aces >= 1 && kings >= 2);
+}
+
+function meetsSuitConcentrationRequirement(hand: Card[]): boolean {
+  return SUITS.some((suit) => {
+    const cardsInSuit = hand.filter((c) => c.suit === suit);
+    if (cardsInSuit.length >= 5) return true;
+    return HIGH_RANKS.every((rank) => cardsInSuit.some((c) => c.rank === rank));
+  });
+}
+
+function meetsEasyModeHandRequirements(hand: Card[]): boolean {
+  return meetsHonorRequirement(hand) && meetsSuitConcentrationRequirement(hand);
+}
 
 interface RuleConstants {
   handSize: number;
@@ -126,10 +146,20 @@ export function trickWinnerIndex(trick: Card[], trumpSuit: Suit): number {
 export const batakGame: RuleEngine<BatakState, BatakMove> = {
   setup(options: unknown, rng: RNG): BatakState {
     const opts = options as BatakSetupOptions;
-    const { players } = opts;
+    const { players, guaranteeStrongHand } = opts;
     const { handSize, kittySize } = ruleConstants(players.length);
 
-    const deck = shuffle(createDeck({ deckCount: 1, includeJokers: false }), rng);
+    let deck = shuffle(createDeck({ deckCount: 1, includeJokers: false }), rng);
+    if (guaranteeStrongHand) {
+      let attempts = 0;
+      while (
+        !meetsEasyModeHandRequirements(deck.slice(0, handSize)) &&
+        attempts < MAX_STRONG_HAND_DEAL_ATTEMPTS
+      ) {
+        deck = shuffle(deck, rng);
+        attempts++;
+      }
+    }
     const { table } = dealToZones(deck, makeEmptyTable(players), [
       ...players.map((p) => ({ zoneId: `hand-${p}`, count: handSize })),
       ...(kittySize > 0 ? [{ zoneId: 'kitty', count: kittySize }] : []),

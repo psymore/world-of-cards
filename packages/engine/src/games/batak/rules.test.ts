@@ -966,3 +966,59 @@ describe('validateMove during play', () => {
     expect(batakGame.validateMove(state, { type: 'play', cardId: 'h2' }, 'p1')).toBe(false);
   });
 });
+
+describe('setup with guaranteeStrongHand', () => {
+  const HIGH_RANKS: Card['rank'][] = ['A', 'Q', 'J', '10'];
+  const HAND_SUITS: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
+
+  function meetsHonorRequirement(hand: Card[]): boolean {
+    const aces = hand.filter((c) => c.rank === 'A').length;
+    const kings = hand.filter((c) => c.rank === 'K').length;
+    return aces >= 2 || kings >= 3 || (aces >= 1 && kings >= 2);
+  }
+
+  function meetsSuitConcentrationRequirement(hand: Card[]): boolean {
+    return HAND_SUITS.some((suit) => {
+      const cardsInSuit = hand.filter((c) => c.suit === suit);
+      if (cardsInSuit.length >= 5) return true;
+      return HIGH_RANKS.every((rank) => cardsInSuit.some((c) => c.rank === rank));
+    });
+  }
+
+  it('the predicate is non-trivial: some seeds fail it without guaranteeStrongHand', () => {
+    let anyFailed = false;
+    for (let seed = 1; seed <= 50; seed++) {
+      const state = batakGame.setup({ players: PLAYERS }, createRng(seed));
+      const hand = state.table.zones['hand-p1'].cards;
+      if (!(meetsHonorRequirement(hand) && meetsSuitConcentrationRequirement(hand))) {
+        anyFailed = true;
+        break;
+      }
+    }
+    expect(anyFailed).toBe(true);
+  });
+
+  it("guarantees p1's hand satisfies the honor + suit-concentration requirements across many seeds", () => {
+    for (let seed = 1; seed <= 50; seed++) {
+      const state = batakGame.setup({ players: PLAYERS, guaranteeStrongHand: true }, createRng(seed));
+      const hand = state.table.zones['hand-p1'].cards;
+      expect(meetsHonorRequirement(hand)).toBe(true);
+      expect(meetsSuitConcentrationRequirement(hand)).toBe(true);
+    }
+  });
+
+  it('still deals exactly 52 unique cards across all zones with no duplicates or drops', () => {
+    for (let seed = 1; seed <= 50; seed++) {
+      const state = batakGame.setup({ players: PLAYERS, guaranteeStrongHand: true }, createRng(seed));
+      const allDealt = Object.values(state.table.zones).flatMap((z) => z.cards);
+      expect(allDealt).toHaveLength(52);
+      expect(new Set(allDealt.map((c) => c.id)).size).toBe(52);
+    }
+  });
+
+  it('leaves setup() unchanged when guaranteeStrongHand is omitted, for a fixed seed', () => {
+    const withoutFlag = batakGame.setup({ players: PLAYERS }, createRng(7));
+    const withFlagFalse = batakGame.setup({ players: PLAYERS, guaranteeStrongHand: false }, createRng(7));
+    expect(withFlagFalse).toEqual(withoutFlag);
+  });
+});
