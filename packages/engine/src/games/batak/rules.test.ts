@@ -439,6 +439,7 @@ describe('batakGame (rule engine)', () => {
         ...PLAYERS3.flatMap((p) => state.table.zones[`won-${p}`].cards.map((c) => c.id)),
         ...state.table.zones['buried'].cards.map((c) => c.id),
       ];
+      expect(allCardIds).toHaveLength(52);
       expect(new Set(allCardIds).size).toBe(52);
       expect(state.table.zones['buried'].cards).toHaveLength(4);
 
