@@ -8,11 +8,28 @@ import { compareRanks } from './ranking';
 
 const SUITS: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
 
+interface RuleConstants {
+  handSize: number;
+  kittySize: number;
+  bidFloor: number;
+  maxBid: number;
+  forcedContract: number;
+  bustThreshold: number;
+}
+
+function ruleConstants(playerCount: number): RuleConstants {
+  return playerCount === 3
+    ? { handSize: 16, kittySize: 4, bidFloor: 8, maxBid: 16, forcedContract: 7, bustThreshold: 2 }
+    : { handSize: 13, kittySize: 0, bidFloor: 5, maxBid: 13, forcedContract: 4, bustThreshold: 1 };
+}
+
 function makeEmptyTable(players: PlayerId[]): TableState {
+  const { kittySize } = ruleConstants(players.length);
   return createTable([
     ...players.map((p) => createZone(`hand-${p}`, true)),
     createZone('trick', true),
     ...players.map((p) => createZone(`won-${p}`, true)),
+    ...(kittySize > 0 ? [createZone('kitty', false), createZone('buried', false)] : []),
   ]);
 }
 
@@ -79,13 +96,13 @@ export const batakGame: RuleEngine<BatakState, BatakMove> = {
   setup(options: unknown, rng: RNG): BatakState {
     const opts = options as BatakSetupOptions;
     const { players } = opts;
+    const { handSize, kittySize } = ruleConstants(players.length);
 
     const deck = shuffle(createDeck({ deckCount: 1, includeJokers: false }), rng);
-    const { table } = dealToZones(
-      deck,
-      makeEmptyTable(players),
-      players.map((p) => ({ zoneId: `hand-${p}`, count: 13 }))
-    );
+    const { table } = dealToZones(deck, makeEmptyTable(players), [
+      ...players.map((p) => ({ zoneId: `hand-${p}`, count: handSize })),
+      ...(kittySize > 0 ? [{ zoneId: 'kitty', count: kittySize }] : []),
+    ]);
 
     return {
       gameId: 'batak',
@@ -104,6 +121,7 @@ export const batakGame: RuleEngine<BatakState, BatakMove> = {
       currentTrick: [],
       trickLeader: null,
       tricksWon: Object.fromEntries(players.map((p) => [p, 0])),
+      kittyCardIds: null,
     };
   },
 

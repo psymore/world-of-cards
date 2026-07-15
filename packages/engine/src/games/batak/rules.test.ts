@@ -16,6 +16,18 @@ function emptyTable(): TableState {
   ]);
 }
 
+const PLAYERS3 = ['p1', 'p2', 'p3'];
+
+function emptyTable3(): TableState {
+  return createTable([
+    ...PLAYERS3.map((p) => createZone(`hand-${p}`, true)),
+    createZone('trick', true),
+    ...PLAYERS3.map((p) => createZone(`won-${p}`, true)),
+    createZone('kitty', false),
+    createZone('buried', false),
+  ]);
+}
+
 function makeState(overrides: Partial<BatakState> & { table: BatakState['table'] }): BatakState {
   const players = overrides.players ?? PLAYERS;
   return {
@@ -34,6 +46,7 @@ function makeState(overrides: Partial<BatakState> & { table: BatakState['table']
     currentTrick: [],
     trickLeader: null,
     tricksWon: Object.fromEntries(players.map((p) => [p, 0])),
+    kittyCardIds: null,
     ...overrides,
   };
 }
@@ -71,6 +84,41 @@ describe('batakGame (rule engine)', () => {
       expect(state.tricksWon).toEqual({ p1: 0, p2: 0, p3: 0, p4: 0 });
       expect(state.table.zones['trick'].cards).toEqual([]);
       expect(state.table.zones['won-p1'].cards).toEqual([]);
+    });
+  });
+
+  describe('setup — 3-player gömmeli', () => {
+    const setupOptions3: BatakSetupOptions = { players: PLAYERS3 };
+
+    it('deals 16 cards to each of the 3 hands and 4 to the kitty', () => {
+      const state = batakGame.setup(setupOptions3, createRng(1));
+      for (const p of PLAYERS3) {
+        expect(state.table.zones[`hand-${p}`].cards).toHaveLength(16);
+      }
+      expect(state.table.zones['kitty'].cards).toHaveLength(4);
+    });
+
+    it('deals every card exactly once across the 3 hands and the kitty', () => {
+      const state = batakGame.setup(setupOptions3, createRng(1));
+      const allIds = [
+        ...PLAYERS3.flatMap((p) => state.table.zones[`hand-${p}`].cards.map((c) => c.id)),
+        ...state.table.zones['kitty'].cards.map((c) => c.id),
+      ];
+      expect(new Set(allIds).size).toBe(52);
+    });
+
+    it('initializes kittyCardIds to null, phase to bidding, and an empty buried zone', () => {
+      const state = batakGame.setup(setupOptions3, createRng(1));
+      expect(state.kittyCardIds).toBeNull();
+      expect(state.phase).toBe('bidding');
+      expect(state.table.zones['buried'].cards).toEqual([]);
+    });
+
+    it('does not create kitty/buried zones for a 4-player game', () => {
+      const state = batakGame.setup({ players: PLAYERS }, createRng(1));
+      expect(state.table.zones['kitty']).toBeUndefined();
+      expect(state.table.zones['buried']).toBeUndefined();
+      expect(state.kittyCardIds).toBeNull();
     });
   });
 
