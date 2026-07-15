@@ -51,8 +51,7 @@ function useDealSequence(): BatakDealPhase {
       clearTimeout(toCutting);
       clearTimeout(toRevealing);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs once per mount
-  }, []);
+  }, [reducedMotion]);
 
   return dealPhase;
 }
