@@ -73,7 +73,10 @@ export function BatakScreen({ onExitToHome }: BatakScreenProps) {
 
   function startGame(difficulty: Difficulty) {
     const rng = createRng(Date.now());
-    const initialState = batakDescriptor.ruleEngine.setup({ players: [HUMAN_ID, ...AI_IDS] }, rng);
+    const initialState = batakDescriptor.ruleEngine.setup(
+      { players: [HUMAN_ID, ...AI_IDS], guaranteeStrongHand: difficulty === 'easy' },
+      rng
+    );
     const useSessionStore = createGameSessionStore(batakDescriptor.ruleEngine, initialState);
     setSession({ difficulty, rng, useSessionStore });
     setSessionKey((k) => k + 1);
