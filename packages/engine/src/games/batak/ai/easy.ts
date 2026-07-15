@@ -2,7 +2,7 @@ import { AIStrategy } from '../../../ai/types';
 import { pickRandom } from '../../../ai/weightedRandom';
 import { BatakState, BatakMove } from '../types';
 import { compareRanks } from '../ranking';
-import { chooseTrumpSuit, estimateBidDecision } from './handStrength';
+import { chooseTrumpSuit } from './handStrength';
 
 type PlayMove = Extract<BatakMove, { type: 'play' }>;
 
@@ -12,7 +12,7 @@ export const batakEasyAI: AIStrategy<BatakState, BatakMove> = {
     const hand = state.table.zones[`hand-${playerId}`].cards;
 
     if (state.phase === 'bidding') {
-      return estimateBidDecision(hand, state.highestBid);
+      return { type: 'pass' };
     }
 
     if (state.phase === 'trump-selection') {

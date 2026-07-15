@@ -42,13 +42,15 @@ describe('batakEasyAI', () => {
     }
   });
 
-  it('passes on a weak hand regardless of rng, instead of gambling on a random legal bid', () => {
+  it('always passes during bidding, regardless of hand strength or the current highest bid', () => {
+    const strongHand: Card[] = [
+      card('a', 'A', 'spades'),
+      card('b', 'K', 'spades'),
+      card('c', 'Q', 'spades'),
+      card('d', 'J', 'spades'),
+    ];
     const table = createTable([
-      createZone('hand-p1', true, [
-        card('a', '2', 'clubs'),
-        card('b', '3', 'clubs'),
-        card('c', '4', 'diamonds'),
-      ]),
+      createZone('hand-p1', true, strongHand),
       createZone('hand-p2', true, []),
       createZone('hand-p3', true, []),
       createZone('hand-p4', true, []),
@@ -58,36 +60,13 @@ describe('batakEasyAI', () => {
       createZone('won-p3', true),
       createZone('won-p4', true),
     ]);
-    const state = makeState({ table, phase: 'bidding' });
-    for (let seed = 1; seed <= 20; seed++) {
-      const legalMoves = batakGame.getLegalMoves(state, 'p1');
-      const move = batakEasyAI.chooseMove(state, 'p1', legalMoves, createRng(seed));
-      expect(move).toEqual({ type: 'pass' });
-    }
-  });
-
-  it('bids the hand-strength estimate on a strong hand regardless of rng, instead of a random legal amount', () => {
-    const table = createTable([
-      createZone('hand-p1', true, [
-        card('a', 'A', 'spades'),
-        card('b', 'K', 'spades'),
-        card('c', 'Q', 'spades'),
-        card('d', 'J', 'spades'),
-      ]),
-      createZone('hand-p2', true, []),
-      createZone('hand-p3', true, []),
-      createZone('hand-p4', true, []),
-      createZone('trick', true),
-      createZone('won-p1', true),
-      createZone('won-p2', true),
-      createZone('won-p3', true),
-      createZone('won-p4', true),
-    ]);
-    const state = makeState({ table, phase: 'bidding' });
-    for (let seed = 1; seed <= 20; seed++) {
-      const legalMoves = batakGame.getLegalMoves(state, 'p1');
-      const move = batakEasyAI.chooseMove(state, 'p1', legalMoves, createRng(seed));
-      expect(move).toEqual({ type: 'bid', amount: 7 });
+    for (const highestBid of [0, 5, 8, 12]) {
+      const state = makeState({ table, phase: 'bidding', highestBid });
+      for (let seed = 1; seed <= 10; seed++) {
+        const legalMoves = batakGame.getLegalMoves(state, 'p1');
+        const move = batakEasyAI.chooseMove(state, 'p1', legalMoves, createRng(seed));
+        expect(move).toEqual({ type: 'pass' });
+      }
     }
   });
 
