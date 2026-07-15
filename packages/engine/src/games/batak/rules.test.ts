@@ -122,6 +122,49 @@ describe('batakGame (rule engine)', () => {
     });
   });
 
+  describe('bidding constants — 3-player gömmeli', () => {
+    const setupOptions3: BatakSetupOptions = { players: PLAYERS3 };
+
+    it('rejects a first bid below 8 and accepts 8', () => {
+      const state = batakGame.setup(setupOptions3, createRng(1));
+      expect(batakGame.validateMove(state, { type: 'bid', amount: 7 }, 'p1')).toBe(false);
+      expect(batakGame.validateMove(state, { type: 'bid', amount: 8 }, 'p1')).toBe(true);
+    });
+
+    it('rejects a bid above 16', () => {
+      const state = batakGame.setup(setupOptions3, createRng(1));
+      expect(batakGame.validateMove(state, { type: 'bid', amount: 17 }, 'p1')).toBe(false);
+      expect(batakGame.validateMove(state, { type: 'bid', amount: 16 }, 'p1')).toBe(true);
+    });
+
+    it('offers pass plus every bid from 8 to 16 at the start of a 3-player auction', () => {
+      const state = batakGame.setup(setupOptions3, createRng(1));
+      const moves = batakGame.getLegalMoves(state, 'p1');
+      expect(moves).toContainEqual({ type: 'bid', amount: 8 });
+      expect(moves).toContainEqual({ type: 'bid', amount: 16 });
+      expect(moves).not.toContainEqual({ type: 'bid', amount: 7 });
+      expect(moves).toHaveLength(1 + (16 - 8 + 1));
+    });
+
+    it('forces a contract of 7 to player 0 when all 3 players pass', () => {
+      let state = batakGame.setup(setupOptions3, createRng(1));
+      state = batakGame.performMove(state, { type: 'pass' }); // p1
+      state = batakGame.performMove(state, { type: 'pass' }); // p2
+      expect(state.phase).toBe('bidding'); // p3 hasn't acted yet — must get their own turn
+      state = batakGame.performMove(state, { type: 'pass' }); // p3
+      expect(state.phase).toBe('trump-selection');
+      expect(state.bidWinner).toBe('p1');
+      expect(state.contract).toBe(7);
+    });
+
+    it('does not regress the 4-player bid floor/ceiling/forced-contract', () => {
+      const state = batakGame.setup({ players: PLAYERS }, createRng(1));
+      expect(batakGame.validateMove(state, { type: 'bid', amount: 4 }, 'p1')).toBe(false);
+      expect(batakGame.validateMove(state, { type: 'bid', amount: 5 }, 'p1')).toBe(true);
+      expect(batakGame.validateMove(state, { type: 'bid', amount: 14 }, 'p1')).toBe(false);
+    });
+  });
+
   describe('validateMove', () => {
     it('rejects a move from any player other than the current one', () => {
       const state = batakGame.setup(setupOptions, createRng(1));

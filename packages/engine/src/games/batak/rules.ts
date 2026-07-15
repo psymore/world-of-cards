@@ -35,9 +35,10 @@ function makeEmptyTable(players: PlayerId[]): TableState {
 
 function biddingLegalMoves(state: BatakState, playerId: PlayerId): BatakMove[] {
   if (state.bids[playerId] === 'pass') return [];
+  const { bidFloor, maxBid } = ruleConstants(state.players.length);
   const moves: BatakMove[] = [{ type: 'pass' }];
-  const minBid = Math.max(5, state.highestBid + 1);
-  for (let amount = minBid; amount <= 13; amount++) {
+  const minBid = Math.max(bidFloor, state.highestBid + 1);
+  for (let amount = minBid; amount <= maxBid; amount++) {
     moves.push({ type: 'bid', amount });
   }
   return moves;
@@ -130,13 +131,15 @@ export const batakGame: RuleEngine<BatakState, BatakMove> = {
     if (state.players[state.currentPlayerIndex] !== playerId) return false;
 
     switch (move.type) {
-      case 'bid':
+      case 'bid': {
+        const { bidFloor, maxBid } = ruleConstants(state.players.length);
         return (
           state.phase === 'bidding' &&
           state.bids[playerId] !== 'pass' &&
-          move.amount >= Math.max(5, state.highestBid + 1) &&
-          move.amount <= 13
+          move.amount >= Math.max(bidFloor, state.highestBid + 1) &&
+          move.amount <= maxBid
         );
+      }
       case 'pass':
         return state.phase === 'bidding' && state.bids[playerId] !== 'pass';
       case 'selectTrump':
@@ -176,11 +179,12 @@ export const batakGame: RuleEngine<BatakState, BatakMove> = {
       }
 
       if (activePlayers.length === 0) {
+        const { forcedContract } = ruleConstants(state.players.length);
         return {
           ...state,
           bids,
           highestBid,
-          contract: 4,
+          contract: forcedContract,
           bidWinner: state.players[0],
           phase: 'trump-selection',
           currentPlayerIndex: 0,
