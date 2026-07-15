@@ -28,6 +28,20 @@ function emptyTable3(): TableState {
   ]);
 }
 
+function batakTable3(overrides: Partial<Record<string, Card[]>>): TableState {
+  return createTable([
+    ...PLAYERS3.map((p) => createZone(`hand-${p}`, true, overrides[`hand-${p}`] ?? [])),
+    createZone('trick', true, overrides['trick'] ?? []),
+    ...PLAYERS3.map((p) => createZone(`won-${p}`, true, overrides[`won-${p}`] ?? [])),
+    createZone('kitty', false, overrides['kitty'] ?? []),
+    createZone('buried', false, overrides['buried'] ?? []),
+  ]);
+}
+
+function twentyCards(): Card[] {
+  return Array.from({ length: 20 }, (_, i) => card(`c${i}`, '2', i % 2 === 0 ? 'hearts' : 'clubs'));
+}
+
 function makeState(overrides: Partial<BatakState> & { table: BatakState['table'] }): BatakState {
   const players = overrides.players ?? PLAYERS;
   return {
@@ -162,6 +176,97 @@ describe('batakGame (rule engine)', () => {
       expect(batakGame.validateMove(state, { type: 'bid', amount: 4 }, 'p1')).toBe(false);
       expect(batakGame.validateMove(state, { type: 'bid', amount: 5 }, 'p1')).toBe(true);
       expect(batakGame.validateMove(state, { type: 'bid', amount: 14 }, 'p1')).toBe(false);
+    });
+  });
+
+  describe('batakGame performMove — selectTrump into kitty-exchange (3-player)', () => {
+    it("moves the kitty into the bidder's hand, reveals kittyCardIds, and enters kitty-exchange", () => {
+      const kittyCards = [
+        card('k1', '2', 'diamonds'),
+        card('k2', '3', 'diamonds'),
+        card('k3', '4', 'diamonds'),
+        card('k4', '5', 'diamonds'),
+      ];
+      const table = batakTable3({ 'hand-p1': [card('h1', 'A', 'hearts')], kitty: kittyCards });
+      const state = makeState({
+        table,
+        players: PLAYERS3,
+        phase: 'trump-selection',
+        bidWinner: 'p1',
+        contract: 8,
+        currentPlayerIndex: 0,
+      });
+      const next = batakGame.performMove(state, { type: 'selectTrump', suit: 'spades' });
+      expect(next.trumpSuit).toBe('spades');
+      expect(next.phase).toBe('kitty-exchange');
+      expect(next.kittyCardIds).toEqual(['k1', 'k2', 'k3', 'k4']);
+      expect(next.table.zones['kitty'].cards).toEqual([]);
+      expect(next.table.zones['hand-p1'].cards.map((c) => c.id).sort()).toEqual(['h1', 'k1', 'k2', 'k3', 'k4']);
+    });
+
+    it('still goes straight to playing for a 4-player game (no kitty)', () => {
+      const state = {
+        ...batakGame.setup({ players: PLAYERS }, createRng(1)),
+        phase: 'trump-selection' as const,
+        bidWinner: 'p3',
+        contract: 5,
+        currentPlayerIndex: 2,
+      };
+      const next = batakGame.performMove(state, { type: 'selectTrump', suit: 'spades' });
+      expect(next.phase).toBe('playing');
+      expect(next.kittyCardIds).toBeNull();
+    });
+  });
+
+  describe('getLegalMoves — kitty-exchange (3-player)', () => {
+    it('returns bury moves only for the bid winner', () => {
+      const table = batakTable3({ 'hand-p1': twentyCards() });
+      const state = makeState({
+        table,
+        players: PLAYERS3,
+        phase: 'kitty-exchange',
+        bidWinner: 'p1',
+        currentPlayerIndex: 0,
+      });
+      expect(batakGame.getLegalMoves(state, 'p2')).toEqual([]);
+    });
+
+    it('returns exactly C(20,4) = 4845 combinations, each of 4 distinct cards from the hand', () => {
+      const hand = twentyCards();
+      const table = batakTable3({ 'hand-p1': hand });
+      const state = makeState({
+        table,
+        players: PLAYERS3,
+        phase: 'kitty-exchange',
+        bidWinner: 'p1',
+        currentPlayerIndex: 0,
+      });
+      const moves = batakGame.getLegalMoves(state, 'p1');
+      expect(moves).toHaveLength(4845);
+      for (const move of moves) {
+        if (move.type !== 'bury') throw new Error('expected only bury moves');
+        expect(new Set(move.cardIds).size).toBe(4);
+        for (const id of move.cardIds) {
+          expect(hand.some((c) => c.id === id)).toBe(true);
+        }
+      }
+    });
+
+    it('includes a specific known combination and excludes one containing a card not in hand', () => {
+      const hand = twentyCards();
+      const table = batakTable3({ 'hand-p1': hand });
+      const state = makeState({
+        table,
+        players: PLAYERS3,
+        phase: 'kitty-exchange',
+        bidWinner: 'p1',
+        currentPlayerIndex: 0,
+      });
+      const moves = batakGame.getLegalMoves(state, 'p1');
+      expect(moves).toContainEqual({ type: 'bury', cardIds: ['c0', 'c1', 'c2', 'c3'] });
+      expect(
+        moves.some((m) => m.type === 'bury' && m.cardIds.includes('not-in-hand'))
+      ).toBe(false);
     });
   });
 

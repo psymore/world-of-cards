@@ -49,6 +49,29 @@ function trumpSelectionLegalMoves(state: BatakState, playerId: PlayerId): BatakM
   return SUITS.map((suit) => ({ type: 'selectTrump', suit }));
 }
 
+function fourCardCombinations(cards: Card[]): Card[][] {
+  const combos: Card[][] = [];
+  for (let a = 0; a < cards.length; a++) {
+    for (let b = a + 1; b < cards.length; b++) {
+      for (let c = b + 1; c < cards.length; c++) {
+        for (let d = c + 1; d < cards.length; d++) {
+          combos.push([cards[a], cards[b], cards[c], cards[d]]);
+        }
+      }
+    }
+  }
+  return combos;
+}
+
+function kittyExchangeLegalMoves(state: BatakState, playerId: PlayerId): BatakMove[] {
+  if (playerId !== state.bidWinner) return [];
+  const hand = state.table.zones[`hand-${playerId}`].cards;
+  return fourCardCombinations(hand).map((combo) => ({
+    type: 'bury' as const,
+    cardIds: combo.map((c) => c.id) as [string, string, string, string],
+  }));
+}
+
 function nextActivePlayerIndex(state: BatakState, fromIndex: number): number {
   const n = state.players.length;
   for (let step = 1; step <= n; step++) {
@@ -201,6 +224,20 @@ export const batakGame: RuleEngine<BatakState, BatakMove> = {
 
     if (move.type === 'selectTrump') {
       const winner = state.bidWinner!;
+      const { kittySize } = ruleConstants(state.players.length);
+
+      if (kittySize > 0) {
+        const kittyCardIds = state.table.zones['kitty'].cards.map((c) => c.id);
+        const table = moveAllCards(state.table, 'kitty', `hand-${winner}`);
+        return {
+          ...state,
+          table,
+          trumpSuit: move.suit,
+          phase: 'kitty-exchange',
+          kittyCardIds,
+        };
+      }
+
       return {
         ...state,
         trumpSuit: move.suit,
@@ -254,6 +291,8 @@ export const batakGame: RuleEngine<BatakState, BatakMove> = {
         return biddingLegalMoves(state, playerId);
       case 'trump-selection':
         return trumpSelectionLegalMoves(state, playerId);
+      case 'kitty-exchange':
+        return kittyExchangeLegalMoves(state, playerId);
       case 'playing':
         return playingLegalMoves(state, playerId);
       case 'finished':
