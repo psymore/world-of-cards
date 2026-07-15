@@ -7,8 +7,9 @@ import { useSettingsStore } from '../../state/settingsStore';
 import { GameScreenLayout } from '../../components/GameScreenLayout';
 import { GameResultModal } from '../../components/GameResultModal';
 import { useAITurn } from '../../hooks/useAITurn';
+import { useReducedMotion } from '../../components/useReducedMotion';
 import { BatakSetupView } from './BatakSetupView';
-import { BatakTable, PendingBatakPlay } from './BatakTable';
+import { BatakTable, BatakDealPhase, PendingBatakPlay } from './BatakTable';
 
 const HUMAN_ID: PlayerId = 'human';
 const AI_IDS: PlayerId[] = ['ai-1', 'ai-2', 'ai-3'];
@@ -25,6 +26,36 @@ const PLAYER_NAMES: Record<PlayerId, string> = {
 // this pause the UI would show the 4th card appear and the whole trick vanish in the same
 // instant, with no way to see what everyone played.
 const TRICK_COMPLETION_PAUSE_MS = 1100;
+
+const SHUFFLE_MS = 1000;
+const CUT_MS = 700;
+const DEAL_PAUSE_MS = 1200;
+
+// Runs once per ActiveGame mount (i.e. once per hand — a fresh mount happens on every
+// startGame call, both the initial game and every "Play Again", via BatakScreen's
+// key={sessionKey}), so no extra reset logic is needed here: a new hand always gets a fresh
+// deal sequence for free.
+function useDealSequence(): BatakDealPhase {
+  const reducedMotion = useReducedMotion();
+  const [dealPhase, setDealPhase] = useState<BatakDealPhase>(reducedMotion ? 'revealing' : 'shuffling');
+
+  useEffect(() => {
+    if (reducedMotion) {
+      setDealPhase('revealing');
+      return;
+    }
+    setDealPhase('shuffling');
+    const toCutting = setTimeout(() => setDealPhase('cutting'), SHUFFLE_MS);
+    const toRevealing = setTimeout(() => setDealPhase('revealing'), SHUFFLE_MS + CUT_MS + DEAL_PAUSE_MS);
+    return () => {
+      clearTimeout(toCutting);
+      clearTimeout(toRevealing);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs once per mount
+  }, []);
+
+  return dealPhase;
+}
 
 export interface BatakScreenProps {
   onExitToHome: () => void;
@@ -78,6 +109,7 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
   const performMove = useSessionStore((s) => s.performMove);
   const [pendingPlay, setPendingPlay] = useState<PendingBatakPlay | null>(null);
   const pendingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dealPhase = useDealSequence();
 
   const aiStrategy = batakDescriptor.aiStrategies[difficulty];
 
@@ -137,6 +169,7 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
         legalMoves={legalMoves}
         onMove={handleHumanMove}
         pendingPlay={pendingPlay}
+        dealPhase={dealPhase}
       />
       {gameOver && (
         <GameResultModal

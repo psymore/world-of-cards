@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { Card, Suit } from '@world-cards/engine';
 import type { BatakState, BatakMove } from '@world-cards/engine/games/batak';
 import { compareRanks } from '@world-cards/engine/games/batak';
@@ -7,6 +7,8 @@ import { PlayingCard, SuitIcon, TableFelt, TableWoodCorners, glowShadow } from '
 import { SelectableCard } from '../../components/SelectableCard';
 import { useCardSelection } from '../../components/useCardSelection';
 import { PlayerAvatar } from '../../components/PlayerAvatar';
+import { useReducedMotion } from '../../components/useReducedMotion';
+import { DealAnimationOverlay } from './DealAnimationOverlay';
 import {
   assignSeats,
   fanCurveY,
@@ -42,6 +44,8 @@ export interface PendingBatakPlay {
   card: Card;
 }
 
+export type BatakDealPhase = 'shuffling' | 'cutting' | 'revealing';
+
 export interface BatakTableProps {
   state: BatakState;
   humanPlayerId: string;
@@ -53,6 +57,7 @@ export interface BatakTableProps {
   legalMoves: BatakMove[];
   onMove: (move: BatakMove) => void;
   pendingPlay?: PendingBatakPlay | null;
+  dealPhase: BatakDealPhase;
 }
 
 function PlayerBadge({
@@ -296,33 +301,84 @@ function HandRow({
   isHumanInteractive,
   selectedCardId,
   selectCard,
+  playEntrance,
 }: {
   cards: Card[];
   legalCardIds: Set<string>;
   isHumanInteractive: boolean;
   selectedCardId: string | null;
   selectCard: (cardId: string) => void;
+  playEntrance: boolean;
 }) {
   return (
     <View style={styles.handFanRow}>
       {cards.map((card, i) => {
         const interactive = isHumanInteractive && legalCardIds.has(card.id);
         return (
-          <View key={card.id} style={!interactive && styles.disabledCard}>
-            <SelectableCard
-              card={card}
-              size="small"
-              selected={selectedCardId === card.id}
-              disabled={!interactive}
-              onPress={() => selectCard(card.id)}
-              rotateDeg={fanRotationDeg(i, cards.length)}
-              curveOffsetY={fanCurveY(i, cards.length)}
-              marginLeft={i > 0 ? HUMAN_HAND_MARGIN : undefined}
-            />
-          </View>
+          <EntranceCard key={card.id} index={i} playEntrance={playEntrance}>
+            <View style={!interactive && styles.disabledCard}>
+              <SelectableCard
+                card={card}
+                size="small"
+                selected={selectedCardId === card.id}
+                disabled={!interactive}
+                onPress={() => selectCard(card.id)}
+                rotateDeg={fanRotationDeg(i, cards.length)}
+                curveOffsetY={fanCurveY(i, cards.length)}
+                marginLeft={i > 0 ? HUMAN_HAND_MARGIN : undefined}
+              />
+            </View>
+          </EntranceCard>
         );
       })}
     </View>
+  );
+}
+
+// Plays a one-shot fade+scale+rise entrance the first time `playEntrance` becomes true (the
+// moment the deal sequence reaches 'revealing'), then stays static — re-renders after that
+// (card removed by a play, selection state changing) must not replay it, hence the `played` ref.
+function EntranceCard({
+  index,
+  playEntrance,
+  children,
+}: {
+  index: number;
+  playEntrance: boolean;
+  children: React.ReactNode;
+}) {
+  const progress = useRef(new Animated.Value(playEntrance ? 1 : 0)).current;
+  const played = useRef(playEntrance);
+  const reducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (playEntrance && !played.current) {
+      played.current = true;
+      if (reducedMotion) {
+        progress.setValue(1);
+        return;
+      }
+      Animated.timing(progress, {
+        toValue: 1,
+        duration: 350,
+        delay: index * 40,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [playEntrance, index, progress, reducedMotion]);
+
+  return (
+    <Animated.View
+      style={{
+        opacity: progress,
+        transform: [
+          { scale: progress.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) },
+          { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [-40, 0] }) },
+        ],
+      }}
+    >
+      {children}
+    </Animated.View>
   );
 }
 
@@ -334,6 +390,7 @@ export function BatakTable({
   legalMoves,
   onMove,
   pendingPlay,
+  dealPhase,
 }: BatakTableProps) {
   const seats = assignSeats(opponentPlayerIds);
   const isHumanTurn = state.players[state.currentPlayerIndex] === humanPlayerId;
@@ -392,6 +449,7 @@ export function BatakTable({
             isHumanInteractive={isHumanInteractive}
             selectedCardId={selectedCardId}
             selectCard={selectCard}
+            playEntrance={dealPhase === 'revealing'}
           />
           <HandRow
             cards={bottomRow}
@@ -399,6 +457,7 @@ export function BatakTable({
             isHumanInteractive={isHumanInteractive}
             selectedCardId={selectedCardId}
             selectCard={selectCard}
+            playEntrance={dealPhase === 'revealing'}
           />
         </View>
         {state.phase === 'bidding' && isHumanInteractive && <BidControls legalMoves={legalMoves} onMove={onMove} />}
@@ -409,6 +468,7 @@ export function BatakTable({
           isHuman
         />
       </View>
+      {dealPhase !== 'revealing' && <DealAnimationOverlay phase={dealPhase} />}
     </View>
   );
 }
