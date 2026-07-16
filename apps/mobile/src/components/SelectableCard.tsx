@@ -3,6 +3,13 @@ import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { PlayingCard, PlayingCardProps } from '@world-cards/ui';
 import { useReducedMotion } from './useReducedMotion';
 
+export interface SelectableCardHitSlop {
+  top?: number;
+  left?: number;
+  bottom?: number;
+  right?: number;
+}
+
 export interface SelectableCardProps extends PlayingCardProps {
   selected?: boolean;
   disabled?: boolean;
@@ -11,12 +18,19 @@ export interface SelectableCardProps extends PlayingCardProps {
   marginLeft?: number;
   liftDistance?: number;
   curveOffsetY?: number;
+  // Shrinks (negative values) or grows (positive) the Pressable's touchable bounds relative to
+  // its visual size. Used by Batak's overlapping fan to shrink the SELECTED card's hit box: once
+  // lifted and rotated, its axis-aligned touch rectangle is wider than its rotated visual
+  // silhouette and can otherwise catch a tap aimed at a neighbor's clearly-exposed face.
+  hitSlop?: SelectableCardHitSlop;
 }
 
 const DEFAULT_LIFT_DISTANCE = 16;
 const LIFT_ANIM_DURATION_MS = 150;
 // Matches PlayingCard's default CARD_RADIUS, used when the caller doesn't override cardRadius.
 const DEFAULT_CARD_RADIUS = 6;
+// How much a selected card scales up, on top of its lift, to read as moving toward the camera.
+const SELECTED_SCALE = 1.05;
 
 export function SelectableCard({
   selected = false,
@@ -26,6 +40,7 @@ export function SelectableCard({
   marginLeft,
   liftDistance = DEFAULT_LIFT_DISTANCE,
   curveOffsetY = 0,
+  hitSlop,
   ...cardProps
 }: SelectableCardProps) {
   const lift = useRef(new Animated.Value(selected ? -liftDistance : 0)).current;
@@ -48,11 +63,26 @@ export function SelectableCard({
     }
   }, [selected, liftDistance, lift, reducedMotion]);
 
+  // Reuses the same lift driver (no second Animated.Value): fully lifted (-liftDistance) maps to
+  // the max scale, at rest (0) maps to 1 — so the scale-up rides the exact same native-driven
+  // animation as the lift, with the same instant-select/animated-deselect timing.
+  const scale = lift.interpolate({
+    inputRange: [-liftDistance, 0],
+    outputRange: [SELECTED_SCALE, 1],
+  });
+
   return (
     <Animated.View
-      style={{ marginLeft, transform: [{ rotate: `${rotateDeg}deg` }, { translateY: Animated.add(lift, curveOffsetY) }] }}
+      style={{
+        marginLeft,
+        transform: [
+          { rotate: `${rotateDeg}deg` },
+          { translateY: Animated.add(lift, curveOffsetY) },
+          { scale },
+        ],
+      }}
     >
-      <Pressable disabled={disabled} onPress={onPress}>
+      <Pressable disabled={disabled} onPress={onPress} hitSlop={hitSlop}>
         <PlayingCard {...cardProps} highlighted={selected} />
         {disabled && (
           // Dark scrim marking the card as "not currently tappable" while keeping its art fully

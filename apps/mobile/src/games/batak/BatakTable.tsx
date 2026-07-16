@@ -69,6 +69,14 @@ const BATAK_TOP_OVERLAP_PERCENT = 85;
 // Sized to 13 to cover Batak's full starting hand (same ceiling reasoning as seating.ts's
 // MAX_SIDE_STACK_CARDS) — a stable style object per index keeps PlayingCard's React.memo effective.
 const BATAK_MAX_SIDE_STACK_CARDS = 13;
+// Front-stacking for the selected card (Section 5 of the design spec): must beat every other
+// card's zIndex, both in its own row and the other row (see handFanRow's zIndex removal below).
+const SELECTED_CARD_Z_INDEX = 10;
+const UNSELECTED_CARD_Z_INDEX = 1;
+// Shrinks only the currently-selected card's touchable width — see SelectableCard's hitSlop doc
+// comment. Deliberately conservative (not the full ~25px rotation-widened estimate) so the
+// selected card stays comfortably tappable for the second tap that plays it.
+const SELECTED_CARD_HIT_SLOP = { left: -20, right: -20 };
 const BATAK_SIDE_CARD_STYLES: ({ marginTop: number } | undefined)[] =
   Array.from({ length: BATAK_MAX_SIDE_STACK_CARDS }, (_, i) =>
     i > 0
@@ -444,16 +452,15 @@ function HandRow({
             key={card.id}
             index={i}
             playEntrance={playEntrance}
-            // While a card is selected, unselected neighbors take paint/hit priority over it.
-            // In this overlapping fan, the raised card's lower corners jut over the neighboring
-            // cards' territory (rotation widens the negative-marginLeft overlap to ~25px at the
-            // fan's edges), so a tap aimed at the adjacent card could land on the selected card
-            // instead — which reads as a second tap on it and PLAYS it instantly, i.e. the
-            // "selected card sometimes disappears when I tap a different card" bug (confirmed
-            // empirically via elementFromPoint hit-mapping). With neighbors on top, a boundary
-            // tap resolves to the neighbor — a harmless selection switch — while deliberate
-            // second taps on the selected card's exposed face still play it.
-            zIndex={selectedCardId === card.id ? 0 : 1}>
+            // The selected card renders in front of every other card (both its own row and the
+            // other row — see handFanRow's zIndex removal below), matching a real lifted card.
+            // This is safe from the old "stray tap plays the wrong card" bug because
+            // SelectableCard's hitSlop (passed below) shrinks the SELECTED card's touchable
+            // bounds specifically — it's the lifted+rotated card whose axis-aligned hit
+            // rectangle can otherwise extend past its rotated visual silhouette into a
+            // neighbor's clearly-exposed face (confirmed empirically via elementFromPoint
+            // hit-mapping in the prior, now-superseded zIndex-inversion fix).
+            zIndex={selectedCardId === card.id ? SELECTED_CARD_Z_INDEX : UNSELECTED_CARD_Z_INDEX}>
             <SelectableCard
               card={card}
               size="normal"
@@ -463,6 +470,7 @@ function HandRow({
               rotateDeg={fanRotationDeg(i, cards.length, HUMAN_HAND_DEGREES_PER_STEP)}
               curveOffsetY={fanCurveY(i, cards.length, 1, HUMAN_HAND_CURVE_MULTIPLIER)}
               marginLeft={i > 0 ? cardMarginLeft : undefined}
+              hitSlop={selectedCardId === card.id ? SELECTED_CARD_HIT_SLOP : undefined}
             />
           </EntranceCard>
         );
@@ -777,9 +785,8 @@ const styles = StyleSheet.create({
   passButton: { borderColor: "rgba(192, 57, 43, 0.6)" },
   bidButtonText: { fontSize: 15, fontWeight: "700", color: "#f5f0e6" },
   handFan: { alignItems: "center", gap: 6 },
-  // zIndex: 0 makes each row its own stacking context (rows are flex items), so the per-card
-  // zIndex 0/1 dance in HandRow reorders cards only within their row — a selected (zIndex 0)
-  // bottom-row card must not slip behind the top row's cards where its lifted top overlaps them.
-  // Row-over-row order is unchanged: equal zIndex falls back to render order (bottom row last).
-  handFanRow: { flexDirection: "row", justifyContent: "center", zIndex: 0 },
+  // No zIndex here (each row used to be its own stacking context) — removed so a selected
+  // bottom-row card's SELECTED_CARD_Z_INDEX also wins against the top row's cards, satisfying
+  // "in front of every other card," not just its own row.
+  handFanRow: { flexDirection: "row", justifyContent: "center" },
 });
