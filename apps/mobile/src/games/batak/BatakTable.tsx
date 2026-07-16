@@ -29,7 +29,6 @@ import {
   fanRotationDeg,
   overlapMarginPx,
   splitTwoRows,
-  OPPONENT_CARD_OVERLAP,
   HUMAN_HAND_OVERLAP_PERCENT,
 } from "../../table/seating";
 import type { Seat, SeatPosition } from "../../table/seating";
@@ -53,7 +52,12 @@ const HUMAN_HAND_MARGIN = overlapMarginPx(
 // overlapMarginPx is generic "dimension × percent" despite its cardWidth param name — it's already
 // the established way to derive an overlap margin from a percentage (see HUMAN_HAND_MARGIN above).
 const SMALL_CARD_HEIGHT = 78; // matches PlayingCard's 'small' size height
+const SMALL_CARD_WIDTH = 54; // matches PlayingCard's 'small' size width
 const BATAK_SIDE_OVERLAP_PERCENT = 85;
+// AI 2 (top seat)'s fan previously overlapped by a fixed 21px (~39% of a small card), which read
+// as loose/uneven. Reuse the same percentage-overlap approach as the side stacks for a
+// consistently tight fan across every AI seat.
+const BATAK_TOP_OVERLAP_PERCENT = 85;
 // Sized to 13 to cover Batak's full starting hand (same ceiling reasoning as seating.ts's
 // MAX_SIDE_STACK_CARDS) — a stable style object per index keeps PlayingCard's React.memo effective.
 const BATAK_MAX_SIDE_STACK_CARDS = 13;
@@ -199,7 +203,7 @@ function OpponentSeat({
               faceDown
               size="small"
               style={[
-                i > 0 && { marginLeft: -OPPONENT_CARD_OVERLAP },
+                i > 0 && { marginLeft: overlapMarginPx(SMALL_CARD_WIDTH, BATAK_TOP_OVERLAP_PERCENT) },
                 {
                   transform: [
                     { rotate: `${fanRotationDeg(i, arr.length)}deg` },
