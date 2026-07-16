@@ -60,25 +60,6 @@ export function fanCurveY(
   );
 }
 
-export const OPPONENT_CARD_OVERLAP = 21;
-
-// Side seats (left/right, 4-player mode) stack their face-down cards vertically instead of
-// fanning horizontally — a horizontal fan rotated 90° would keep its unrotated (wide) footprint
-// reserved in the layout since RN transforms don't affect sizing, which risks overflowing a
-// phone-width row. A vertical stack sidesteps that entirely.
-export const SIDE_CARD_OVERLAP = 45;
-
-// Precomputed per-index style for the side stack — a stable object reference per index (instead
-// of a fresh `{marginTop: ...}` literal built inline on every render) means PlayingCard's
-// React.memo can actually skip re-rendering unchanged face-down cards. Sized to 13 (not Pişti's
-// original 8) because Batak hands start at 13 cards, not Pişti's capped-at-4 — a shared ceiling
-// has to cover the largest real hand size across every consumer, not just the first one.
-const MAX_SIDE_STACK_CARDS = 13;
-export const SIDE_CARD_STYLES: ({ marginTop: number } | undefined)[] =
-  Array.from({ length: MAX_SIDE_STACK_CARDS }, (_, i) =>
-    i > 0 ? { marginTop: -SIDE_CARD_OVERLAP } : undefined,
-  );
-
 // The human's own hand (Batak, and any future game with a large face-up hand) splits into two
 // rows once it can't read cleanly as one — always rebalanced as the hand shrinks, rather than
 // keeping one row's size fixed, so the fan stays visually centered and full-looking at every
@@ -88,24 +69,16 @@ export function splitTwoRows(count: number): [number, number] {
   return [top, count - top];
 }
 
-// Converts a percentage-based overlap (the natural way to describe "cards overlap by X%") into
-// the negative marginLeft pixel value consumers actually apply, given the specific card width
-// they're rendering at — kept generic here (not hardcoded to one PlayingCard size) since seating.ts
-// has no PlayingCard/RN dependency.
-export function overlapMarginPx(
-  cardWidth: number,
-  overlapPercent: number,
-): number {
-  return -Math.round(cardWidth * (overlapPercent / 100));
-}
-
 // Computes the per-card marginLeft needed so a row of `count` cards (each `cardWidth` wide) spans
 // close to `targetSpan` total width — negative for overlap (a full hand needs more cards than fit
 // at full width), positive for a gap (a near-empty hand where cards alone would undershoot the
 // target span). `count <= 1` needs no margin at all (nothing to space). `maxGap` clamps the
 // positive case so a 1-2 card hand doesn't scatter across the full target span with unnaturally
 // large gaps — once the natural gap would exceed it, extra width is simply left unused around a
-// normally-spaced row instead of stretching further.
+// normally-spaced row instead of stretching further. Originally written for the human hand's
+// width-fill; also reused for opponent hands' auto-fit spacing (both the top seat's horizontal
+// row and the side seats' vertical stack — the "cardWidth"/`marginLeft` naming is a leftover from
+// that first use, the math itself is dimension-agnostic).
 export function fillWidthMarginPx(
   cardWidth: number,
   count: number,
