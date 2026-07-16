@@ -3,7 +3,7 @@
 // "3 opponents at left/top/right, human at bottom" layout (first shared use: Pişti's 4-player
 // free-for-all mode; second: Batak, which is fixed 4-player).
 
-export type SeatPosition = 'top' | 'left' | 'right';
+export type SeatPosition = "top" | "left" | "right";
 
 export interface Seat {
   position: SeatPosition;
@@ -18,12 +18,15 @@ export function assignSeats(opponentPlayerIds: string[]): Seat[] {
   if (opponentPlayerIds.length === 3) {
     const [right, top, left] = opponentPlayerIds;
     return [
-      { position: 'left', playerId: left },
-      { position: 'top', playerId: top },
-      { position: 'right', playerId: right },
+      { position: "left", playerId: left },
+      { position: "top", playerId: top },
+      { position: "right", playerId: right },
     ];
   }
-  return opponentPlayerIds.map((playerId) => ({ position: 'top' as const, playerId }));
+  return opponentPlayerIds.map(playerId => ({
+    position: "top" as const,
+    playerId,
+  }));
 }
 
 const OPPONENT_FAN_DEGREES_PER_STEP = 8;
@@ -50,7 +53,11 @@ export function fanCurveY(
   curveMultiplier: number = OPPONENT_FAN_CURVE,
 ): number {
   if (count <= 1) return 0;
-  return Math.pow(Math.abs(index - (count - 1) / 2), 2) * curveMultiplier * direction;
+  return (
+    Math.pow(Math.abs(index - (count - 1) / 2), 2) *
+    curveMultiplier *
+    direction
+  );
 }
 
 export const OPPONENT_CARD_OVERLAP = 21;
@@ -67,10 +74,10 @@ export const SIDE_CARD_OVERLAP = 45;
 // original 8) because Batak hands start at 13 cards, not Pişti's capped-at-4 — a shared ceiling
 // has to cover the largest real hand size across every consumer, not just the first one.
 const MAX_SIDE_STACK_CARDS = 13;
-export const SIDE_CARD_STYLES: ({ marginTop: number } | undefined)[] = Array.from(
-  { length: MAX_SIDE_STACK_CARDS },
-  (_, i) => (i > 0 ? { marginTop: -SIDE_CARD_OVERLAP } : undefined)
-);
+export const SIDE_CARD_STYLES: ({ marginTop: number } | undefined)[] =
+  Array.from({ length: MAX_SIDE_STACK_CARDS }, (_, i) =>
+    i > 0 ? { marginTop: -SIDE_CARD_OVERLAP } : undefined,
+  );
 
 // The human's own hand (Batak, and any future game with a large face-up hand) splits into two
 // rows once it can't read cleanly as one — always rebalanced as the hand shrinks, rather than
@@ -85,7 +92,10 @@ export function splitTwoRows(count: number): [number, number] {
 // the negative marginLeft pixel value consumers actually apply, given the specific card width
 // they're rendering at — kept generic here (not hardcoded to one PlayingCard size) since seating.ts
 // has no PlayingCard/RN dependency.
-export function overlapMarginPx(cardWidth: number, overlapPercent: number): number {
+export function overlapMarginPx(
+  cardWidth: number,
+  overlapPercent: number,
+): number {
   return -Math.round(cardWidth * (overlapPercent / 100));
 }
 
