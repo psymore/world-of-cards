@@ -10,6 +10,7 @@ import { useAITurn } from '../../hooks/useAITurn';
 import { useReducedMotion } from '../../components/useReducedMotion';
 import { BatakSetupView } from './BatakSetupView';
 import { BatakTable, BatakDealPhase, PendingBatakPlay } from './BatakTable';
+import { BatakSettingsModal } from './BatakSettingsModal';
 
 const HUMAN_ID: PlayerId = 'human';
 const AI_IDS: PlayerId[] = ['ai-1', 'ai-2', 'ai-3'];
@@ -110,6 +111,7 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
   const state = useSessionStore((s) => s.state);
   const performMove = useSessionStore((s) => s.performMove);
   const [pendingPlay, setPendingPlay] = useState<PendingBatakPlay | null>(null);
+  const [settingsVisible, setSettingsVisible] = useState(false);
   const pendingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dealPhase = useDealSequence();
 
@@ -162,7 +164,12 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
   const gameOver = batakDescriptor.ruleEngine.gameOver(state);
 
   return (
-    <GameScreenLayout title="Batak" onExit={onBackHome} backgroundColor="#0b6623" titleColor="#f4c542">
+    <GameScreenLayout
+      title="Batak"
+      onExit={onBackHome}
+      backgroundColor="#0b6623"
+      titleColor="#f4c542"
+      onSettingsPress={() => setSettingsVisible(true)}>
       <BatakTable
         state={state}
         humanPlayerId={HUMAN_ID}
@@ -183,6 +190,7 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
           onBackHome={onBackHome}
         />
       )}
+      <BatakSettingsModal visible={settingsVisible} onClose={() => setSettingsVisible(false)} />
     </GameScreenLayout>
   );
 }

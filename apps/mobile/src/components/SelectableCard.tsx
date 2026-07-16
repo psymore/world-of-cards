@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { PlayingCard, PlayingCardProps } from '@world-cards/ui';
 import { useReducedMotion } from './useReducedMotion';
+import { useSettingsStore } from '../state/settingsStore';
 
 export interface SelectableCardHitSlop {
   top?: number;
@@ -45,6 +46,7 @@ export function SelectableCard({
 }: SelectableCardProps) {
   const lift = useRef(new Animated.Value(selected ? -liftDistance : 0)).current;
   const reducedMotion = useReducedMotion();
+  const dimUnplayableCards = useSettingsStore((s) => s.dimUnplayableCards);
 
   useEffect(() => {
     // Selecting snaps instantly: a fast player taps once to select and immediately taps again to
@@ -84,7 +86,7 @@ export function SelectableCard({
     >
       <Pressable disabled={disabled} onPress={onPress} hitSlop={hitSlop}>
         <PlayingCard {...cardProps} highlighted={selected} />
-        {disabled && (
+        {disabled && dimUnplayableCards && (
           // Dark scrim marking the card as "not currently tappable" while keeping its art fully
           // visible underneath (richer than dimming the whole card via opacity). A plain local
           // View rather than @world-cards/ui's AbsoluteOverlay: the scrim needs the card's
