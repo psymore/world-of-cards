@@ -289,7 +289,10 @@ export function PistiTable({
       <View style={[styles.handArea, isHumanInteractive && styles.activeArea]}>
         <View style={styles.handRow} testID="human-hand">
           {humanHand.map((card) => (
-            <View key={card.id} style={!isHumanInteractive && styles.disabledCard}>
+            // Off-turn "not tappable" styling comes from SelectableCard's own disabled scrim now
+            // (a dark overlay keeping the card art fully visible), replacing the old 0.5-opacity
+            // wrapper — keeping both would double-dim the hand.
+            <View key={card.id}>
               <SelectableCard
                 card={card}
                 selected={selectedCardId === card.id}
@@ -362,5 +365,4 @@ const styles = StyleSheet.create({
   bannerArea: { minHeight: 24, alignItems: 'center', justifyContent: 'center' },
   banner: { fontSize: 16, fontWeight: '700', color: '#ffd966' },
   handRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', gap: 8 },
-  disabledCard: { opacity: 0.5 },
 });

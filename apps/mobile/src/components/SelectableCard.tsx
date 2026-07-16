@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Pressable } from 'react-native';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { PlayingCard, PlayingCardProps } from '@world-cards/ui';
 import { useReducedMotion } from './useReducedMotion';
 
@@ -15,6 +15,8 @@ export interface SelectableCardProps extends PlayingCardProps {
 
 const DEFAULT_LIFT_DISTANCE = 16;
 const LIFT_ANIM_DURATION_MS = 150;
+// Matches PlayingCard's default CARD_RADIUS, used when the caller doesn't override cardRadius.
+const DEFAULT_CARD_RADIUS = 6;
 
 export function SelectableCard({
   selected = false,
@@ -52,7 +54,32 @@ export function SelectableCard({
     >
       <Pressable disabled={disabled} onPress={onPress}>
         <PlayingCard {...cardProps} highlighted={selected} />
+        {disabled && (
+          // Dark scrim marking the card as "not currently tappable" while keeping its art fully
+          // visible underneath (richer than dimming the whole card via opacity). A plain local
+          // View rather than @world-cards/ui's AbsoluteOverlay: the scrim needs the card's
+          // rounded corners on the colored layer itself, which AbsoluteOverlay (a transparent
+          // square fill wrapper) would only add as a second nested view. style.pointerEvents
+          // (not the deprecated prop form) guarantees it never swallows touches, even though the
+          // Pressable above is disabled anyway whenever the scrim shows.
+          <View
+            testID="selectable-card-disabled-scrim"
+            style={[styles.disabledScrim, { borderRadius: cardProps.cardRadius ?? DEFAULT_CARD_RADIUS }]}
+          />
+        )}
       </Pressable>
     </Animated.View>
   );
 }
+
+const styles = StyleSheet.create({
+  disabledScrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    pointerEvents: 'none',
+  },
+});

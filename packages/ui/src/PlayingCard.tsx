@@ -376,32 +376,35 @@ const styles = StyleSheet.create({
   // rank's, visibly drifting off-center relative to them. 'flex-start' anchors every child
   // (rank text and suit icon alike) to the same left edge regardless of that child's own width,
   // so the icon lines up identically under every rank, "10" included, with no fixed-width hack.
+  // Corner offsets are inset from the card edge (rather than hugging it) so the rank/suit index
+  // reads as deliberately placed, not jammed into the corner — keep the mirrored pair's
+  // bottom/right values matched to the unmirrored top/left, since it's a 180°-rotated duplicate.
   cornerNormal: {
     position: "absolute",
-    top: 2,
-    left: 3,
+    top: 4,
+    left: 5,
     alignItems: "flex-start",
     zIndex: 1,
   },
   cornerSmall: {
     position: "absolute",
-    top: 1,
-    left: 1,
+    top: 3,
+    left: 3,
     alignItems: "flex-start",
     zIndex: 1,
   },
   cornerNormalMirrored: {
     position: "absolute",
-    bottom: 2,
-    right: 3,
+    bottom: 4,
+    right: 5,
     alignItems: "flex-start",
     transform: [{ rotate: "180deg" }],
     zIndex: 1,
   },
   cornerSmallMirrored: {
     position: "absolute",
-    bottom: 1,
-    right: 1,
+    bottom: 3,
+    right: 3,
     alignItems: "flex-start",
     transform: [{ rotate: "180deg" }],
     zIndex: 1,

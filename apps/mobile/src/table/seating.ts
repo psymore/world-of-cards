@@ -36,10 +36,12 @@ export function fanRotationDeg(index: number, count: number): number {
 }
 
 // Cards further from the center card droop down slightly, like a fan held from below and
-// spread facing the viewer, rather than sitting on a flat line.
-export function fanCurveY(index: number, count: number): number {
+// spread facing the viewer, rather than sitting on a flat line. Pass direction: -1 to flip the
+// curve (ends rise instead of droop — center card lowest); the default of 1 preserves the
+// original droop for every existing call site.
+export function fanCurveY(index: number, count: number, direction: 1 | -1 = 1): number {
   if (count <= 1) return 0;
-  return Math.pow(Math.abs(index - (count - 1) / 2), 2) * OPPONENT_FAN_CURVE;
+  return Math.pow(Math.abs(index - (count - 1) / 2), 2) * OPPONENT_FAN_CURVE * direction;
 }
 
 export const OPPONENT_CARD_OVERLAP = 21;
@@ -78,4 +80,8 @@ export function overlapMarginPx(cardWidth: number, overlapPercent: number): numb
   return -Math.round(cardWidth * (overlapPercent / 100));
 }
 
-export const HUMAN_HAND_OVERLAP_PERCENT = 16;
+// Calibrated for the 84px-wide 'normal' PlayingCard size the human hand renders at: a full
+// 13-card hand's 7-card top row lays out at 84 + 6 × (84 − round(84 × 0.45)) = 360px, fitting a
+// ~390px phone viewport with side margin. (The original 16% was tuned for the 54px 'small' size,
+// whose 7-card row was ~324px — at 16%, normal-size cards would lay out ~510px wide and overflow.)
+export const HUMAN_HAND_OVERLAP_PERCENT = 45;
