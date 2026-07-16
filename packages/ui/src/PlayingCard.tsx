@@ -48,6 +48,12 @@ export interface PlayingCardProps {
 const RED_SUITS: Suit[] = ["hearts", "diamonds"];
 const SUIT_COLOR = { red: "#c0392b", black: "#111" };
 const CORNER_ICON_SIZE = { normal: 18, small: 12 };
+// Fixed width (not shrink-wrap) so every rank's corner index shares one consistent center axis:
+// the suit icon centers under "10" (the widest rank) exactly as it does under any single-character
+// rank, and — since the box width no longer depends on that card's own rank text — the icon's
+// absolute offset from the corner is identical across every rank too. Tuned by eye against the
+// PTSerif-Bold rank glyphs at each size; confirmed via screenshot, not computed from font metrics.
+const CORNER_INDEX_WIDTH = { normal: 28, small: 19 };
 const WATERMARK_ICON_SIZE = { normal: 50, small: 31 };
 const CARD_DIMS = {
   normal: { width: 84, height: 120 },
@@ -370,12 +376,11 @@ const styles = StyleSheet.create({
   // is added after these in the tree and would otherwise paint over the corner index on native
   // platforms, which stack by array order regardless of position — unlike the browser, where
   // position: absolute already happens to paint on top.
-  // alignItems: 'flex-start' (not 'center') is load-bearing, not just "hug the corner": this
-  // container shrink-wraps to its widest child, and "10" is the only two-character rank — with
-  // 'center', the suit icon below it would get centered under a wider box than every other
-  // rank's, visibly drifting off-center relative to them. 'flex-start' anchors every child
-  // (rank text and suit icon alike) to the same left edge regardless of that child's own width,
-  // so the icon lines up identically under every rank, "10" included, with no fixed-width hack.
+  // width: CORNER_INDEX_WIDTH + alignItems: 'center' (not shrink-wrap + 'flex-start') is what
+  // makes the index optically centered: every rank's text and its suit icon center within the
+  // same fixed box, so a card's own rank always shares a center axis with its own glyph (fixing
+  // "10" drifting from its suit icon), and that box is the same width for every rank, so the
+  // glyph's absolute offset from the corner no longer varies card-to-card either.
   // Corner offsets are inset from the card edge (rather than hugging it) so the rank/suit index
   // reads as deliberately placed, not jammed into the corner — keep the mirrored pair's
   // bottom/right values matched to the unmirrored top/left, since it's a 180°-rotated duplicate.
@@ -383,21 +388,27 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 4,
     left: 5,
-    alignItems: "flex-start",
+    width: CORNER_INDEX_WIDTH.normal,
+    alignItems: "center",
+    gap: 2,
     zIndex: 1,
   },
   cornerSmall: {
     position: "absolute",
     top: 3,
     left: 3,
-    alignItems: "flex-start",
+    width: CORNER_INDEX_WIDTH.small,
+    alignItems: "center",
+    gap: 1,
     zIndex: 1,
   },
   cornerNormalMirrored: {
     position: "absolute",
     bottom: 4,
     right: 5,
-    alignItems: "flex-start",
+    width: CORNER_INDEX_WIDTH.normal,
+    alignItems: "center",
+    gap: 2,
     transform: [{ rotate: "180deg" }],
     zIndex: 1,
   },
@@ -405,7 +416,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 3,
     right: 3,
-    alignItems: "flex-start",
+    width: CORNER_INDEX_WIDTH.small,
+    alignItems: "center",
+    gap: 1,
     transform: [{ rotate: "180deg" }],
     zIndex: 1,
   },
