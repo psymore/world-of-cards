@@ -1,12 +1,14 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
+import type { LayoutChangeEvent } from "react-native";
 import type { Card, Suit } from "@world-cards/engine";
 import type { BatakState, BatakMove } from "@world-cards/engine/games/batak";
 import { compareRanks } from "@world-cards/engine/games/batak";
@@ -29,7 +31,7 @@ import {
   fanRotationDeg,
   overlapMarginPx,
   splitTwoRows,
-  HUMAN_HAND_OVERLAP_PERCENT,
+  fillWidthMarginPx,
 } from "../../table/seating";
 import type { Seat, SeatPosition } from "../../table/seating";
 
@@ -40,10 +42,16 @@ function suitColor(suit: Suit): string {
 }
 
 const HUMAN_CARD_WIDTH = 84; // matches PlayingCard's 'normal' size width
-const HUMAN_HAND_MARGIN = overlapMarginPx(
-  HUMAN_CARD_WIDTH,
-  HUMAN_HAND_OVERLAP_PERCENT,
-);
+// A flatter arc than the opponents' default fan (half the rotation-per-card and curve
+// multiplier) — first-pass values, tune during the manual visual verification pass if needed.
+const HUMAN_HAND_DEGREES_PER_STEP = 4;
+const HUMAN_HAND_CURVE_MULTIPLIER = 1.5;
+// Reserve a 15% gutter on each side (i.e. cards span the middle 70% of the hand area's real
+// width) instead of a fixed-percent overlap that doesn't adapt to device width.
+const HUMAN_HAND_SPREAD_FRACTION = 0.7;
+// Caps the per-card gap once a near-empty hand (1-2 cards left) would otherwise need to stretch
+// across the full target span with unnaturally large gaps.
+const HUMAN_HAND_MAX_GAP = 24;
 
 // Batak-local override of seating.ts's shared SIDE_CARD_STYLES: with 13-card starting hands, the
 // shared 45px flat overlap (~58% of a small card) makes each side stack ~474px tall — taller than
@@ -417,6 +425,7 @@ function HandRow({
   selectedCardId,
   selectCard,
   playEntrance,
+  cardMarginLeft,
 }: {
   cards: Card[];
   legalCardIds: Set<string>;
@@ -424,6 +433,7 @@ function HandRow({
   selectedCardId: string | null;
   selectCard: (cardId: string) => void;
   playEntrance: boolean;
+  cardMarginLeft: number | undefined;
 }) {
   return (
     <View style={styles.handFanRow}>
@@ -450,9 +460,9 @@ function HandRow({
               selected={selectedCardId === card.id}
               disabled={!interactive}
               onPress={() => selectCard(card.id)}
-              rotateDeg={fanRotationDeg(i, cards.length)}
-              curveOffsetY={fanCurveY(i, cards.length)}
-              marginLeft={i > 0 ? HUMAN_HAND_MARGIN : undefined}
+              rotateDeg={fanRotationDeg(i, cards.length, HUMAN_HAND_DEGREES_PER_STEP)}
+              curveOffsetY={fanCurveY(i, cards.length, 1, HUMAN_HAND_CURVE_MULTIPLIER)}
+              marginLeft={i > 0 ? cardMarginLeft : undefined}
             />
           </EntranceCard>
         );
@@ -568,6 +578,15 @@ export function BatakTable({
       .map(m => m.cardId),
   );
 
+  const { width: windowWidth } = useWindowDimensions();
+  const [handAreaWidth, setHandAreaWidth] = useState(windowWidth);
+  function handleHandAreaLayout(event: LayoutChangeEvent) {
+    setHandAreaWidth(event.nativeEvent.layout.width);
+  }
+  const handSpanTarget = handAreaWidth * HUMAN_HAND_SPREAD_FRACTION;
+  const topRowMargin = fillWidthMarginPx(HUMAN_CARD_WIDTH, topRow.length, handSpanTarget, HUMAN_HAND_MAX_GAP);
+  const bottomRowMargin = fillWidthMarginPx(HUMAN_CARD_WIDTH, bottomRow.length, handSpanTarget, HUMAN_HAND_MAX_GAP);
+
   return (
     <View style={styles.container}>
       <TableFelt />
@@ -620,7 +639,9 @@ export function BatakTable({
         />
       </View>
 
-      <View style={[styles.handArea, isHumanInteractive && styles.activeArea]}>
+      <View
+        style={[styles.handArea, isHumanInteractive && styles.activeArea]}
+        onLayout={handleHandAreaLayout}>
         <PlayerBadge
           name={playerNames[humanPlayerId] ?? "You"}
           statusText={statusTextFor(state, humanPlayerId)}
@@ -638,6 +659,7 @@ export function BatakTable({
             selectedCardId={selectedCardId}
             selectCard={selectCard}
             playEntrance={dealPhase === "revealing"}
+            cardMarginLeft={topRowMargin}
           />
           <HandRow
             cards={bottomRow}
@@ -646,6 +668,7 @@ export function BatakTable({
             selectedCardId={selectedCardId}
             selectCard={selectCard}
             playEntrance={dealPhase === "revealing"}
+            cardMarginLeft={bottomRowMargin}
           />
         </View>
       </View>

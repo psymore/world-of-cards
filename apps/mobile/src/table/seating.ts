@@ -29,19 +29,28 @@ export function assignSeats(opponentPlayerIds: string[]): Seat[] {
 const OPPONENT_FAN_DEGREES_PER_STEP = 8;
 const OPPONENT_FAN_CURVE = 3;
 
-export function fanRotationDeg(index: number, count: number): number {
+export function fanRotationDeg(
+  index: number,
+  count: number,
+  degreesPerStep: number = OPPONENT_FAN_DEGREES_PER_STEP,
+): number {
   if (count <= 1) return 0;
   const mid = (count - 1) / 2;
-  return (index - mid) * OPPONENT_FAN_DEGREES_PER_STEP;
+  return (index - mid) * degreesPerStep;
 }
 
 // Cards further from the center card droop down slightly, like a fan held from below and
 // spread facing the viewer, rather than sitting on a flat line. Pass direction: -1 to flip the
 // curve (ends rise instead of droop — center card lowest); the default of 1 preserves the
 // original droop for every existing call site.
-export function fanCurveY(index: number, count: number, direction: 1 | -1 = 1): number {
+export function fanCurveY(
+  index: number,
+  count: number,
+  direction: 1 | -1 = 1,
+  curveMultiplier: number = OPPONENT_FAN_CURVE,
+): number {
   if (count <= 1) return 0;
-  return Math.pow(Math.abs(index - (count - 1) / 2), 2) * OPPONENT_FAN_CURVE * direction;
+  return Math.pow(Math.abs(index - (count - 1) / 2), 2) * curveMultiplier * direction;
 }
 
 export const OPPONENT_CARD_OVERLAP = 21;
@@ -80,8 +89,20 @@ export function overlapMarginPx(cardWidth: number, overlapPercent: number): numb
   return -Math.round(cardWidth * (overlapPercent / 100));
 }
 
-// Calibrated for the 84px-wide 'normal' PlayingCard size the human hand renders at: a full
-// 13-card hand's 7-card top row lays out at 84 + 6 × (84 − round(84 × 0.45)) = 360px, fitting a
-// ~390px phone viewport with side margin. (The original 16% was tuned for the 54px 'small' size,
-// whose 7-card row was ~324px — at 16%, normal-size cards would lay out ~510px wide and overflow.)
-export const HUMAN_HAND_OVERLAP_PERCENT = 45;
+// Computes the per-card marginLeft needed so a row of `count` cards (each `cardWidth` wide) spans
+// close to `targetSpan` total width — negative for overlap (a full hand needs more cards than fit
+// at full width), positive for a gap (a near-empty hand where cards alone would undershoot the
+// target span). `count <= 1` needs no margin at all (nothing to space). `maxGap` clamps the
+// positive case so a 1-2 card hand doesn't scatter across the full target span with unnaturally
+// large gaps — once the natural gap would exceed it, extra width is simply left unused around a
+// normally-spaced row instead of stretching further.
+export function fillWidthMarginPx(
+  cardWidth: number,
+  count: number,
+  targetSpan: number,
+  maxGap: number,
+): number | undefined {
+  if (count <= 1) return undefined;
+  const step = (targetSpan - cardWidth) / (count - 1) - cardWidth;
+  return Math.min(step, maxGap);
+}
