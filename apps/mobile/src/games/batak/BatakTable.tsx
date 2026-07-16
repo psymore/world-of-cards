@@ -596,7 +596,7 @@ export function BatakTable({
   const bottomRowMargin = fillWidthMarginPx(HUMAN_CARD_WIDTH, bottomRow.length, handSpanTarget, HUMAN_HAND_MAX_GAP);
 
   return (
-    <View style={styles.container}>
+    <Pressable style={styles.container} onPress={clearSelection}>
       <TableFelt />
       <TableWoodCorners />
       <TableEdgeRails />
@@ -681,7 +681,7 @@ export function BatakTable({
         </View>
       </View>
       {dealPhase !== "revealing" && <DealAnimationOverlay phase={dealPhase} />}
-    </View>
+    </Pressable>
   );
 }
 
