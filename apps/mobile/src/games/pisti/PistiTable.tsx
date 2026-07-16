@@ -1,5 +1,13 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Animated,
+  Easing,
+  LayoutChangeEvent,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import type { Card } from '@world-cards/engine';
 import type { PistiState } from '@world-cards/engine/games/pisti';
 import { PlayingCard, TableFelt, TableWoodCorners, glowShadow } from '@world-cards/ui';
@@ -9,12 +17,9 @@ import { PlayerAvatar } from '../../components/PlayerAvatar';
 import { useReducedMotion } from '../../components/useReducedMotion';
 import {
   assignSeats,
-  fanCurveY,
-  fanRotationDeg,
-  OPPONENT_CARD_OVERLAP,
+  fillWidthMarginPx,
   resolveRevealOrigin,
   revealOriginOffset,
-  SIDE_CARD_STYLES,
 } from './pistiSeating';
 import type { RevealOrigin, Seat } from './pistiSeating';
 
@@ -45,6 +50,17 @@ const PILE_CARD_OFFSETS = Array.from({ length: MAX_STACKED_PILE_CARDS + 1 }, (_,
   x: i * 6,
   y: i * -4.5,
 }));
+
+const SMALL_CARD_WIDTH = 54; // matches PlayingCard's 'small' size width
+const SMALL_CARD_HEIGHT = 78; // matches PlayingCard's 'small' size height
+// Opponent hands render flat (no rotation/curve). Spacing auto-scales via fillWidthMarginPx: a
+// small hand (Pişti's max-4 opponent cards) spreads into an evenly-gapped row (capped at
+// *_MAX_GAP so it doesn't look sparse); a larger hand compresses into overlap automatically as
+// count grows — one continuous rule instead of two separate "row" vs. "fan" modes.
+const TOP_FAN_WIDTH_FRACTION = 0.85; // fraction of window width the top seat's row may use
+const TOP_FAN_MAX_GAP = 10;
+const SIDE_STACK_HEIGHT_FRACTION = 0.82; // fraction of the measured middle-row height the side stack may use
+const SIDE_FAN_MAX_GAP = 10;
 
 function RevealCard({
   revealCard,
@@ -139,9 +155,13 @@ interface OpponentSeatProps {
   state: PistiState;
   playerNames: Record<string, string>;
   revealCard?: PistiRevealCard | null;
+  // Measured height of the middle row (see PistiTable's onLayout below) — the real available
+  // vertical space for a side seat's card stack, which can't be derived from window height alone
+  // since the side seats live inside a centered (non-stretching) flex row.
+  sideStackHeight: number;
 }
 
-function OpponentSeat({ seat, state, playerNames, revealCard }: OpponentSeatProps) {
+function OpponentSeat({ seat, state, playerNames, revealCard, sideStackHeight }: OpponentSeatProps) {
   const { position, playerId } = seat;
   const isSide = position !== 'top';
   const hand = state.table.zones[`hand-${playerId}`].cards;
@@ -149,6 +169,22 @@ function OpponentSeat({ seat, state, playerNames, revealCard }: OpponentSeatProp
   const count = Math.max(isRevealing ? hand.length - 1 : hand.length, 0);
   const capturedCount = state.table.zones[`captured-${playerId}`].cards.length;
   const isCurrentTurn = state.players[state.currentPlayerIndex] === playerId;
+
+  const { width: windowWidth } = useWindowDimensions();
+  const cardMargin = isSide
+    ? fillWidthMarginPx(SMALL_CARD_HEIGHT, count, sideStackHeight * SIDE_STACK_HEIGHT_FRACTION, SIDE_FAN_MAX_GAP)
+    : fillWidthMarginPx(SMALL_CARD_WIDTH, count, windowWidth * TOP_FAN_WIDTH_FRACTION, TOP_FAN_MAX_GAP);
+  // Precomputed per-index style array (stable reference when count/cardMargin/isSide don't
+  // change) so PlayingCard's React.memo can still skip re-rendering unchanged face-down cards —
+  // the same reasoning as the PILE_CARD_OFFSETS array above, just computed dynamically instead
+  // of statically since the margin now depends on measured layout.
+  const cardStyles = useMemo(
+    () =>
+      Array.from({ length: count }, (_, i) =>
+        i === 0 ? undefined : isSide ? { marginTop: cardMargin } : { marginLeft: cardMargin }
+      ),
+    [count, cardMargin, isSide]
+  );
 
   return (
     <View style={[styles.opponentArea, isSide && styles.opponentAreaSide, isCurrentTurn && styles.activeArea]}>
@@ -160,26 +196,9 @@ function OpponentSeat({ seat, state, playerNames, revealCard }: OpponentSeatProp
         compact={isSide}
       />
       <View style={isSide ? styles.opponentColumn : styles.opponentRow} testID={`opponent-hand-${playerId}`}>
-        {Array.from({ length: count }).map((_, i, arr) =>
-          isSide ? (
-            <PlayingCard key={i} faceDown size="small" style={SIDE_CARD_STYLES[i]} />
-          ) : (
-            <PlayingCard
-              key={i}
-              faceDown
-              size="small"
-              style={[
-                i > 0 && { marginLeft: -OPPONENT_CARD_OVERLAP },
-                {
-                  transform: [
-                    { rotate: `${fanRotationDeg(i, arr.length)}deg` },
-                    { translateY: fanCurveY(i, arr.length) },
-                  ],
-                },
-              ]}
-            />
-          )
-        )}
+        {cardStyles.map((style, i) => (
+          <PlayingCard key={i} faceDown size="small" style={style} />
+        ))}
       </View>
     </View>
   );
@@ -191,19 +210,28 @@ function OpponentSeatGroup({
   state,
   playerNames,
   revealCard,
+  sideStackHeight,
 }: {
   position: Seat['position'];
   seats: Seat[];
   state: PistiState;
   playerNames: Record<string, string>;
   revealCard?: PistiRevealCard | null;
+  sideStackHeight: number;
 }) {
   return (
     <>
       {seats
         .filter((seat) => seat.position === position)
         .map((seat) => (
-          <OpponentSeat key={seat.playerId} seat={seat} state={state} playerNames={playerNames} revealCard={revealCard} />
+          <OpponentSeat
+            key={seat.playerId}
+            seat={seat}
+            state={state}
+            playerNames={playerNames}
+            revealCard={revealCard}
+            sideStackHeight={sideStackHeight}
+          />
         ))}
     </>
   );
@@ -239,14 +267,37 @@ export function PistiTable({
 
   const seats = assignSeats(opponentPlayerIds);
 
+  // Side seats live inside a centered (non-stretching) flex row, so there's no way to derive
+  // their available vertical space from window height alone — measure the row itself. 280 is a
+  // reasonable pre-layout guess (corrected after the first onLayout pass), the same pattern
+  // BatakTable's handAreaWidth already uses for its own width-fill measurement.
+  const [middleRowHeight, setMiddleRowHeight] = useState(280);
+  function handleMiddleRowLayout(event: LayoutChangeEvent) {
+    setMiddleRowHeight(event.nativeEvent.layout.height);
+  }
+
   return (
     <View style={styles.container}>
       <TableFelt />
       <TableWoodCorners />
-      <OpponentSeatGroup position="top" seats={seats} state={state} playerNames={playerNames} revealCard={revealCard} />
+      <OpponentSeatGroup
+        position="top"
+        seats={seats}
+        state={state}
+        playerNames={playerNames}
+        revealCard={revealCard}
+        sideStackHeight={middleRowHeight}
+      />
 
-      <View style={styles.middleRow}>
-        <OpponentSeatGroup position="left" seats={seats} state={state} playerNames={playerNames} revealCard={revealCard} />
+      <View style={styles.middleRow} onLayout={handleMiddleRowLayout}>
+        <OpponentSeatGroup
+          position="left"
+          seats={seats}
+          state={state}
+          playerNames={playerNames}
+          revealCard={revealCard}
+          sideStackHeight={middleRowHeight}
+        />
 
         <View style={styles.pileArea}>
           <View style={styles.pileMat}>
@@ -281,7 +332,14 @@ export function PistiTable({
           </View>
         </View>
 
-        <OpponentSeatGroup position="right" seats={seats} state={state} playerNames={playerNames} revealCard={revealCard} />
+        <OpponentSeatGroup
+          position="right"
+          seats={seats}
+          state={state}
+          playerNames={playerNames}
+          revealCard={revealCard}
+          sideStackHeight={middleRowHeight}
+        />
       </View>
 
       <View style={styles.bannerArea}>{bannerText ? <Text style={styles.banner}>{bannerText}</Text> : null}</View>

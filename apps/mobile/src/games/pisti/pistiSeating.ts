@@ -5,10 +5,7 @@
 
 export {
   assignSeats,
-  fanCurveY,
-  fanRotationDeg,
-  OPPONENT_CARD_OVERLAP,
-  SIDE_CARD_STYLES,
+  fillWidthMarginPx,
 } from '../../table/seating';
 export type { Seat, SeatPosition } from '../../table/seating';
 
