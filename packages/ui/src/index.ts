@@ -5,6 +5,8 @@ export type { SuitIconProps } from './SuitIcon';
 export { TableFelt } from './TableFelt';
 export { TableWoodCorners } from './TableWoodCorners';
 export type { TableWoodCornersProps } from './TableWoodCorners';
+export { TableEdgeRails } from './TableEdgeRails';
+export type { TableEdgeRailsProps } from './TableEdgeRails';
 export { CardBackPattern } from './CardBackPattern';
 export { AbsoluteOverlay } from './AbsoluteOverlay';
 export { glowShadow } from './glowShadow';

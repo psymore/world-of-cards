@@ -15,6 +15,7 @@ import {
   SuitIcon,
   TableFelt,
   TableWoodCorners,
+  TableEdgeRails,
   glowShadow,
 } from "@world-cards/ui";
 import { SelectableCard } from "../../components/SelectableCard";
@@ -567,6 +568,7 @@ export function BatakTable({
     <View style={styles.container}>
       <TableFelt />
       <TableWoodCorners />
+      <TableEdgeRails />
       <OpponentSeatGroup
         position="top"
         seats={seats}

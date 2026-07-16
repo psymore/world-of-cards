@@ -4,7 +4,7 @@ import Svg, { Defs, Line, LinearGradient, Path, Pattern, Stop } from 'react-nati
 import { AbsoluteOverlay } from './AbsoluteOverlay';
 import { shadeColor } from './colorUtils';
 
-const WEDGE_SIZE = 140; // 2.5x the original 56dp
+export const CORNER_WEDGE_SIZE = 140; // 2.5x the original 56dp
 const TRIM_COLOR = '#ffd966';
 const DEFAULT_WOOD_LIGHT = '#5c2a1e';
 const DEFAULT_WOOD_DARK = '#331209';
@@ -25,7 +25,7 @@ interface WedgeGeometry {
   positionStyle: { top?: number; bottom?: number; left?: number; right?: number };
 }
 
-const S = WEDGE_SIZE;
+const S = CORNER_WEDGE_SIZE;
 
 // Each wedge is a quarter-disc pie slice centered on the box's own outer corner (radius S),
 // matching the CSS border-radius corner shape from the brainstormed mockup (see
