@@ -621,6 +621,15 @@ export function BatakTable({
       </View>
 
       <View style={[styles.handArea, isHumanInteractive && styles.activeArea]}>
+        <PlayerBadge
+          name={playerNames[humanPlayerId] ?? "You"}
+          statusText={statusTextFor(state, humanPlayerId)}
+          active={isHumanTurn}
+          isHuman
+        />
+        {state.phase === "bidding" && isHumanInteractive && (
+          <BidControls legalMoves={legalMoves} onMove={onMove} />
+        )}
         <View style={styles.handFan} testID="human-hand">
           <HandRow
             cards={topRow}
@@ -639,15 +648,6 @@ export function BatakTable({
             playEntrance={dealPhase === "revealing"}
           />
         </View>
-        {state.phase === "bidding" && isHumanInteractive && (
-          <BidControls legalMoves={legalMoves} onMove={onMove} />
-        )}
-        <PlayerBadge
-          name={playerNames[humanPlayerId] ?? "You"}
-          statusText={statusTextFor(state, humanPlayerId)}
-          active={isHumanTurn}
-          isHuman
-        />
       </View>
       {dealPhase !== "revealing" && <DealAnimationOverlay phase={dealPhase} />}
     </View>
