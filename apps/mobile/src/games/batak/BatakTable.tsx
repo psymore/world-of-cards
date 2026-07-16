@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Pressable,
@@ -29,7 +29,6 @@ import {
   assignSeats,
   fanCurveY,
   fanRotationDeg,
-  overlapMarginPx,
   splitTwoRows,
   fillWidthMarginPx,
 } from "../../table/seating";
@@ -46,29 +45,24 @@ const HUMAN_CARD_WIDTH = 84; // matches PlayingCard's 'normal' size width
 // multiplier) — first-pass values, tune during the manual visual verification pass if needed.
 const HUMAN_HAND_DEGREES_PER_STEP = 4;
 const HUMAN_HAND_CURVE_MULTIPLIER = 1.5;
-// Reserve a 15% gutter on each side (i.e. cards span the middle 70% of the hand area's real
-// width) instead of a fixed-percent overlap that doesn't adapt to device width.
-const HUMAN_HAND_SPREAD_FRACTION = 0.7;
+// Reserve a small ~4% gutter on each side (i.e. cards span the middle 92% of the hand area's
+// real width) instead of a fixed-percent overlap that doesn't adapt to device width — bumped
+// from 0.7 (15% gutter) to spread much closer to the Alper Games reference.
+const HUMAN_HAND_SPREAD_FRACTION = 0.92;
 // Caps the per-card gap once a near-empty hand (1-2 cards left) would otherwise need to stretch
 // across the full target span with unnaturally large gaps.
 const HUMAN_HAND_MAX_GAP = 24;
 
-// Batak-local override of seating.ts's shared SIDE_CARD_STYLES: with 13-card starting hands, the
-// shared 45px flat overlap (~58% of a small card) makes each side stack ~474px tall — taller than
-// the middle row on a phone screen. A tighter 85% overlap keeps the full stack ~222px. Kept local
-// (rather than changing the shared constant) so Pişti's finalized side-stack look is untouched.
-// overlapMarginPx is generic "dimension × percent" despite its cardWidth param name — it's already
-// the established way to derive an overlap margin from a percentage (see HUMAN_HAND_MARGIN above).
 const SMALL_CARD_HEIGHT = 78; // matches PlayingCard's 'small' size height
 const SMALL_CARD_WIDTH = 54; // matches PlayingCard's 'small' size width
-const BATAK_SIDE_OVERLAP_PERCENT = 85;
-// AI 2 (top seat)'s fan previously overlapped by a fixed 21px (~39% of a small card), which read
-// as loose/uneven. Reuse the same percentage-overlap approach as the side stacks for a
-// consistently tight fan across every AI seat.
-const BATAK_TOP_OVERLAP_PERCENT = 85;
-// Sized to 13 to cover Batak's full starting hand (same ceiling reasoning as seating.ts's
-// MAX_SIDE_STACK_CARDS) — a stable style object per index keeps PlayingCard's React.memo effective.
-const BATAK_MAX_SIDE_STACK_CARDS = 13;
+// Opponent hands render flat (no rotation/curve). Spacing auto-scales via fillWidthMarginPx: a
+// small hand spreads into an evenly-gapped row (capped at *_MAX_GAP so it doesn't look sparse); a
+// larger hand (Batak's 13-card starting hand) compresses into overlap automatically as count
+// grows — one continuous rule instead of two separate "row" vs. "fan" modes.
+const TOP_FAN_WIDTH_FRACTION = 0.85; // fraction of window width the top seat's row may use
+const TOP_FAN_MAX_GAP = 10;
+const SIDE_STACK_HEIGHT_FRACTION = 0.82; // fraction of the measured middle-row height the side stack may use
+const SIDE_FAN_MAX_GAP = 10;
 // Front-stacking for the selected card (Section 5 of the design spec): must beat every other
 // card's zIndex, both in its own row and the other row (see handFanRow's zIndex removal below).
 const SELECTED_CARD_Z_INDEX = 10;
@@ -77,17 +71,6 @@ const UNSELECTED_CARD_Z_INDEX = 1;
 // comment. Deliberately conservative (not the full ~25px rotation-widened estimate) so the
 // selected card stays comfortably tappable for the second tap that plays it.
 const SELECTED_CARD_HIT_SLOP = { left: -20, right: -20 };
-const BATAK_SIDE_CARD_STYLES: ({ marginTop: number } | undefined)[] =
-  Array.from({ length: BATAK_MAX_SIDE_STACK_CARDS }, (_, i) =>
-    i > 0
-      ? {
-          marginTop: overlapMarginPx(
-            SMALL_CARD_HEIGHT,
-            BATAK_SIDE_OVERLAP_PERCENT,
-          ),
-        }
-      : undefined,
-  );
 const HAND_SUIT_ORDER = ["hearts", "spades", "diamonds", "clubs"] as const;
 
 function sortHandForDisplay(cards: Card[]): Card[] {
@@ -169,6 +152,10 @@ interface OpponentSeatProps {
   state: BatakState;
   playerNames: Record<string, string>;
   pendingPlay?: PendingBatakPlay | null;
+  // Measured height of the middle row (see BatakTable's onLayout below) — the real available
+  // vertical space for a side seat's card stack, which can't be derived from window height alone
+  // since the side seats live inside a centered (non-stretching) flex row.
+  sideStackHeight: number;
 }
 
 function OpponentSeat({
@@ -176,6 +163,7 @@ function OpponentSeat({
   state,
   playerNames,
   pendingPlay,
+  sideStackHeight,
 }: OpponentSeatProps) {
   const { position, playerId } = seat;
   const isSide = position !== "top";
@@ -185,13 +173,24 @@ function OpponentSeat({
   const isCurrentTurn =
     state.players[state.currentPlayerIndex] === playerId && pendingPlay == null;
 
+  const { width: windowWidth } = useWindowDimensions();
+  const cardMargin = isSide
+    ? fillWidthMarginPx(SMALL_CARD_HEIGHT, count, sideStackHeight * SIDE_STACK_HEIGHT_FRACTION, SIDE_FAN_MAX_GAP)
+    : fillWidthMarginPx(SMALL_CARD_WIDTH, count, windowWidth * TOP_FAN_WIDTH_FRACTION, TOP_FAN_MAX_GAP);
+  // Precomputed per-index style array (stable reference when count/cardMargin/isSide don't
+  // change) so PlayingCard's React.memo can still skip re-rendering unchanged face-down cards.
+  const cardStyles = useMemo(
+    () =>
+      Array.from({ length: count }, (_, i) =>
+        i === 0 ? undefined : isSide ? { marginTop: cardMargin } : { marginLeft: cardMargin },
+      ),
+    [count, cardMargin, isSide],
+  );
+
   return (
     <View
       style={[
         styles.opponentArea,
-        // The top seat's fan is convex (ends rise, see fanCurveY(..., -1) below) — pad it down so
-        // the raised end cards don't tuck under the navigation header at full 13-card hand size.
-        !isSide && styles.opponentAreaTop,
         isSide && styles.opponentAreaSide,
         isCurrentTurn && styles.activeArea,
       ]}>
@@ -205,33 +204,9 @@ function OpponentSeat({
       <View
         style={isSide ? styles.opponentColumn : styles.opponentRow}
         testID={`opponent-hand-${playerId}`}>
-        {Array.from({ length: count }).map((_, i, arr) =>
-          isSide ? (
-            <PlayingCard
-              key={i}
-              faceDown
-              size="small"
-              style={BATAK_SIDE_CARD_STYLES[i]}
-            />
-          ) : (
-            <PlayingCard
-              key={i}
-              faceDown
-              size="small"
-              style={[
-                i > 0 && { marginLeft: overlapMarginPx(SMALL_CARD_WIDTH, BATAK_TOP_OVERLAP_PERCENT) },
-                {
-                  transform: [
-                    { rotate: `${fanRotationDeg(i, arr.length)}deg` },
-                    // direction -1 flips the top seat's fan convex: end cards rise instead of
-                    // drooping, so the fan arcs away from the side stacks below it.
-                    { translateY: fanCurveY(i, arr.length, -1) },
-                  ],
-                },
-              ]}
-            />
-          ),
-        )}
+        {cardStyles.map((style, i) => (
+          <PlayingCard key={i} faceDown size="small" style={style} />
+        ))}
       </View>
     </View>
   );
@@ -243,12 +218,14 @@ function OpponentSeatGroup({
   state,
   playerNames,
   pendingPlay,
+  sideStackHeight,
 }: {
   position: SeatPosition;
   seats: Seat[];
   state: BatakState;
   playerNames: Record<string, string>;
   pendingPlay?: PendingBatakPlay | null;
+  sideStackHeight: number;
 }) {
   return (
     <>
@@ -261,6 +238,7 @@ function OpponentSeatGroup({
             state={state}
             playerNames={playerNames}
             pendingPlay={pendingPlay}
+            sideStackHeight={sideStackHeight}
           />
         ))}
     </>
@@ -595,6 +573,15 @@ export function BatakTable({
   const topRowMargin = fillWidthMarginPx(HUMAN_CARD_WIDTH, topRow.length, handSpanTarget, HUMAN_HAND_MAX_GAP);
   const bottomRowMargin = fillWidthMarginPx(HUMAN_CARD_WIDTH, bottomRow.length, handSpanTarget, HUMAN_HAND_MAX_GAP);
 
+  // Side seats live inside a centered (non-stretching) flex row, so there's no way to derive
+  // their available vertical space from window height alone — measure the row itself. 280 is a
+  // reasonable pre-layout guess (corrected after the first onLayout pass), same pattern as
+  // handAreaWidth's own default above.
+  const [middleRowHeight, setMiddleRowHeight] = useState(280);
+  function handleMiddleRowLayout(event: LayoutChangeEvent) {
+    setMiddleRowHeight(event.nativeEvent.layout.height);
+  }
+
   return (
     <Pressable style={styles.container} onPress={clearSelection}>
       <TableFelt />
@@ -606,15 +593,17 @@ export function BatakTable({
         state={state}
         playerNames={playerNames}
         pendingPlay={pendingPlay}
+        sideStackHeight={middleRowHeight}
       />
 
-      <View style={styles.middleRow}>
+      <View style={styles.middleRow} onLayout={handleMiddleRowLayout}>
         <OpponentSeatGroup
           position="left"
           seats={seats}
           state={state}
           playerNames={playerNames}
           pendingPlay={pendingPlay}
+          sideStackHeight={middleRowHeight}
         />
 
         {state.phase === "bidding" && (
@@ -644,6 +633,7 @@ export function BatakTable({
           state={state}
           playerNames={playerNames}
           pendingPlay={pendingPlay}
+          sideStackHeight={middleRowHeight}
         />
       </View>
 
@@ -694,7 +684,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 4,
   },
-  opponentAreaTop: { paddingTop: 32 },
   opponentAreaSide: { minHeight: 0, width: 96, paddingVertical: 4 },
   // 300 hugs the playing-phase content at 'normal' card size (two 120px rows + 6px fan gap +
   // 4px area gap + badge ≈ 296); during bidding the BidControls row grows the area past the
