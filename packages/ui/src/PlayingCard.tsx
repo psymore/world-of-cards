@@ -361,9 +361,9 @@ const styles = StyleSheet.create({
   frameInnerRing: { flex: 1 },
   normal: { width: 84, height: 120 },
   small: { width: 54, height: 78 },
+  // Border-free by design: a hard border read as visual noise on top of the lift animation
+  // that already signals "selected" (see SelectableCard) — the glow alone is enough.
   highlighted: {
-    borderColor: "#f4c542",
-    borderWidth: 2,
     ...glowShadow("#f4c542", 6),
   },
   // zIndex is explicit (not left to default child order) because centerArt's court-card Image

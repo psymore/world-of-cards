@@ -495,6 +495,12 @@ function EntranceCard({
 
   return (
     <Animated.View
+      // Android silently drops zIndex-based sibling reordering when it flattens a plain view
+      // into its parent's draw commands — collapsable={false} opts this view out of that
+      // optimization so the zIndex above (which resolves overlapping-fan hit-test priority
+      // between the selected card and its neighbors) actually takes effect on-device, not just
+      // in the web/Playwright verification, which has no such flattening to begin with.
+      collapsable={false}
       style={{
         zIndex,
         opacity: progress,
