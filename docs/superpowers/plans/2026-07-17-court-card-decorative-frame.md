@@ -57,20 +57,22 @@ interface FrameGeometry {
 // PlayingCard's own CARD_DIMS and CORNER_INDEX_WIDTH per size, not linearly rescaled between
 // them — see docs/superpowers/specs/2026-07-17-court-card-decorative-frame-design.md for the
 // full derivation (13% inset from the true card edge for the two closed corners, measured
-// directly from the user's reference photos with a pixel scanner).
+// directly from the user's reference photos with a pixel scanner). Card dimensions here
+// (94x132 / 64x86) match the current PlayingCard.tsx CARD_DIMS post-width-bump — do not use
+// 84x132 / 54x86, an earlier revision's numbers superseded by an unrelated branch.
 const GEOMETRY: Record<PlayingCardSize, FrameGeometry> = {
   normal: {
-    width: 84,
+    width: 94,
     height: 132,
-    topRightBracket: 'M32.5,17.25 L73,17.25 L73,83.5',
-    bottomLeftBracket: 'M11,48.5 L11,114.75 L51.5,114.75',
+    topRightBracket: 'M32.5,17 L82,17 L82,83.5',
+    bottomLeftBracket: 'M12,48.5 L12,115 L61.5,115',
     strokeWidth: 1.5,
   },
   small: {
-    width: 54,
+    width: 64,
     height: 86,
-    topRightBracket: 'M22,11 L47,11 L47,52',
-    bottomLeftBracket: 'M7,34 L7,75 L32,75',
+    topRightBracket: 'M22,11 L56,11 L56,52',
+    bottomLeftBracket: 'M8,34 L8,75 L42,75',
     strokeWidth: 1,
   },
 };

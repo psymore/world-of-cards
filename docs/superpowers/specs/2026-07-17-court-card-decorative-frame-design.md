@@ -36,18 +36,20 @@ Rounded to a single uniform **13% inset** on all four sides for both corners, ra
 
 Both sizes below were checked against the actual corner-index box dimensions already in `PlayingCard.tsx` (`CORNER_INDEX_WIDTH`, corner text/icon sizing) so the open ends clear the box with a small (~2–2.5px) gap, never touching or entering it.
 
-**Normal size (card 84×132):**
+**Card dimensions note:** `PlayingCard.tsx`'s `CARD_DIMS` was widened (94×132 normal / 64×86 small, from 84×132 / 54×86) by an unrelated branch that merged into master after this spec was first drafted. The coordinates below are derived from the current, correct dimensions — verified directly against `packages/ui/src/PlayingCard.tsx` on `master` at the time this plan is executed, not against the original brainstorm session's numbers.
+
+**Normal size (card 94×132):**
 
 ```
-Piece 1 (top-right bracket): M32.5,17.25 L73,17.25 L73,83.5
-Piece 2 (bottom-left bracket): M11,48.5 L11,114.75 L51.5,114.75
+Piece 1 (top-right bracket): M32.5,17 L82,17 L82,83.5
+Piece 2 (bottom-left bracket): M12,48.5 L12,115 L61.5,115
 ```
 
-**Small size (card 54×86):**
+**Small size (card 64×86):**
 
 ```
-Piece 1 (top-right bracket): M22,11 L47,11 L47,52
-Piece 2 (bottom-left bracket): M7,34 L7,75 L32,75
+Piece 1 (top-right bracket): M22,11 L56,11 L56,52
+Piece 2 (bottom-left bracket): M8,34 L8,75 L42,75
 ```
 
 These are reference values for the initial implementation. If they need hand-tuning once rendered on a real card (e.g., the open-end clearance looks too tight/loose at actual mobile render size), adjust in place — the derivation method (13% inset for closed corners, box-edge + small gap for open ends) is what matters, not that these exact numbers are sacred.
