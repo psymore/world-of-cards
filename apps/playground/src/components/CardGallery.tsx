@@ -1,24 +1,16 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { createDeck } from '@world-cards/engine';
 import type { Card, Suit } from '@world-cards/engine';
 import { PlayingCard, TableFelt, TableWoodCorners } from '@world-cards/ui';
 import { usePlaygroundStore } from '../state/playgroundStore';
-import { getCardGroup } from '../utils/cardGroups';
+import { getCardGroup, SUIT_LABELS } from '../utils/cardGroups';
+import { ORDERED_DECK } from '../utils/orderedDeck';
 import { toPlayingCardOverrides } from '../utils/toPlayingCardOverrides';
 
 const SUIT_ORDER: Suit[] = ['spades', 'hearts', 'clubs', 'diamonds'];
-const SUIT_LABELS: Record<Suit, string> = {
-  spades: 'Spades',
-  hearts: 'Hearts',
-  clubs: 'Clubs',
-  diamonds: 'Diamonds',
-};
-
-const DECK: Card[] = createDeck({ deckCount: 1, includeJokers: false });
 
 function cardsBySuit(suit: Suit): Card[] {
-  return DECK.filter((card) => card.suit === suit);
+  return ORDERED_DECK.filter((card) => card.suit === suit);
 }
 
 export function CardGallery() {
@@ -37,7 +29,7 @@ export function CardGallery() {
               <PlayingCard
                 key={card.id}
                 card={card}
-                size="small"
+                size="normal"
                 {...toPlayingCardOverrides(templates[getCardGroup(card.rank)])}
               />
             ))}
