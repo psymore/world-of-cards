@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Easing,
   LayoutChangeEvent,
   StyleSheet,
   Text,
@@ -22,6 +21,7 @@ import {
   revealOriginOffset,
 } from './pistiSeating';
 import type { RevealOrigin, Seat } from './pistiSeating';
+import { CARD_TRAVEL_DURATION_MS, CARD_TRAVEL_EASING } from '../../table/travelAnimation';
 import { DealFlightOverlay } from '../../table/DealFlightOverlay';
 import type { DealFlightSeat } from '../../table/DealFlightOverlay';
 import type { DealPhase } from '../../hooks/useDealSequence';
@@ -88,8 +88,8 @@ function RevealCard({
     anim.setValue(0);
     Animated.timing(anim, {
       toValue: 1,
-      duration: 530,
-      easing: Easing.out(Easing.cubic),
+      duration: CARD_TRAVEL_DURATION_MS,
+      easing: CARD_TRAVEL_EASING,
       useNativeDriver: true,
     }).start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
