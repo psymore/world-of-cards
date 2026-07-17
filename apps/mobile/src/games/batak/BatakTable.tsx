@@ -45,7 +45,7 @@ function suitColor(suit: Suit): string {
   return suit === "hearts" || suit === "diamonds" ? "#c0392b" : "#111";
 }
 
-const HUMAN_CARD_WIDTH = 84; // matches PlayingCard's 'normal' size width
+const HUMAN_CARD_WIDTH = 94; // matches PlayingCard's 'normal' size width
 // A flatter arc than the opponents' default fan (half the rotation-per-card and curve
 // multiplier) — first-pass values, tune during the manual visual verification pass if needed.
 const HUMAN_HAND_DEGREES_PER_STEP = 4;
@@ -58,8 +58,8 @@ const HUMAN_HAND_SPREAD_FRACTION = 0.92;
 // across the full target span with unnaturally large gaps.
 const HUMAN_HAND_MAX_GAP = 24;
 
-const SMALL_CARD_HEIGHT = 78; // matches PlayingCard's 'small' size height
-const SMALL_CARD_WIDTH = 54; // matches PlayingCard's 'small' size width
+const SMALL_CARD_HEIGHT = 86; // matches PlayingCard's 'small' size height
+const SMALL_CARD_WIDTH = 64; // matches PlayingCard's 'small' size width
 // Opponent hands render flat (no rotation/curve). Spacing auto-scales via fillWidthMarginPx: a
 // small hand spreads into an evenly-gapped row (capped at *_MAX_GAP so it doesn't look sparse); a
 // larger hand (Batak's 13-card starting hand) compresses into overlap automatically as count
@@ -834,16 +834,16 @@ const styles = StyleSheet.create({
   },
   // Fixed-size relative box (RN Views are relatively-positioned by default) so the 4 absolutely-
   // positioned trickSlot children can be offset from a shared center point — see
-  // TRICK_SLOT_OFFSETS. Sized generously around the small card's 54x86 footprint plus the loose
+  // TRICK_SLOT_OFFSETS. Sized generously around the small card's 64x86 footprint plus the loose
   // cross-overlap offsets; confirm via screenshot in the final verification pass.
-  trickCross: { width: 150, height: 180, alignSelf: "center" },
+  trickCross: { width: 160, height: 180, alignSelf: "center" },
   trickSlot: {
     position: "absolute",
     left: "50%",
     top: "50%",
-    marginLeft: -27,
+    marginLeft: -32,
     marginTop: -43,
-    width: 54,
+    width: 64,
     height: 86,
     alignItems: "center",
     justifyContent: "center",

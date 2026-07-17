@@ -54,11 +54,11 @@ const CORNER_ICON_SIZE = { normal: 18, small: 12 };
 // PTSerif-Bold rank glyphs at each size; confirmed via screenshot, not computed from font metrics.
 const CORNER_INDEX_WIDTH = { normal: 28, small: 19 };
 const WATERMARK_ICON_SIZE = { normal: 50, small: 31 };
-// +10% height vs. the original 120/78, width unchanged — makes the cards read as slightly
-// taller/more elegant per the 2026-07-17 deal/selection/trick-motion polish spec.
+// +10% height vs. the original 120/78, and widened further per live visual feedback during the
+// 2026-07-17 deal/selection/trick-motion polish pass.
 const CARD_DIMS = {
-  normal: { width: 84, height: 132 },
-  small: { width: 54, height: 86 },
+  normal: { width: 94, height: 132 },
+  small: { width: 64, height: 86 },
 };
 const DEFAULT_BORDERS: PlayingCardBorderSpec[] = [
   { width: 1, color: "#fff" },
@@ -318,8 +318,8 @@ function PlayingCardComponent({
         <Image
           testID="playing-card-back-art"
           source={CARD_BACK_IMAGE}
-          resizeMode="cover"
-          style={StyleSheet.absoluteFill}
+          resizeMode="stretch"
+          style={styles.backArt}
         />
       </CardFrame>
     );
@@ -459,4 +459,19 @@ const styles = StyleSheet.create({
   courtArtImageEnlarged: { width: "81%", height: "81%" },
   red: { color: "#c0392b" },
   overlay: { position: "absolute" },
+  // Explicit width/height (not just StyleSheet.absoluteFill's position:absolute + inset:0) is
+  // required here: for an absolutely-positioned replaced element (an <img>, per the CSS spec)
+  // with auto width/height, browsers size it to its own intrinsic dimensions and only use the
+  // inset offsets for position — not for size — so without this the card back rendered at the
+  // source PNG's full 1254x1254 resolution instead of filling the card, clipping to a tiny sliver
+  // of the image's corner. Confirmed via react-native-web DOM inspection, not just guessed.
+  backArt: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
+  },
 });

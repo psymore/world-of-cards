@@ -55,8 +55,8 @@ const PILE_CARD_OFFSETS = Array.from({ length: MAX_STACKED_PILE_CARDS + 1 }, (_,
   y: i * -4.5,
 }));
 
-const SMALL_CARD_WIDTH = 54; // matches PlayingCard's 'small' size width
-const SMALL_CARD_HEIGHT = 78; // matches PlayingCard's 'small' size height
+const SMALL_CARD_WIDTH = 64; // matches PlayingCard's 'small' size width
+const SMALL_CARD_HEIGHT = 86; // matches PlayingCard's 'small' size height
 // Opponent hands render flat (no rotation/curve). Spacing auto-scales via fillWidthMarginPx: a
 // small hand (Pişti's max-4 opponent cards) spreads into an evenly-gapped row (capped at
 // *_MAX_GAP so it doesn't look sparse); a larger hand compresses into overlap automatically as
