@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Pressable,
@@ -59,16 +59,6 @@ const HUMAN_HAND_SPREAD_FRACTION = 0.92;
 // across the full target span with unnaturally large gaps.
 const HUMAN_HAND_MAX_GAP = 24;
 
-const SMALL_CARD_HEIGHT = 86; // matches PlayingCard's 'small' size height
-const SMALL_CARD_WIDTH = 64; // matches PlayingCard's 'small' size width
-// Opponent hands render flat (no rotation/curve). Spacing auto-scales via fillWidthMarginPx: a
-// small hand spreads into an evenly-gapped row (capped at *_MAX_GAP so it doesn't look sparse); a
-// larger hand (Batak's 13-card starting hand) compresses into overlap automatically as count
-// grows — one continuous rule instead of two separate "row" vs. "fan" modes.
-const TOP_FAN_WIDTH_FRACTION = 0.85; // fraction of window width the top seat's row may use
-const TOP_FAN_MAX_GAP = 10;
-const SIDE_STACK_HEIGHT_FRACTION = 0.82; // fraction of the measured middle-row height the side stack may use
-const SIDE_FAN_MAX_GAP = 10;
 // 2.5x SelectableCard's own default (16px) lift — Batak-only override, see
 // docs/superpowers/specs/2026-07-17-batak-deal-selection-and-trick-motion-polish-design.md
 // section C. Selection no longer forces the card to the front via zIndex (below); this larger
@@ -159,48 +149,16 @@ interface OpponentSeatProps {
   state: BatakState;
   playerNames: Record<string, string>;
   pendingPlay?: PendingBatakPlay | null;
-  // Measured height of the middle row (see BatakTable's onLayout below) — the real available
-  // vertical space for a side seat's card stack, which can't be derived from window height alone
-  // since the side seats live inside a centered (non-stretching) flex row.
-  sideStackHeight: number;
 }
 
-function OpponentSeat({
-  seat,
-  state,
-  playerNames,
-  pendingPlay,
-  sideStackHeight,
-}: OpponentSeatProps) {
+function OpponentSeat({ seat, state, playerNames, pendingPlay }: OpponentSeatProps) {
   const { position, playerId } = seat;
   const isSide = position !== "top";
-  const hand = state.table.zones[`hand-${playerId}`].cards;
-  const isPending = pendingPlay != null && pendingPlay.playerId === playerId;
-  const count = Math.max(isPending ? hand.length - 1 : hand.length, 0);
   const isCurrentTurn =
     state.players[state.currentPlayerIndex] === playerId && pendingPlay == null;
 
-  const { width: windowWidth } = useWindowDimensions();
-  const cardMargin = isSide
-    ? fillWidthMarginPx(SMALL_CARD_HEIGHT, count, sideStackHeight * SIDE_STACK_HEIGHT_FRACTION, SIDE_FAN_MAX_GAP)
-    : fillWidthMarginPx(SMALL_CARD_WIDTH, count, windowWidth * TOP_FAN_WIDTH_FRACTION, TOP_FAN_MAX_GAP);
-  // Precomputed per-index style array (stable reference when count/cardMargin/isSide don't
-  // change) so PlayingCard's React.memo can still skip re-rendering unchanged face-down cards.
-  const cardStyles = useMemo(
-    () =>
-      Array.from({ length: count }, (_, i) =>
-        i === 0 ? undefined : isSide ? { marginTop: cardMargin } : { marginLeft: cardMargin },
-      ),
-    [count, cardMargin, isSide],
-  );
-
   return (
-    <View
-      style={[
-        styles.opponentArea,
-        isSide && styles.opponentAreaSide,
-        isCurrentTurn && styles.activeArea,
-      ]}>
+    <View style={[styles.opponentArea, isSide && styles.opponentAreaSide]}>
       <PlayerBadge
         name={playerNames[playerId] ?? playerId}
         statusText={statusTextFor(state, playerId)}
@@ -208,13 +166,6 @@ function OpponentSeat({
         isHuman={false}
         compact={isSide}
       />
-      <View
-        style={isSide ? styles.opponentColumn : styles.opponentRow}
-        testID={`opponent-hand-${playerId}`}>
-        {cardStyles.map((style, i) => (
-          <PlayingCard key={i} faceDown size="small" style={style} />
-        ))}
-      </View>
     </View>
   );
 }
@@ -225,14 +176,12 @@ function OpponentSeatGroup({
   state,
   playerNames,
   pendingPlay,
-  sideStackHeight,
 }: {
   position: SeatPosition;
   seats: Seat[];
   state: BatakState;
   playerNames: Record<string, string>;
   pendingPlay?: PendingBatakPlay | null;
-  sideStackHeight: number;
 }) {
   return (
     <>
@@ -245,7 +194,6 @@ function OpponentSeatGroup({
             state={state}
             playerNames={playerNames}
             pendingPlay={pendingPlay}
-            sideStackHeight={sideStackHeight}
           />
         ))}
     </>
@@ -653,15 +601,6 @@ export function BatakTable({
   const topRowMargin = fillWidthMarginPx(HUMAN_CARD_WIDTH, topRow.length, handSpanTarget, HUMAN_HAND_MAX_GAP);
   const bottomRowMargin = fillWidthMarginPx(HUMAN_CARD_WIDTH, bottomRow.length, handSpanTarget, HUMAN_HAND_MAX_GAP);
 
-  // Side seats live inside a centered (non-stretching) flex row, so there's no way to derive
-  // their available vertical space from window height alone — measure the row itself. 280 is a
-  // reasonable pre-layout guess (corrected after the first onLayout pass), same pattern as
-  // handAreaWidth's own default above.
-  const [middleRowHeight, setMiddleRowHeight] = useState(280);
-  function handleMiddleRowLayout(event: LayoutChangeEvent) {
-    setMiddleRowHeight(event.nativeEvent.layout.height);
-  }
-
   return (
     <DeselectableSurface style={styles.container} onDeselect={clearSelection}>
       <TableFelt />
@@ -673,17 +612,15 @@ export function BatakTable({
         state={state}
         playerNames={playerNames}
         pendingPlay={pendingPlay}
-        sideStackHeight={middleRowHeight}
       />
 
-      <View style={styles.middleRow} onLayout={handleMiddleRowLayout}>
+      <View style={styles.middleRow}>
         <OpponentSeatGroup
           position="left"
           seats={seats}
           state={state}
           playerNames={playerNames}
           pendingPlay={pendingPlay}
-          sideStackHeight={middleRowHeight}
         />
 
         {state.phase === "bidding" && (
@@ -713,13 +650,10 @@ export function BatakTable({
           state={state}
           playerNames={playerNames}
           pendingPlay={pendingPlay}
-          sideStackHeight={middleRowHeight}
         />
       </View>
 
-      <View
-        style={[styles.handArea, isHumanInteractive && styles.activeArea]}
-        onLayout={handleHandAreaLayout}>
+      <View style={styles.handArea} onLayout={handleHandAreaLayout}>
         <PlayerBadge
           name={playerNames[humanPlayerId] ?? "You"}
           statusText={statusTextFor(state, humanPlayerId)}
@@ -758,7 +692,7 @@ export function BatakTable({
 const styles = StyleSheet.create({
   container: { flex: 1, paddingVertical: 12 },
   opponentArea: {
-    minHeight: 135,
+    minHeight: 56,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 12,
@@ -775,7 +709,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     gap: 4,
   },
-  activeArea: { backgroundColor: "rgba(244, 197, 66, 0.14)" },
   middleRow: {
     flex: 1,
     flexDirection: "row",
@@ -808,8 +741,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   playerLabelCompact: { fontSize: 11 },
-  opponentRow: { flexDirection: "row", justifyContent: "center" },
-  opponentColumn: { flexDirection: "column", alignItems: "center" },
   centerPanel: {
     flex: 1,
     alignItems: "center",
