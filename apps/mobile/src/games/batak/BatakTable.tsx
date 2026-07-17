@@ -63,10 +63,11 @@ const TOP_FAN_WIDTH_FRACTION = 0.85; // fraction of window width the top seat's 
 const TOP_FAN_MAX_GAP = 10;
 const SIDE_STACK_HEIGHT_FRACTION = 0.82; // fraction of the measured middle-row height the side stack may use
 const SIDE_FAN_MAX_GAP = 10;
-// Front-stacking for the selected card (Section 5 of the design spec): must beat every other
-// card's zIndex, both in its own row and the other row (see handFanRow's zIndex removal below).
-const SELECTED_CARD_Z_INDEX = 10;
-const UNSELECTED_CARD_Z_INDEX = 1;
+// 2.5x SelectableCard's own default (16px) lift — Batak-only override, see
+// docs/superpowers/specs/2026-07-17-batak-deal-selection-and-trick-motion-polish-design.md
+// section C. Selection no longer forces the card to the front via zIndex (below); this larger
+// lift is what makes a selected card read as prominent instead.
+const SELECTED_LIFT_DISTANCE = 40;
 // Shrinks only the currently-selected card's touchable width — see SelectableCard's hitSlop doc
 // comment. Deliberately conservative (not the full ~25px rotation-widened estimate) so the
 // selected card stays comfortably tappable for the second tap that plays it.
@@ -426,19 +427,7 @@ function HandRow({
       {cards.map((card, i) => {
         const interactive = isHumanInteractive && legalCardIds.has(card.id);
         return (
-          <EntranceCard
-            key={card.id}
-            index={i}
-            playEntrance={playEntrance}
-            // The selected card renders in front of every other card (both its own row and the
-            // other row — see handFanRow's zIndex removal below), matching a real lifted card.
-            // This is safe from the old "stray tap plays the wrong card" bug because
-            // SelectableCard's hitSlop (passed below) shrinks the SELECTED card's touchable
-            // bounds specifically — it's the lifted+rotated card whose axis-aligned hit
-            // rectangle can otherwise extend past its rotated visual silhouette into a
-            // neighbor's clearly-exposed face (confirmed empirically via elementFromPoint
-            // hit-mapping in the prior, now-superseded zIndex-inversion fix).
-            zIndex={selectedCardId === card.id ? SELECTED_CARD_Z_INDEX : UNSELECTED_CARD_Z_INDEX}>
+          <EntranceCard key={card.id} index={i} playEntrance={playEntrance}>
             <SelectableCard
               card={card}
               size="normal"
@@ -448,6 +437,10 @@ function HandRow({
               rotateDeg={fanRotationDeg(i, cards.length, HUMAN_HAND_DEGREES_PER_STEP)}
               curveOffsetY={fanCurveY(i, cards.length, 1, HUMAN_HAND_CURVE_MULTIPLIER)}
               marginLeft={i > 0 ? cardMarginLeft : undefined}
+              liftDistance={SELECTED_LIFT_DISTANCE}
+              // Kept even without the front-stacking zIndex below: it independently shrinks the
+              // selected card's own touch bounds, which is what actually prevents a stray tap
+              // from landing on it instead of an exposed neighbor — orthogonal to stacking order.
               hitSlop={selectedCardId === card.id ? SELECTED_CARD_HIT_SLOP : undefined}
             />
           </EntranceCard>
@@ -463,15 +456,10 @@ function HandRow({
 function EntranceCard({
   index,
   playEntrance,
-  zIndex,
   children,
 }: {
   index: number;
   playEntrance: boolean;
-  // Stacking order among the row's cards (see HandRow's selected-card comment). Applied here
-  // because this Animated.View is the row's direct flex child — anything deeper sits inside
-  // this card's own stacking context and can't reorder against sibling cards.
-  zIndex?: number;
   children: React.ReactNode;
 }) {
   const progress = useRef(new Animated.Value(playEntrance ? 1 : 0)).current;
@@ -496,14 +484,7 @@ function EntranceCard({
 
   return (
     <Animated.View
-      // Android silently drops zIndex-based sibling reordering when it flattens a plain view
-      // into its parent's draw commands — collapsable={false} opts this view out of that
-      // optimization so the zIndex above (which resolves overlapping-fan hit-test priority
-      // between the selected card and its neighbors) actually takes effect on-device, not just
-      // in the web/Playwright verification, which has no such flattening to begin with.
-      collapsable={false}
       style={{
-        zIndex,
         opacity: progress,
         transform: [
           {
@@ -777,8 +758,8 @@ const styles = StyleSheet.create({
   passButton: { borderColor: "rgba(192, 57, 43, 0.6)" },
   bidButtonText: { fontSize: 15, fontWeight: "700", color: "#f5f0e6" },
   handFan: { alignItems: "center", gap: 6 },
-  // No zIndex here (each row used to be its own stacking context) — removed so a selected
-  // bottom-row card's SELECTED_CARD_Z_INDEX also wins against the top row's cards, satisfying
-  // "in front of every other card," not just its own row.
+  // No zIndex here — natural render order (top row's Views come before bottom row's in the
+  // JSX) already makes a lifted bottom-row card paint over the top row on its own, with no
+  // per-card override needed.
   handFanRow: { flexDirection: "row", justifyContent: "center" },
 });
