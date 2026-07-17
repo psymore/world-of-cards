@@ -89,3 +89,35 @@ export function fillWidthMarginPx(
   const step = (targetSpan - cardWidth) / (count - 1) - cardWidth;
   return Math.min(step, maxGap);
 }
+
+// The direction a played/dealt card visually travels from or to: an opponent seat's position, or
+// 'bottom' for the human (who isn't part of the Seat[] array — always rendered separately).
+// Shared by every game's deal-flight and play-travel animations (first use: Pişti's trick-reveal
+// motion; second: the deal-flight overlay and Batak's own play-travel animation).
+export type RevealOrigin = SeatPosition | "bottom";
+
+// Fixed direction-based travel offsets (see
+// docs/superpowers/specs/2026-07-10-pisti-trick-reveal-motion-design.md for the original
+// rationale). Deliberately not measured from real seat layout (no onLayout) — a fixed offset per
+// direction reads clearly as "came from/goes to that side" without new layout-measurement
+// plumbing. Reused as a travel *destination* by the deal-flight overlay (Task 6), the mirror
+// image of its original use as a travel *origin*.
+const REVEAL_ORIGIN_OFFSETS: Record<RevealOrigin, { x: number; y: number }> = {
+  top: { x: 0, y: -195 },
+  bottom: { x: 0, y: 195 },
+  left: { x: -165, y: 0 },
+  right: { x: 165, y: 0 },
+};
+
+export function revealOriginOffset(origin: RevealOrigin): { x: number; y: number } {
+  return REVEAL_ORIGIN_OFFSETS[origin];
+}
+
+// Resolves which direction a given seat travels from/to: the human is always 'bottom' (not part
+// of `seats`); an AI seat not found in `seats` (shouldn't happen — every opponentPlayerId gets a
+// seat) falls back to 'top', matching assignSeats' own single-opponent fallback.
+export function resolveRevealOrigin(playerId: string, humanPlayerId: string, seats: Seat[]): RevealOrigin {
+  if (playerId === humanPlayerId) return "bottom";
+  const seat = seats.find((s) => s.playerId === playerId);
+  return seat ? seat.position : "top";
+}
