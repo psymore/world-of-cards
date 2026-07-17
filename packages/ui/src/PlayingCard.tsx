@@ -3,6 +3,7 @@ import {
   View,
   Text,
   Image,
+  ImageSourcePropType,
   StyleSheet,
   StyleProp,
   ViewStyle,
@@ -13,6 +14,7 @@ import { SuitIcon } from "./SuitIcon";
 import { glowShadow } from "./glowShadow";
 import { COURT_CARD_ART } from "./courtCardArt";
 import { CARD_RANK_FONT_FAMILY } from "./fonts";
+import { CourtCardFrame } from "./CourtCardFrame";
 
 export type PlayingCardSize = "normal" | "small";
 
@@ -211,11 +213,15 @@ function CenterArt({
   suitColor,
   isSmall,
   overlayImage,
+  courtArt,
+  isFaceCard,
 }: {
   card: Card;
   suitColor: string;
   isSmall: boolean;
   overlayImage: PlayingCardOverlayImage | null | undefined;
+  courtArt: ImageSourcePropType | undefined;
+  isFaceCard: boolean;
 }) {
   if (overlayImage !== undefined) {
     if (overlayImage == null) {
@@ -260,11 +266,6 @@ function CenterArt({
       />
     );
   }
-
-  const courtArt =
-    card.suit != null ? COURT_CARD_ART[`${card.rank}-${card.suit}`] : undefined;
-  const isFaceCard =
-    card.rank === "K" || card.rank === "Q" || card.rank === "J";
 
   if (courtArt != null) {
     return (
@@ -327,6 +328,12 @@ function PlayingCardComponent({
 
   const isRed = card.suit != null && RED_SUITS.includes(card.suit);
   const suitColor = isRed ? SUIT_COLOR.red : SUIT_COLOR.black;
+  const isFaceCard =
+    card.rank === "K" || card.rank === "Q" || card.rank === "J";
+  const courtArt =
+    overlayImage === undefined && card.suit != null
+      ? COURT_CARD_ART[`${card.rank}-${card.suit}`]
+      : undefined;
 
   return (
     <CardFrame
@@ -358,8 +365,11 @@ function PlayingCardComponent({
           suitColor={suitColor}
           isSmall={isSmall}
           overlayImage={overlayImage}
+          courtArt={courtArt}
+          isFaceCard={isFaceCard}
         />
       </View>
+      {courtArt != null && isFaceCard && <CourtCardFrame size={size} />}
     </CardFrame>
   );
 }
