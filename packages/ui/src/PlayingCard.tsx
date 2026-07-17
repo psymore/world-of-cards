@@ -66,6 +66,9 @@ const DEFAULT_BORDERS: PlayingCardBorderSpec[] = [
   { width: 1, color: "#fff" },
   { width: 1, color: "#999" },
 ];
+
+const BACK_BORDERS: PlayingCardBorderSpec[] = [{ width: 1, color: "#024a64" }];
+
 const OVERLAY_BASE_SIZE = { normal: 60, small: 38 };
 // Default face-down back art for every card in the app (Pişti, Batak, and apps/playground all
 // consume PlayingCard directly, so this applies everywhere at once — see the 2026-07-17
@@ -315,7 +318,10 @@ function PlayingCardComponent({
         highlighted={highlighted}
         style={style}
         cardRadius={cardRadius}
-        borders={borders}>
+        // Unlike the face, the back art already has its own border baked into the artwork
+        // (see cards-backround assets) — wrapping it in the face's white/grey rings too
+        // produced a visible double-border. No caller overrides `borders` for the back today.
+        borders={BACK_BORDERS}>
         <Image
           testID="playing-card-back-art"
           source={CARD_BACK_IMAGE}
@@ -457,10 +463,10 @@ const styles = StyleSheet.create({
   },
   centerArt: { flex: 1, alignItems: "center", justifyContent: "center" },
   courtArtFrame: {
-    width: "90%",
-    height: "95%",
+    width: "70%",
+    height: "75%",
     borderWidth: 1,
-    borderColor: "#000",
+    borderColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
   },
