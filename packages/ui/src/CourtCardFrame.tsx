@@ -30,15 +30,21 @@ const GEOMETRY: Record<PlayingCardSize, FrameGeometry> = {
   normal: {
     width: 94,
     height: 132,
-    topRightBracket: 'M32.5,17 L82,17 L82,83.5',
-    bottomLeftBracket: 'M12,48.5 L12,115 L61.5,115',
+    // Horizontal segments sit at y=37 (top) / y=95 (bottom) — the corner index's suit-glyph
+    // vertical center at this size (top:1 + rank lineHeight 25 + gap 2 + suitIcon 18/2 = 37;
+    // mirrored corner is symmetric at cardHeight(132)-37=95), not an arbitrary edge inset.
+    // See docs/superpowers/specs/2026-07-18-card-face-polish-and-batak-turn-indicator-design.md.
+    topRightBracket: 'M32.5,37 L82,37 L82,83.5',
+    bottomLeftBracket: 'M12,48.5 L12,95 L61.5,95',
     strokeWidth: 1.5,
   },
   small: {
     width: 64,
     height: 86,
-    topRightBracket: 'M22,11 L56,11 L56,52',
-    bottomLeftBracket: 'M8,34 L8,75 L42,75',
+    // Suit-glyph vertical center at this size: top:1 + rank lineHeight 18 + gap 1 + suitIcon
+    // 12/2 = 26; mirrored corner is symmetric at cardHeight(86)-26=60.
+    topRightBracket: 'M22,26 L56,26 L56,52',
+    bottomLeftBracket: 'M8,34 L8,60 L42,60',
     strokeWidth: 1,
   },
 };
