@@ -21,6 +21,7 @@ import {
   glowShadow,
 } from "@world-cards/ui";
 import { SelectableCard } from "../../components/SelectableCard";
+import { DeselectableSurface } from "../../components/DeselectableSurface";
 import { useCardSelection } from "../../components/useCardSelection";
 import { PlayerAvatar } from "../../components/PlayerAvatar";
 import { useReducedMotion } from "../../components/useReducedMotion";
@@ -662,7 +663,7 @@ export function BatakTable({
   }
 
   return (
-    <Pressable style={styles.container} onPress={clearSelection}>
+    <DeselectableSurface style={styles.container} onDeselect={clearSelection}>
       <TableFelt />
       <TableWoodCorners />
       <TableEdgeRails />
@@ -750,7 +751,7 @@ export function BatakTable({
         </View>
       </View>
       {dealPhase !== "revealing" && <DealFlightOverlay seats={dealSeats} />}
-    </Pressable>
+    </DeselectableSurface>
   );
 }
 
