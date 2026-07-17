@@ -20,7 +20,7 @@ const MUTED_GLYPH_COLOR = '#cbd5c9';
 
 // A deliberately generic person silhouette (circle head + rounded-shoulder body) — no facial
 // detail or per-player distinguishing marks, same "keep it simple at tiny render size" reasoning
-// as SuitIcon/CardBackPattern. `accent` is generic, not "isHuman": this component has no concept
+// as SuitIcon. `accent` is generic, not "isHuman": this component has no concept
 // of which seat is the human — the caller decides who gets the ring.
 function PlayerAvatarComponent({ accent = false, size = 'normal' }: PlayerAvatarProps) {
   const ringColor = accent ? ACCENT_COLOR : MUTED_RING_COLOR;

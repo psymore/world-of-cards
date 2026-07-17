@@ -10,7 +10,6 @@ import {
 import { SvgXml } from "react-native-svg";
 import type { Card, Suit } from "@world-cards/engine";
 import { SuitIcon } from "./SuitIcon";
-import { CardBackPattern } from "./CardBackPattern";
 import { glowShadow } from "./glowShadow";
 import { COURT_CARD_ART } from "./courtCardArt";
 import { CARD_RANK_FONT_FAMILY } from "./fonts";
@@ -66,6 +65,11 @@ const DEFAULT_BORDERS: PlayingCardBorderSpec[] = [
   { width: 1, color: "#999" },
 ];
 const OVERLAY_BASE_SIZE = { normal: 60, small: 38 };
+// Default face-down back art for every card in the app (Pişti, Batak, and apps/playground all
+// consume PlayingCard directly, so this applies everywhere at once — see the 2026-07-17
+// deal/selection/trick-motion polish spec for why this is a deliberate "apply everywhere" call,
+// not a per-game override). Replaces the earlier hand-drawn SVG lattice (CardBackPattern).
+const CARD_BACK_IMAGE = require("../assets/card-art/processed/ai-generated/cards-backround/middle-lighted.png");
 
 function CornerIndex({
   rank,
@@ -302,7 +306,6 @@ function PlayingCardComponent({
   const dims = isSmall ? styles.small : styles.normal;
 
   if (faceDown || !card) {
-    const pixelDims = isSmall ? CARD_DIMS.small : CARD_DIMS.normal;
     return (
       <CardFrame
         testID="playing-card-back"
@@ -312,7 +315,12 @@ function PlayingCardComponent({
         style={style}
         cardRadius={cardRadius}
         borders={borders}>
-        <CardBackPattern width={pixelDims.width} height={pixelDims.height} />
+        <Image
+          testID="playing-card-back-art"
+          source={CARD_BACK_IMAGE}
+          resizeMode="cover"
+          style={StyleSheet.absoluteFill}
+        />
       </CardFrame>
     );
   }

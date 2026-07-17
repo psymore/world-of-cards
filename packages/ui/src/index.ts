@@ -7,7 +7,6 @@ export { TableWoodCorners } from './TableWoodCorners';
 export type { TableWoodCornersProps } from './TableWoodCorners';
 export { TableEdgeRails } from './TableEdgeRails';
 export type { TableEdgeRailsProps } from './TableEdgeRails';
-export { CardBackPattern } from './CardBackPattern';
 export { AbsoluteOverlay } from './AbsoluteOverlay';
 export { glowShadow } from './glowShadow';
 export { FONTS, CARD_RANK_FONT_FAMILY } from './fonts';
