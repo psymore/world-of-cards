@@ -553,7 +553,10 @@ export function BatakTable({
 
   const humanHand = state.table.zones[`hand-${humanPlayerId}`].cards;
   const sortedHand = sortHandForDisplay(humanHand);
-  const [topRowCount] = splitTwoRows(sortedHand.length);
+  // splitTwoRows returns the larger half first; the bottom row (closer to the viewer) should get
+  // the extra card on an odd-sized hand, not the top row — e.g. 13 cards is 6 top / 7 bottom.
+  const [largerRowCount] = splitTwoRows(sortedHand.length);
+  const topRowCount = sortedHand.length - largerRowCount;
   const topRow = sortedHand.slice(0, topRowCount);
   const bottomRow = sortedHand.slice(topRowCount);
   const legalCardIds = new Set(
