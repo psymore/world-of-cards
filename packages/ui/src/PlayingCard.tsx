@@ -3,6 +3,7 @@ import {
   View,
   Text,
   Image,
+  ImageSourcePropType,
   StyleSheet,
   StyleProp,
   ViewStyle,
@@ -13,6 +14,7 @@ import { SuitIcon } from "./SuitIcon";
 import { glowShadow } from "./glowShadow";
 import { COURT_CARD_ART } from "./courtCardArt";
 import { CARD_RANK_FONT_FAMILY } from "./fonts";
+import { CourtCardFrame } from "./CourtCardFrame";
 
 export type PlayingCardSize = "normal" | "small";
 
@@ -64,6 +66,9 @@ const DEFAULT_BORDERS: PlayingCardBorderSpec[] = [
   { width: 1, color: "#fff" },
   { width: 1, color: "#999" },
 ];
+
+const BACK_BORDERS: PlayingCardBorderSpec[] = [{ width: 1, color: "#024a64" }];
+
 const OVERLAY_BASE_SIZE = { normal: 60, small: 38 };
 // Default face-down back art for every card in the app (Pişti, Batak, and apps/playground all
 // consume PlayingCard directly, so this applies everywhere at once — see the 2026-07-17
@@ -211,11 +216,15 @@ function CenterArt({
   suitColor,
   isSmall,
   overlayImage,
+  courtArt,
+  isFaceCard,
 }: {
   card: Card;
   suitColor: string;
   isSmall: boolean;
   overlayImage: PlayingCardOverlayImage | null | undefined;
+  courtArt: ImageSourcePropType | undefined;
+  isFaceCard: boolean;
 }) {
   if (overlayImage !== undefined) {
     if (overlayImage == null) {
@@ -260,11 +269,6 @@ function CenterArt({
       />
     );
   }
-
-  const courtArt =
-    card.suit != null ? COURT_CARD_ART[`${card.rank}-${card.suit}`] : undefined;
-  const isFaceCard =
-    card.rank === "K" || card.rank === "Q" || card.rank === "J";
 
   if (courtArt != null) {
     return (
@@ -314,7 +318,10 @@ function PlayingCardComponent({
         highlighted={highlighted}
         style={style}
         cardRadius={cardRadius}
-        borders={borders}>
+        // Unlike the face, the back art already has its own border baked into the artwork
+        // (see cards-backround assets) — wrapping it in the face's white/grey rings too
+        // produced a visible double-border. No caller overrides `borders` for the back today.
+        borders={BACK_BORDERS}>
         <Image
           testID="playing-card-back-art"
           source={CARD_BACK_IMAGE}
@@ -327,6 +334,12 @@ function PlayingCardComponent({
 
   const isRed = card.suit != null && RED_SUITS.includes(card.suit);
   const suitColor = isRed ? SUIT_COLOR.red : SUIT_COLOR.black;
+  const isFaceCard =
+    card.rank === "K" || card.rank === "Q" || card.rank === "J";
+  const courtArt =
+    overlayImage === undefined && card.suit != null
+      ? COURT_CARD_ART[`${card.rank}-${card.suit}`]
+      : undefined;
 
   return (
     <CardFrame
@@ -358,8 +371,11 @@ function PlayingCardComponent({
           suitColor={suitColor}
           isSmall={isSmall}
           overlayImage={overlayImage}
+          courtArt={courtArt}
+          isFaceCard={isFaceCard}
         />
       </View>
+      {courtArt != null && isFaceCard && <CourtCardFrame size={size} />}
     </CardFrame>
   );
 }
@@ -447,10 +463,10 @@ const styles = StyleSheet.create({
   },
   centerArt: { flex: 1, alignItems: "center", justifyContent: "center" },
   courtArtFrame: {
-    width: "90%",
-    height: "95%",
+    width: "70%",
+    height: "75%",
     borderWidth: 1,
-    borderColor: "#000",
+    borderColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
   },
