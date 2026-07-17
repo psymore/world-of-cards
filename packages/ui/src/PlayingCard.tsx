@@ -55,9 +55,11 @@ const CORNER_ICON_SIZE = { normal: 18, small: 12 };
 // PTSerif-Bold rank glyphs at each size; confirmed via screenshot, not computed from font metrics.
 const CORNER_INDEX_WIDTH = { normal: 28, small: 19 };
 const WATERMARK_ICON_SIZE = { normal: 50, small: 31 };
+// +10% height vs. the original 120/78, width unchanged — makes the cards read as slightly
+// taller/more elegant per the 2026-07-17 deal/selection/trick-motion polish spec.
 const CARD_DIMS = {
-  normal: { width: 84, height: 120 },
-  small: { width: 54, height: 78 },
+  normal: { width: 84, height: 132 },
+  small: { width: 54, height: 86 },
 };
 const DEFAULT_BORDERS: PlayingCardBorderSpec[] = [
   { width: 1, color: "#fff" },
@@ -365,8 +367,8 @@ const CARD_RADIUS = 6;
 const styles = StyleSheet.create({
   cardOuter: { overflow: "hidden" },
   frameInnerRing: { flex: 1 },
-  normal: { width: 84, height: 120 },
-  small: { width: 54, height: 78 },
+  normal: { width: CARD_DIMS.normal.width, height: CARD_DIMS.normal.height },
+  small: { width: CARD_DIMS.small.width, height: CARD_DIMS.small.height },
   // Border-free by design: a hard border read as visual noise on top of the lift animation
   // that already signals "selected" (see SelectableCard) — the glow alone is enough.
   highlighted: {
@@ -381,13 +383,14 @@ const styles = StyleSheet.create({
   // same fixed box, so a card's own rank always shares a center axis with its own glyph (fixing
   // "10" drifting from its suit icon), and that box is the same width for every rank, so the
   // glyph's absolute offset from the corner no longer varies card-to-card either.
-  // Corner offsets are inset from the card edge (rather than hugging it) so the rank/suit index
-  // reads as deliberately placed, not jammed into the corner — keep the mirrored pair's
-  // bottom/right values matched to the unmirrored top/left, since it's a 180°-rotated duplicate.
+  // Corner offsets sit close to the card edge (a 2026-07-17 change from the previous, more
+  // generously-inset look) to read closer to a real playing card's printed index — keep the
+  // mirrored pair's bottom/right values matched to the unmirrored top/left, since it's a
+  // 180°-rotated duplicate.
   cornerNormal: {
     position: "absolute",
-    top: 4,
-    left: 5,
+    top: 1,
+    left: 2,
     width: CORNER_INDEX_WIDTH.normal,
     alignItems: "center",
     gap: 2,
@@ -395,8 +398,8 @@ const styles = StyleSheet.create({
   },
   cornerSmall: {
     position: "absolute",
-    top: 3,
-    left: 3,
+    top: 1,
+    left: 1,
     width: CORNER_INDEX_WIDTH.small,
     alignItems: "center",
     gap: 1,
@@ -404,8 +407,8 @@ const styles = StyleSheet.create({
   },
   cornerNormalMirrored: {
     position: "absolute",
-    bottom: 4,
-    right: 5,
+    bottom: 1,
+    right: 2,
     width: CORNER_INDEX_WIDTH.normal,
     alignItems: "center",
     gap: 2,
@@ -414,8 +417,8 @@ const styles = StyleSheet.create({
   },
   cornerSmallMirrored: {
     position: "absolute",
-    bottom: 3,
-    right: 3,
+    bottom: 1,
+    right: 1,
     width: CORNER_INDEX_WIDTH.small,
     alignItems: "center",
     gap: 1,
