@@ -24,13 +24,16 @@ import { SelectableCard } from "../../components/SelectableCard";
 import { useCardSelection } from "../../components/useCardSelection";
 import { PlayerAvatar } from "../../components/PlayerAvatar";
 import { useReducedMotion } from "../../components/useReducedMotion";
-import { DealAnimationOverlay } from "./DealAnimationOverlay";
+import { DealFlightOverlay } from "../../table/DealFlightOverlay";
+import type { DealFlightSeat } from "../../table/DealFlightOverlay";
+import type { DealPhase } from "../../hooks/useDealSequence";
 import {
   assignSeats,
   fanCurveY,
   fanRotationDeg,
   splitTwoRows,
   fillWidthMarginPx,
+  resolveRevealOrigin,
 } from "../../table/seating";
 import type { Seat, SeatPosition } from "../../table/seating";
 
@@ -89,7 +92,7 @@ export interface PendingBatakPlay {
   card: Card;
 }
 
-export type BatakDealPhase = "shuffling" | "cutting" | "revealing";
+export type BatakDealPhase = DealPhase;
 
 export interface BatakTableProps {
   state: BatakState;
@@ -517,6 +520,17 @@ export function BatakTable({
   dealPhase,
 }: BatakTableProps) {
   const seats = assignSeats(opponentPlayerIds);
+  // Deal order: human first, then opponents in existing turn order (right, top, left for the
+  // fixed 4-player table) — see docs/superpowers/specs/2026-07-17-batak-deal-selection-and-
+  // trick-motion-polish-design.md section D2. Card counts come from the real dealt hand size,
+  // not a hardcoded 13, so this stays correct if hand size ever varies (e.g. the gömmeli variant).
+  const dealSeats: DealFlightSeat[] = [
+    { origin: "bottom", cardCount: state.table.zones[`hand-${humanPlayerId}`].cards.length },
+    ...opponentPlayerIds.map((playerId) => ({
+      origin: resolveRevealOrigin(playerId, humanPlayerId, seats),
+      cardCount: state.table.zones[`hand-${playerId}`].cards.length,
+    })),
+  ];
   const isHumanTurn = state.players[state.currentPlayerIndex] === humanPlayerId;
   // No trick-completing pause happens during bidding/trump-selection (pendingPlay is always null
   // there), so this single check correctly gates interactivity across every phase: whenever a
@@ -654,7 +668,7 @@ export function BatakTable({
           />
         </View>
       </View>
-      {dealPhase !== "revealing" && <DealAnimationOverlay phase={dealPhase} />}
+      {dealPhase !== "revealing" && <DealFlightOverlay seats={dealSeats} />}
     </Pressable>
   );
 }
