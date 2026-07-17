@@ -20,33 +20,36 @@ const HEART_PATH =
 const DIAMOND_PATH =
   'M12,2 Q15.15,8.5 21,12 Q15.15,15.5 12,22 Q8.85,15.5 3,12 Q8.85,8.5 12,2 Z';
 
-// Same waist treatment as the heart, mirrored above the stem.
+// Classic convex pip (no concave waist) matching the user-supplied reference photo at
+// docs/references/card-art/SPADE.jpeg — see the 2026-07-18 design spec for the brainstorming
+// history (this was the first candidate shown, confirmed after later "wider base" and "traced
+// from a hand sketch" alternatives were both tried and rejected in its favor). Leaf and stem
+// are two separate paths so the stem's flare can be tuned independently of the leaf curve.
 const SPADE_PATH =
-  'M12,2 C13.5,8 22,11 21,14.5 C21,17.5 18.5,20 15.5,20 C14.1,20 12.85,19.3 12,18.2 C12.4,19.6 13.3,20.8 14.5,21.5 C14.9,21.7 14.7,22 14.3,22 L9.7,22 C9.3,22 9.1,21.7 9.5,21.5 C10.7,20.8 11.6,19.6 12,18.2 C11.15,19.3 9.9,20 8.5,20 C5.5,20 3,17.5 3,14.5 C2,11 10.5,8 12,2 Z';
+  'M12,1.5 C7.5,7 2,10.8 2,15 C2,18.6 4.9,21.2 8.2,21.2 C10,21.2 11.4,20.3 12,18.8 C12.6,20.3 14,21.2 15.8,21.2 C19.1,21.2 22,18.6 22,15 C22,10.8 16.5,7 12,1.5 Z';
+const SPADE_STEM_PATH =
+  'M9.3,22.7 C10.7,21.5 11.6,20 12,18.3 C12.4,20 13.3,21.5 14.7,22.7 C15,23 14.8,23.4 14.3,23.4 L9.7,23.4 C9.2,23.4 9,23 9.3,22.7 Z';
 
 const CLUB_STEM_PATH =
   'M11,15 C11,17.2 10.2,19.8 8.6,21.2 C8.2,21.5 8.4,21.9 8.9,21.9 L15.1,21.9 C15.6,21.9 15.8,21.5 15.4,21.2 C13.8,19.8 13,17.2 13,15 Z';
-
-// The three lobes sit at true equilateral spacing (each circle's center is the same distance from
-// the shape's center, and none individually reaches it), so a real gap opens up on its own. The
-// small white circle at the center punches that gap open further, guaranteeing it stays visible
-// even at the corner index's smallest render size — this assumes a white/light card face behind
-// the icon, true everywhere SuitIcon is used today.
-const CLUB_CENTER_HOLE = { cx: 12, cy: 11, r: 1.4 };
 
 function SuitIconComponent({ suit, size, color, opacity = 1, testID }: SuitIconProps) {
   return (
     <Svg testID={testID} width={size} height={size} viewBox="0 0 24 24" opacity={opacity}>
       {suit === 'hearts' && <Path d={HEART_PATH} fill={color} />}
       {suit === 'diamonds' && <Path d={DIAMOND_PATH} fill={color} />}
-      {suit === 'spades' && <Path d={SPADE_PATH} fill={color} />}
+      {suit === 'spades' && (
+        <>
+          <Path d={SPADE_PATH} fill={color} />
+          <Path d={SPADE_STEM_PATH} fill={color} />
+        </>
+      )}
       {suit === 'clubs' && (
         <G>
-          <Circle cx={12} cy={6} r={4.6} fill={color} />
-          <Circle cx={7.67} cy={13.5} r={4.6} fill={color} />
-          <Circle cx={16.33} cy={13.5} r={4.6} fill={color} />
+          <Circle cx={12} cy={6.3} r={5.3} fill={color} />
+          <Circle cx={7.4} cy={14} r={5.3} fill={color} />
+          <Circle cx={16.6} cy={14} r={5.3} fill={color} />
           <Path d={CLUB_STEM_PATH} fill={color} />
-          <Circle cx={CLUB_CENTER_HOLE.cx} cy={CLUB_CENTER_HOLE.cy} r={CLUB_CENTER_HOLE.r} fill="#ffffff" />
         </G>
       )}
     </Svg>
