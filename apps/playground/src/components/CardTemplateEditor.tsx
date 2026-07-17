@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Slider from '@react-native-community/slider';
-import type { Card } from '@world-cards/engine';
+import type { Rank, Suit } from '@world-cards/engine';
 import type { CardGroup } from '../types';
 import { MAX_CARD_BORDERS } from '../types';
 import { usePlaygroundStore } from '../state/playgroundStore';
 import { PlayingCard } from '@world-cards/ui';
 import { toPlayingCardOverrides } from '../utils/toPlayingCardOverrides';
+import { getCardGroup, formatCardLabel } from '../utils/cardGroups';
+import { ORDERED_DECK } from '../utils/orderedDeck';
 import { ColorPicker } from './ColorPicker';
 import { pickCardImage, buildCardImage } from '../utils/imagePicker';
 
@@ -18,11 +20,18 @@ const GROUP_LABELS: Record<CardGroup, string> = {
 
 const GROUP_ORDER: CardGroup[] = ['number', 'face', 'ace'];
 
-const GROUP_PREVIEW_CARD: Record<CardGroup, Card> = {
-  number: { id: 'preview-number', suit: 'spades', rank: '7' },
-  face: { id: 'preview-face', suit: 'hearts', rank: 'Q' },
-  ace: { id: 'preview-ace', suit: 'clubs', rank: 'A' },
+// Which card each group tab jumps the browser to when tapped — same representative
+// cards the old fixed-preview design used (7♠ / Q♥ / A♣), just resolved against
+// ORDERED_DECK's real card objects instead of one-off placeholder Card literals.
+const GROUP_REPRESENTATIVE: Record<CardGroup, { rank: Rank; suit: Suit }> = {
+  number: { rank: '7', suit: 'spades' },
+  face: { rank: 'Q', suit: 'hearts' },
+  ace: { rank: 'A', suit: 'clubs' },
 };
+
+function findCardIndex(rank: Rank, suit: Suit): number {
+  return ORDERED_DECK.findIndex((card) => card.rank === rank && card.suit === suit);
+}
 
 // The slider's own layout height before the scaleY transform. The wrapper box reserves
 // SLIDER_BASE_HEIGHT * SLIDER_SCALE_Y of layout height so the visually-scaled slider
@@ -107,7 +116,11 @@ function SliderWithInput({ label, testID, minimumValue, maximumValue, step, valu
 }
 
 export function CardTemplateEditor() {
-  const [selectedGroup, setSelectedGroup] = useState<CardGroup>('number');
+  const [cardIndex, setCardIndex] = useState<number>(() =>
+    findCardIndex(GROUP_REPRESENTATIVE.number.rank, GROUP_REPRESENTATIVE.number.suit)
+  );
+  const currentCard = ORDERED_DECK[cardIndex];
+  const selectedGroup = getCardGroup(currentCard.rank);
   const [presetName, setPresetName] = useState('');
   const template = usePlaygroundStore((state) => state.templates[selectedGroup]);
   const setBorderRadius = usePlaygroundStore((state) => state.setBorderRadius);
@@ -131,10 +144,8 @@ export function CardTemplateEditor() {
     }
   }
 
-  function cycleGroup(delta: number) {
-    const index = GROUP_ORDER.indexOf(selectedGroup);
-    const next = (index + delta + GROUP_ORDER.length) % GROUP_ORDER.length;
-    setSelectedGroup(GROUP_ORDER[next]);
+  function cycleCard(delta: number) {
+    setCardIndex((index) => (index + delta + ORDERED_DECK.length) % ORDERED_DECK.length);
   }
 
   function handleSavePreset() {
@@ -147,26 +158,29 @@ export function CardTemplateEditor() {
   return (
     <View style={styles.container}>
       <View style={styles.groupRow}>
-        <Pressable testID="group-nav-prev" onPress={() => cycleGroup(-1)} style={styles.groupNavButton}>
+        <Pressable testID="group-nav-prev" onPress={() => cycleCard(-1)} style={styles.groupNavButton}>
           <Text style={styles.groupNavLabel}>‹</Text>
         </Pressable>
         {GROUP_ORDER.map((group) => (
           <Pressable
             key={group}
             testID={`group-tab-${group}`}
-            onPress={() => setSelectedGroup(group)}
+            onPress={() => setCardIndex(findCardIndex(GROUP_REPRESENTATIVE[group].rank, GROUP_REPRESENTATIVE[group].suit))}
             style={[styles.groupTab, group === selectedGroup && styles.groupTabActive]}
           >
             <Text style={styles.groupTabLabel}>{GROUP_LABELS[group]}</Text>
           </Pressable>
         ))}
-        <Pressable testID="group-nav-next" onPress={() => cycleGroup(1)} style={styles.groupNavButton}>
+        <Pressable testID="group-nav-next" onPress={() => cycleCard(1)} style={styles.groupNavButton}>
           <Text style={styles.groupNavLabel}>›</Text>
         </Pressable>
       </View>
 
       <View style={styles.editorBody}>
-        <PlayingCard card={GROUP_PREVIEW_CARD[selectedGroup]} size="normal" {...toPlayingCardOverrides(template)} />
+        <View style={styles.previewColumn}>
+          <Text style={styles.previewLabel}>{formatCardLabel(currentCard)}</Text>
+          <PlayingCard card={currentCard} size="normal" {...toPlayingCardOverrides(template)} />
+        </View>
 
         <View style={styles.controls}>
           <SliderWithInput
@@ -325,6 +339,8 @@ const styles = StyleSheet.create({
   },
   groupNavLabel: { color: '#ffffff', fontSize: 22, fontWeight: 'bold', lineHeight: 24 },
   editorBody: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
+  previewColumn: { alignItems: 'center', gap: 6 },
+  previewLabel: { color: '#eeeeee', fontWeight: 'bold' },
   controls: { flex: 1 },
   controlLabel: { marginTop: 8, marginBottom: 2, color: '#eeeeee' },
   sliderRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
