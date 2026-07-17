@@ -27,6 +27,10 @@ const PLAYER_NAMES: Record<PlayerId, string> = {
 // this pause the UI would show the 4th card appear and the whole trick vanish in the same
 // instant, with no way to see what everyone played.
 const TRICK_COMPLETION_PAUSE_MS = 1100;
+// Pause before a non-trick-completing play (1st-3rd card of a trick) commits, giving the new
+// play-travel animation (BatakTable's TrickCenter) time to finish before the card's resting state
+// takes over — roughly matches CARD_TRAVEL_DURATION_MS (apps/mobile/src/table/travelAnimation.ts).
+const PLAY_TRAVEL_DELAY_MS = 300;
 
 export interface BatakScreenProps {
   onExitToHome: () => void;
@@ -95,20 +99,22 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
   }, []);
 
   function commitMove(move: BatakMove, playerId: PlayerId) {
-    // Only a card play can be the trick-completing 4th card; bid/pass/selectTrump never need
-    // staging since engine state already reflects them visibly with nothing to bridge.
-    if (move.type === 'play' && state.currentTrick.length === 3) {
+    // Every card play now gets staged (not just the trick-completing 4th) so the new play-travel
+    // animation has something to animate from for every play; bid/pass/selectTrump still commit
+    // instantly since engine state already reflects them visibly with nothing to bridge.
+    if (move.type === 'play') {
       const hand = state.table.zones[`hand-${playerId}`].cards;
       const card = hand.find((c) => c.id === move.cardId);
       if (!card) {
         performMove(move);
         return;
       }
+      const delay = state.currentTrick.length === 3 ? TRICK_COMPLETION_PAUSE_MS : PLAY_TRAVEL_DELAY_MS;
       setPendingPlay({ playerId, card });
       pendingTimeoutRef.current = setTimeout(() => {
         performMove(move);
         setPendingPlay(null);
-      }, TRICK_COMPLETION_PAUSE_MS);
+      }, delay);
       return;
     }
     performMove(move);

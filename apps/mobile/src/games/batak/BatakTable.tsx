@@ -27,6 +27,7 @@ import { useReducedMotion } from "../../components/useReducedMotion";
 import { DealFlightOverlay } from "../../table/DealFlightOverlay";
 import type { DealFlightSeat } from "../../table/DealFlightOverlay";
 import type { DealPhase } from "../../hooks/useDealSequence";
+import { CARD_TRAVEL_DURATION_MS, CARD_TRAVEL_EASING } from "../../table/travelAnimation";
 import {
   assignSeats,
   fanCurveY,
@@ -34,8 +35,9 @@ import {
   splitTwoRows,
   fillWidthMarginPx,
   resolveRevealOrigin,
+  revealOriginOffset,
 } from "../../table/seating";
-import type { Seat, SeatPosition } from "../../table/seating";
+import type { Seat, SeatPosition, RevealOrigin } from "../../table/seating";
 
 const SUITS: Suit[] = ["spades", "hearts", "diamonds", "clubs"];
 
@@ -310,6 +312,61 @@ function TrumpSelectionCenter({
   );
 }
 
+type TrickPosition = "bottom" | SeatPosition;
+
+// Resting offset from dead-center for each seat's slot — small enough (vs. the ~165-195px
+// travel-origin offsets below) that adjacent slots' card rectangles overlap slightly at their
+// inner corners ("loose, corner-touching" per the brainstorming visual companion mockup, chosen
+// over a tighter ~40%-overlap alternative). First-pass values sized against the 'small' card's
+// 54x86 dimensions (see PlayingCard's CARD_DIMS) — confirm via screenshot in the final
+// verification pass.
+const TRICK_SLOT_OFFSETS: Record<TrickPosition, { x: number; y: number }> = {
+  top: { x: 0, y: -38 },
+  bottom: { x: 0, y: 38 },
+  left: { x: -30, y: 0 },
+  right: { x: 30, y: 0 },
+};
+
+// Animates a just-played card traveling from its seat's direction to its resting position in the
+// trick cross — the parent slot (see TrickCenter) already sits at the resting TRICK_SLOT_OFFSETS
+// position, so this only needs to interpolate from the origin vector down to (0, 0) relative to
+// that slot. Mirrors Pişti's PistiTable.RevealCard, sharing the same timing constants
+// (../../table/travelAnimation) so both games' play-travel motion feels consistent.
+function TravelCard({ card, origin }: { card: Card; origin: RevealOrigin }) {
+  const progress = useRef(new Animated.Value(0)).current;
+  const reducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (reducedMotion) {
+      progress.setValue(1);
+      return;
+    }
+    progress.setValue(0);
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: CARD_TRAVEL_DURATION_MS,
+      easing: CARD_TRAVEL_EASING,
+      useNativeDriver: true,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }).start();
+  }, [card.id, reducedMotion]);
+
+  const originVector = revealOriginOffset(origin);
+
+  return (
+    <Animated.View
+      style={{
+        opacity: progress,
+        transform: [
+          { translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [originVector.x, 0] }) },
+          { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [originVector.y, 0] }) },
+        ],
+      }}>
+      <PlayingCard card={card} size="small" />
+    </Animated.View>
+  );
+}
+
 function TrickCenter({
   state,
   seats,
@@ -333,15 +390,41 @@ function TrickCenter({
     );
   }
 
-  function slotFor(position: "bottom" | SeatPosition) {
+  // Play order across both already-committed cards and the still-animating pendingPlay (always
+  // the newest) — drives each slot's zIndex so the most recently played card renders on top of
+  // earlier ones regardless of which seat played it. Trick slots are seat-fixed (TRICK_SLOT_OFFSETS
+  // above), so without this the overlap stacking would silently depend on seat position instead
+  // of when each card actually arrived.
+  const playOrder: string[] = [
+    ...state.currentTrick.map(t => t.playerId),
+    ...(pendingPlay ? [pendingPlay.playerId] : []),
+  ];
+
+  function slotFor(position: TrickPosition) {
     const playerId =
       position === "bottom"
         ? humanPlayerId
         : seats.find(s => s.position === position)?.playerId;
     const card = playerId ? cardFor(playerId) : null;
+    const isPending = playerId != null && pendingPlay != null && pendingPlay.playerId === playerId;
+    const zIndex = playerId ? Math.max(playOrder.indexOf(playerId) + 1, 1) : 1;
+    const offset = TRICK_SLOT_OFFSETS[position];
+
     return (
-      <View style={styles.trickSlot} testID={`trick-slot-${position}`}>
-        {card ? <PlayingCard card={card} size="small" /> : null}
+      <View
+        key={position}
+        testID={`trick-slot-${position}`}
+        style={[
+          styles.trickSlot,
+          { zIndex, transform: [{ translateX: offset.x }, { translateY: offset.y }] },
+        ]}>
+        {card ? (
+          isPending ? (
+            <TravelCard card={card} origin={resolveRevealOrigin(playerId!, humanPlayerId, seats)} />
+          ) : (
+            <PlayingCard card={card} size="small" />
+          )
+        ) : null}
       </View>
     );
   }
@@ -360,12 +443,7 @@ function TrickCenter({
         </Text>
       </View>
       <View style={styles.trickCross}>
-        <View style={styles.trickTopRow}>{slotFor("top")}</View>
-        <View style={styles.trickMiddleRow}>
-          {slotFor("left")}
-          {slotFor("bottom")}
-          {slotFor("right")}
-        </View>
+        {(["top", "left", "bottom", "right"] as TrickPosition[]).map(slotFor)}
       </View>
     </View>
   );
@@ -546,7 +624,10 @@ export function BatakTable({
     if (!isHumanInteractive) clearSelection();
   }, [isHumanInteractive, clearSelection]);
 
-  const humanHand = state.table.zones[`hand-${humanPlayerId}`].cards;
+  const isPendingHuman = pendingPlay != null && pendingPlay.playerId === humanPlayerId;
+  const humanHand = state.table.zones[`hand-${humanPlayerId}`].cards.filter(
+    (card) => !(isPendingHuman && card.id === pendingPlay!.card.id)
+  );
   const sortedHand = sortHandForDisplay(humanHand);
   // splitTwoRows returns the larger half first; the bottom row (closer to the viewer) should get
   // the extra card on an odd-sized hand, not the top row — e.g. 13 cards is 6 top / 7 bottom.
@@ -751,12 +832,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  trickCross: { alignItems: "center", gap: 8 },
-  trickTopRow: { flexDirection: "row", justifyContent: "center" },
-  trickMiddleRow: { flexDirection: "row", alignItems: "center", gap: 24 },
+  // Fixed-size relative box (RN Views are relatively-positioned by default) so the 4 absolutely-
+  // positioned trickSlot children can be offset from a shared center point — see
+  // TRICK_SLOT_OFFSETS. Sized generously around the small card's 54x86 footprint plus the loose
+  // cross-overlap offsets; confirm via screenshot in the final verification pass.
+  trickCross: { width: 150, height: 180, alignSelf: "center" },
   trickSlot: {
-    minWidth: 54,
-    minHeight: 78,
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    marginLeft: -27,
+    marginTop: -43,
+    width: 54,
+    height: 86,
     alignItems: "center",
     justifyContent: "center",
   },
