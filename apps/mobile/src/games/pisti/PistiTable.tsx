@@ -22,6 +22,9 @@ import {
   revealOriginOffset,
 } from './pistiSeating';
 import type { RevealOrigin, Seat } from './pistiSeating';
+import { DealFlightOverlay } from '../../table/DealFlightOverlay';
+import type { DealFlightSeat } from '../../table/DealFlightOverlay';
+import type { DealPhase } from '../../hooks/useDealSequence';
 
 export interface PistiRevealCard {
   card: Card;
@@ -38,6 +41,7 @@ export interface PistiTableProps {
   onPlayCard: (cardId: string) => void;
   bannerText?: string | null;
   revealCard?: PistiRevealCard | null;
+  dealPhase: DealPhase;
 }
 
 // How many of the most recent pile cards to render stacked, plus one extra slot reserved
@@ -155,18 +159,21 @@ interface OpponentSeatProps {
   state: PistiState;
   playerNames: Record<string, string>;
   revealCard?: PistiRevealCard | null;
+  dealPhase: DealPhase;
   // Measured height of the middle row (see PistiTable's onLayout below) — the real available
   // vertical space for a side seat's card stack, which can't be derived from window height alone
   // since the side seats live inside a centered (non-stretching) flex row.
   sideStackHeight: number;
 }
 
-function OpponentSeat({ seat, state, playerNames, revealCard, sideStackHeight }: OpponentSeatProps) {
+function OpponentSeat({ seat, state, playerNames, revealCard, dealPhase, sideStackHeight }: OpponentSeatProps) {
   const { position, playerId } = seat;
   const isSide = position !== 'top';
   const hand = state.table.zones[`hand-${playerId}`].cards;
   const isRevealing = revealCard != null && revealCard.playerId === playerId;
-  const count = Math.max(isRevealing ? hand.length - 1 : hand.length, 0);
+  // No face-down cards render until the deal-flight animation finishes, so the opponent's hand
+  // doesn't pop in ahead of the cards that are still visually traveling toward them.
+  const count = dealPhase !== 'revealing' ? 0 : Math.max(isRevealing ? hand.length - 1 : hand.length, 0);
   const capturedCount = state.table.zones[`captured-${playerId}`].cards.length;
   const isCurrentTurn = state.players[state.currentPlayerIndex] === playerId;
 
@@ -210,6 +217,7 @@ function OpponentSeatGroup({
   state,
   playerNames,
   revealCard,
+  dealPhase,
   sideStackHeight,
 }: {
   position: Seat['position'];
@@ -217,6 +225,7 @@ function OpponentSeatGroup({
   state: PistiState;
   playerNames: Record<string, string>;
   revealCard?: PistiRevealCard | null;
+  dealPhase: DealPhase;
   sideStackHeight: number;
 }) {
   return (
@@ -230,6 +239,7 @@ function OpponentSeatGroup({
             state={state}
             playerNames={playerNames}
             revealCard={revealCard}
+            dealPhase={dealPhase}
             sideStackHeight={sideStackHeight}
           />
         ))}
@@ -245,6 +255,7 @@ export function PistiTable({
   onPlayCard,
   bannerText,
   revealCard,
+  dealPhase,
 }: PistiTableProps) {
   const isHumanTurn = state.players[state.currentPlayerIndex] === humanPlayerId;
   // While the human's own play is revealing (traveling to the pile), the engine state hasn't
@@ -276,6 +287,17 @@ export function PistiTable({
     setMiddleRowHeight(event.nativeEvent.layout.height);
   }
 
+  // Deal order: human first, then opponents in existing turn order. Card counts come from the
+  // real dealt hand size, not a hardcoded 4, so this stays correct for both the 2-player and
+  // 4-player table.
+  const dealSeats: DealFlightSeat[] = [
+    { origin: 'bottom', cardCount: state.table.zones[`hand-${humanPlayerId}`].cards.length },
+    ...opponentPlayerIds.map((playerId) => ({
+      origin: resolveRevealOrigin(playerId, humanPlayerId, seats),
+      cardCount: state.table.zones[`hand-${playerId}`].cards.length,
+    })),
+  ];
+
   return (
     <View style={styles.container}>
       <TableFelt />
@@ -286,6 +308,7 @@ export function PistiTable({
         state={state}
         playerNames={playerNames}
         revealCard={revealCard}
+        dealPhase={dealPhase}
         sideStackHeight={middleRowHeight}
       />
 
@@ -296,6 +319,7 @@ export function PistiTable({
           state={state}
           playerNames={playerNames}
           revealCard={revealCard}
+          dealPhase={dealPhase}
           sideStackHeight={middleRowHeight}
         />
 
@@ -338,6 +362,7 @@ export function PistiTable({
           state={state}
           playerNames={playerNames}
           revealCard={revealCard}
+          dealPhase={dealPhase}
           sideStackHeight={middleRowHeight}
         />
       </View>
@@ -346,22 +371,24 @@ export function PistiTable({
 
       <View style={[styles.handArea, isHumanInteractive && styles.activeArea]}>
         <View style={styles.handRow} testID="human-hand">
-          {humanHand.map((card) => (
-            // Off-turn "not tappable" styling comes from SelectableCard's own disabled scrim now
-            // (a dark overlay keeping the card art fully visible), replacing the old 0.5-opacity
-            // wrapper — keeping both would double-dim the hand.
-            <View key={card.id}>
-              <SelectableCard
-                card={card}
-                selected={selectedCardId === card.id}
-                disabled={!isHumanInteractive}
-                onPress={() => selectCard(card.id)}
-              />
-            </View>
-          ))}
+          {dealPhase === 'revealing' &&
+            humanHand.map((card) => (
+              // Off-turn "not tappable" styling comes from SelectableCard's own disabled scrim
+              // now (a dark overlay keeping the card art fully visible), replacing the old
+              // 0.5-opacity wrapper — keeping both would double-dim the hand.
+              <View key={card.id}>
+                <SelectableCard
+                  card={card}
+                  selected={selectedCardId === card.id}
+                  disabled={!isHumanInteractive}
+                  onPress={() => selectCard(card.id)}
+                />
+              </View>
+            ))}
         </View>
         <PlayerBadge name={playerNames[humanPlayerId] ?? 'You'} capturedCount={capturedHuman} active={isHumanTurn} isHuman />
       </View>
+      {dealPhase !== 'revealing' && <DealFlightOverlay seats={dealSeats} />}
     </View>
   );
 }

@@ -8,6 +8,7 @@ import { GameResultModal } from '../../components/GameResultModal';
 import { PistiSetupView, PistiPlayerCount, PistiFourPlayerMode } from './PistiSetupView';
 import { PistiTable } from './PistiTable';
 import { useAITurn } from '../../hooks/useAITurn';
+import { useDealSequence } from '../../hooks/useDealSequence';
 import { PARTNER_SEAT_INDEX } from './pistiSeating';
 
 const HUMAN_ID: PlayerId = 'human';
@@ -122,6 +123,7 @@ function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgai
   const performMove = useSessionStore((s) => s.performMove);
   const [bannerText, setBannerText] = useState<string | null>(null);
   const [revealedMove, setRevealedMove] = useState<RevealedMove | null>(null);
+  const dealPhase = useDealSequence();
 
   const aiStrategy = pistiDescriptor.aiStrategies[difficulty];
   // aiIds/teams are fixed for the lifetime of a session (a new session gets a new `key`, see
@@ -201,6 +203,7 @@ function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgai
         onPlayCard={handlePlayCard}
         bannerText={bannerText}
         revealCard={revealedMove ? { card: revealedMove.card, playerId: revealedMove.playerId } : null}
+        dealPhase={dealPhase}
       />
       {gameOver && (
         <GameResultModal

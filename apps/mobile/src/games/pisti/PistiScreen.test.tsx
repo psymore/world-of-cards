@@ -21,6 +21,11 @@ describe('PistiScreen', () => {
     await fireEvent.press(screen.getByText('Medium'));
 
     expect(await screen.findByText('Pişti')).toBeTruthy();
+    // Hands stay hidden until the deal-flight animation finishes (see useDealSequence's
+    // DEAL_FLIGHT_MS) — advance past it before asserting on hand contents.
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(1700);
+    });
     const humanHand = within(screen.getByTestId('human-hand')).getAllByTestId('playing-card-face');
     expect(humanHand).toHaveLength(4);
   });
@@ -29,6 +34,11 @@ describe('PistiScreen', () => {
     await render(<PistiScreen onExitToHome={() => {}} />);
     await fireEvent.press(screen.getByText('Easy'));
     await screen.findByText('Pişti');
+    // Hands stay hidden until the deal-flight animation finishes (see useDealSequence's
+    // DEAL_FLIGHT_MS) — advance past it before asserting on hand contents.
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(1700);
+    });
 
     const humanHand = () => within(screen.getByTestId('human-hand')).getAllByTestId('playing-card-face');
     expect(humanHand()).toHaveLength(4);
