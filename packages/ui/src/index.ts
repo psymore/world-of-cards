@@ -8,5 +8,7 @@ export type { TableWoodCornersProps } from './TableWoodCorners';
 export { TableEdgeRails } from './TableEdgeRails';
 export type { TableEdgeRailsProps } from './TableEdgeRails';
 export { AbsoluteOverlay } from './AbsoluteOverlay';
+export { CourtCardFrame } from './CourtCardFrame';
+export type { CourtCardFrameProps } from './CourtCardFrame';
 export { glowShadow } from './glowShadow';
 export { FONTS, CARD_RANK_FONT_FAMILY } from './fonts';
