@@ -318,7 +318,7 @@ type TrickPosition = "bottom" | SeatPosition;
 // travel-origin offsets below) that adjacent slots' card rectangles overlap slightly at their
 // inner corners ("loose, corner-touching" per the brainstorming visual companion mockup, chosen
 // over a tighter ~40%-overlap alternative). First-pass values sized against the 'small' card's
-// 54x86 dimensions (see PlayingCard's CARD_DIMS) — confirm via screenshot in the final
+// 64x86 dimensions (see PlayingCard's CARD_DIMS) — confirm via screenshot in the final
 // verification pass.
 const TRICK_SLOT_OFFSETS: Record<TrickPosition, { x: number; y: number }> = {
   top: { x: 0, y: -38 },
