@@ -11,6 +11,7 @@ import type { Card } from '@world-cards/engine';
 import type { PistiState } from '@world-cards/engine/games/pisti';
 import { PlayingCard, TableFelt, TableWoodCorners, glowShadow } from '@world-cards/ui';
 import { SelectableCard } from '../../components/SelectableCard';
+import { DeselectableSurface } from '../../components/DeselectableSurface';
 import { useCardSelection } from '../../components/useCardSelection';
 import { PlayerAvatar } from '../../components/PlayerAvatar';
 import { useReducedMotion } from '../../components/useReducedMotion';
@@ -299,7 +300,7 @@ export function PistiTable({
   ];
 
   return (
-    <View style={styles.container}>
+    <DeselectableSurface style={styles.container} onDeselect={clearSelection}>
       <TableFelt />
       <TableWoodCorners />
       <OpponentSeatGroup
@@ -389,7 +390,7 @@ export function PistiTable({
         <PlayerBadge name={playerNames[humanPlayerId] ?? 'You'} capturedCount={capturedHuman} active={isHumanTurn} isHuman />
       </View>
       {dealPhase !== 'revealing' && <DealFlightOverlay seats={dealSeats} />}
-    </View>
+    </DeselectableSurface>
   );
 }
 
