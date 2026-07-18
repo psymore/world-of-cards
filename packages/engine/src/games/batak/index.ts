@@ -8,6 +8,7 @@ import { batakHardAI } from './ai/hard';
 
 export * from './types';
 export { compareRanks } from './ranking';
+export { trickWinnerIndex } from './rules';
 
 export const batakDescriptor: GameDescriptor<BatakState, BatakMove> = {
   id: 'batak',

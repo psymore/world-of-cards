@@ -1,6 +1,7 @@
-import { batakDescriptor } from '@world-cards/engine/games/batak';
+import { batakDescriptor, trickWinnerIndex } from '@world-cards/engine/games/batak';
 import type { BatakState, BatakMove } from '@world-cards/engine/games/batak';
 import { createRng } from '@world-cards/engine';
+import type { Card } from '@world-cards/engine';
 
 describe('@world-cards/engine/games/batak subpath', () => {
   it('resolves batakDescriptor with a working rule engine', () => {
@@ -18,5 +19,17 @@ describe('@world-cards/engine/games/batak subpath', () => {
     const next = batakDescriptor.ruleEngine.performMove(state, move);
     // players[0] is 'human'; a pass move advances to the next active bidder, 'ai-1' (index 1).
     expect(next.currentPlayerIndex).toBe(1);
+  });
+
+  it('exposes trickWinnerIndex from the public subpath', () => {
+    const trick: Card[] = [
+      { id: 'c1', suit: 'hearts', rank: '2' },
+      { id: 'c2', suit: 'hearts', rank: 'K' },
+      { id: 'c3', suit: 'spades', rank: '3' },
+      { id: 'c4', suit: 'hearts', rank: 'A' },
+    ];
+    // Only c3 is trump (spades); trumps always beat non-trumps regardless of rank, so it wins
+    // even though c4 (Ace of hearts) is the highest-ranked card overall.
+    expect(trickWinnerIndex(trick, 'spades')).toBe(2);
   });
 });
