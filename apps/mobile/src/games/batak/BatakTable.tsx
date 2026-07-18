@@ -16,8 +16,6 @@ import {
   PlayingCard,
   SuitIcon,
   TableFelt,
-  TableWoodCorners,
-  TableEdgeRails,
   HandFrame,
   HAND_FRAME_PEAK_FRACTION,
   glowShadow,
@@ -674,8 +672,6 @@ export function BatakTable({
   return (
     <DeselectableSurface style={styles.container} onDeselect={clearSelection}>
       <TableFelt />
-      <TableWoodCorners corners={['topLeft', 'topRight']} />
-      <TableEdgeRails edges={['top', 'left', 'right']} />
       <OpponentSeatGroup
         position="top"
         seats={seats}

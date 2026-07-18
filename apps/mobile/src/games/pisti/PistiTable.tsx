@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import type { Card } from '@world-cards/engine';
 import type { PistiState } from '@world-cards/engine/games/pisti';
-import { PlayingCard, TableFelt, TableWoodCorners, glowShadow } from '@world-cards/ui';
+import { PlayingCard, TableFelt, HandFrame, HAND_FRAME_PEAK_FRACTION, glowShadow } from '@world-cards/ui';
 import { SelectableCard } from '../../components/SelectableCard';
 import { DeselectableSurface } from '../../components/DeselectableSurface';
 import { useCardSelection } from '../../components/useCardSelection';
@@ -67,6 +67,31 @@ const TOP_FAN_WIDTH_FRACTION = 0.85; // fraction of window width the top seat's 
 const TOP_FAN_MAX_GAP = 10;
 const SIDE_STACK_HEIGHT_FRACTION = 0.82; // fraction of the measured middle-row height the side stack may use
 const SIDE_FAN_MAX_GAP = 10;
+
+// First-pass constants for positioning HandFrame behind the human hand row, derived from this
+// file's own layout below (not measured on a real device — tune these if the frame's arch peak
+// doesn't line up with the hand row once visually checked). Simpler than Batak's version: Pişti's
+// human hand is a single flat row (no curve/second row), so its "peak" is just the row's own top
+// edge, uniform across every card.
+const HUMAN_CARD_HEIGHT = 132; // matches PlayingCard's 'normal' size height
+const CONTAINER_BOTTOM_PADDING = 12; // matches styles.container.paddingVertical
+const HAND_AREA_HEIGHT = 177; // matches styles.handArea.minHeight
+const HAND_BADGE_HEIGHT = 34; // approx rendered height of PlayerBadge at normal size
+const HAND_CONTENT_HEIGHT = HAND_BADGE_HEIGHT + HUMAN_CARD_HEIGHT;
+const HAND_AREA_TOP_INSET = (HAND_AREA_HEIGHT - HAND_CONTENT_HEIGHT) / 2;
+// Distance from the container's true bottom edge (where HandFrame's own bottom:0 would sit,
+// since absolute positioning ignores the container's own paddingVertical) up to the hand row's
+// top edge.
+const HAND_ROW_PEAK_DISTANCE_FROM_BOTTOM =
+  CONTAINER_BOTTOM_PADDING + HAND_AREA_HEIGHT - HAND_AREA_TOP_INSET - HAND_BADGE_HEIGHT;
+// Peak-aligning the frame exactly to the hand row's own top edge hides the frame's gold trim
+// behind the cards (they render in front, same height). This extra margin lifts the frame's peak
+// above the row instead, so the trim clears the cards and stays visible.
+const HAND_FRAME_REVEAL_MARGIN = 14;
+// The frame's bottom edge sits this far below the screen's true bottom edge (rather than landing
+// exactly flush) so it's guaranteed to fully cover the bottom regardless of small per-device
+// rounding/safe-area differences — the overshoot itself is never visible, it's off-screen.
+const HAND_FRAME_BOTTOM_OVERSHOOT = 16;
 
 function RevealCard({
   revealCard,
@@ -344,10 +369,18 @@ export function PistiTable({
     })),
   ];
 
+  // Anchored below the screen's true bottom edge (covers the full bottom side with margin to
+  // spare — the overshoot itself is off-screen) while keeping the peak at the same height as
+  // before. Width stays exactly windowWidth; only height is stretched (via HandFrame's `height`
+  // prop + resizeMode="stretch") to satisfy both constraints — see HandFrame's prop doc.
+  const handFramePeakTarget = HAND_ROW_PEAK_DISTANCE_FROM_BOTTOM + HAND_FRAME_REVEAL_MARGIN;
+  const handFrameBottomOffset = -HAND_FRAME_BOTTOM_OVERSHOOT;
+  const handFrameHeight =
+    (handFramePeakTarget + HAND_FRAME_BOTTOM_OVERSHOOT) / (1 - HAND_FRAME_PEAK_FRACTION);
+
   return (
     <DeselectableSurface style={styles.container} onDeselect={clearSelection}>
       <TableFelt />
-      <TableWoodCorners />
       <OpponentSeatGroup
         position="top"
         seats={seats}
@@ -415,6 +448,7 @@ export function PistiTable({
 
       <View style={styles.bannerArea}>{bannerText ? <Text style={styles.banner}>{bannerText}</Text> : null}</View>
 
+      <HandFrame bottomOffset={handFrameBottomOffset} height={handFrameHeight} />
       <View style={[styles.handArea, isHumanInteractive && styles.activeArea]}>
         <View style={styles.handRow} testID="human-hand">
           {dealPhase === 'revealing' &&

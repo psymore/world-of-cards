@@ -1,9 +1,9 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
-export type Difficulty = 'easy' | 'medium' | 'hard';
+export type Difficulty = "easy" | "medium" | "hard";
 
 export interface Settings {
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
   soundEnabled: boolean;
   defaultDifficulty: Difficulty;
   // Controls SelectableCard's disabled-scrim visibility (off-turn/illegal cards). Cards that
@@ -12,23 +12,23 @@ export interface Settings {
 }
 
 export interface SettingsStore extends Settings {
-  setTheme: (theme: Settings['theme']) => void;
+  setTheme: (theme: Settings["theme"]) => void;
   setSoundEnabled: (enabled: boolean) => void;
   setDefaultDifficulty: (difficulty: Difficulty) => void;
   setDimUnplayableCards: (dim: boolean) => void;
 }
 
 export const defaultSettings: Settings = {
-  theme: 'light',
+  theme: "light",
   soundEnabled: true,
-  defaultDifficulty: 'medium',
-  dimUnplayableCards: true,
+  defaultDifficulty: "medium",
+  dimUnplayableCards: false,
 };
 
-export const useSettingsStore = create<SettingsStore>((set) => ({
+export const useSettingsStore = create<SettingsStore>(set => ({
   ...defaultSettings,
-  setTheme: (theme) => set({ theme }),
-  setSoundEnabled: (soundEnabled) => set({ soundEnabled }),
-  setDefaultDifficulty: (defaultDifficulty) => set({ defaultDifficulty }),
-  setDimUnplayableCards: (dimUnplayableCards) => set({ dimUnplayableCards }),
+  setTheme: theme => set({ theme }),
+  setSoundEnabled: soundEnabled => set({ soundEnabled }),
+  setDefaultDifficulty: defaultDifficulty => set({ defaultDifficulty }),
+  setDimUnplayableCards: dimUnplayableCards => set({ dimUnplayableCards }),
 }));
