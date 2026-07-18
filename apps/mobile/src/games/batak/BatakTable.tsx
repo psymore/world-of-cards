@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -24,6 +23,7 @@ import { SelectableCard } from "../../components/SelectableCard";
 import { DeselectableSurface } from "../../components/DeselectableSurface";
 import { useCardSelection } from "../../components/useCardSelection";
 import { PlayerAvatar } from "../../components/PlayerAvatar";
+import { CenteredDecisionModal } from "../../components/CenteredDecisionModal";
 import { useReducedMotion } from "../../components/useReducedMotion";
 import { DealFlightOverlay } from "../../table/DealFlightOverlay";
 import type { DealFlightSeat } from "../../table/DealFlightOverlay";
@@ -426,28 +426,27 @@ function BidControls({
   );
   const hasPass = legalMoves.some(m => m.type === "pass");
   return (
-    <ScrollView
-      horizontal
-      contentContainerStyle={styles.bidRow}
-      testID="bid-controls">
-      {bidMoves.map(move => (
-        <Pressable
-          key={move.amount}
-          onPress={() => onMove(move)}
-          style={styles.bidButton}
-          accessibilityRole="button">
-          <Text style={styles.bidButtonText}>{`Bid ${move.amount}`}</Text>
-        </Pressable>
-      ))}
-      {hasPass && (
-        <Pressable
-          onPress={() => onMove({ type: "pass" })}
-          style={[styles.bidButton, styles.passButton]}
-          accessibilityRole="button">
-          <Text style={styles.bidButtonText}>Pass</Text>
-        </Pressable>
-      )}
-    </ScrollView>
+    <View style={styles.modalCard} testID="bid-controls">
+      <View style={styles.bidGrid}>
+        {bidMoves.map(move => (
+          <Pressable
+            key={move.amount}
+            onPress={() => onMove(move)}
+            style={styles.bidButton}
+            accessibilityRole="button">
+            <Text style={styles.bidButtonText}>{`Bid ${move.amount}`}</Text>
+          </Pressable>
+        ))}
+        {hasPass && (
+          <Pressable
+            onPress={() => onMove({ type: "pass" })}
+            style={[styles.bidButton, styles.passButton]}
+            accessibilityRole="button">
+            <Text style={styles.bidButtonText}>Pass</Text>
+          </Pressable>
+        )}
+      </View>
+    </View>
   );
 }
 
@@ -729,9 +728,6 @@ export function BatakTable({
           active={isHumanTurn}
           isHuman
         />
-        {state.phase === "bidding" && isHumanInteractive && (
-          <BidControls legalMoves={legalMoves} onMove={onMove} />
-        )}
         <View style={styles.handFan} testID="human-hand">
           <HandRow
             cards={topRow}
@@ -758,6 +754,9 @@ export function BatakTable({
         </View>
       </View>
       {dealPhase !== "revealing" && <DealFlightOverlay seats={dealSeats} />}
+      <CenteredDecisionModal visible={state.phase === "bidding" && isHumanInteractive}>
+        <BidControls legalMoves={legalMoves} onMove={onMove} />
+      </CenteredDecisionModal>
     </DeselectableSurface>
   );
 }
@@ -865,7 +864,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  bidRow: { flexDirection: "row", gap: 8, paddingHorizontal: 12 },
+  modalCard: {
+    backgroundColor: "rgba(11, 30, 20, 0.94)",
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "rgba(244, 197, 66, 0.5)",
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    maxWidth: 320,
+    alignItems: "center",
+  },
+  bidGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 8,
+  },
   bidButton: {
     backgroundColor: "rgba(255, 255, 255, 0.12)",
     borderWidth: 1,
