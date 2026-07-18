@@ -30,7 +30,7 @@ import { useReducedMotion } from "../../components/useReducedMotion";
 import { DealFlightOverlay } from "../../table/DealFlightOverlay";
 import type { DealFlightSeat } from "../../table/DealFlightOverlay";
 import type { DealPhase } from "../../hooks/useDealSequence";
-import { CARD_TRAVEL_DURATION_MS, CARD_TRAVEL_EASING } from "../../table/travelAnimation";
+import { TravelCard } from "../../table/TravelCard";
 import {
   assignSeats,
   fanCurveY,
@@ -40,7 +40,7 @@ import {
   resolveRevealOrigin,
   revealOriginOffset,
 } from "../../table/seating";
-import type { Seat, SeatPosition, RevealOrigin } from "../../table/seating";
+import type { Seat, SeatPosition } from "../../table/seating";
 
 const SUITS: Suit[] = ["spades", "hearts", "diamonds", "clubs"];
 
@@ -316,46 +316,6 @@ const TRICK_SLOT_OFFSETS: Record<TrickPosition, { x: number; y: number }> = {
   right: { x: 30, y: 0 },
 };
 
-// Animates a just-played card traveling from its seat's direction to its resting position in the
-// trick cross — the parent slot (see TrickCenter) already sits at the resting TRICK_SLOT_OFFSETS
-// position, so this only needs to interpolate from the origin vector down to (0, 0) relative to
-// that slot. Mirrors Pişti's PistiTable.RevealCard, sharing the same timing constants
-// (../../table/travelAnimation) so both games' play-travel motion feels consistent.
-function TravelCard({ card, origin }: { card: Card; origin: RevealOrigin }) {
-  const progress = useRef(new Animated.Value(0)).current;
-  const reducedMotion = useReducedMotion();
-
-  useEffect(() => {
-    if (reducedMotion) {
-      progress.setValue(1);
-      return;
-    }
-    progress.setValue(0);
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: CARD_TRAVEL_DURATION_MS,
-      easing: CARD_TRAVEL_EASING,
-      useNativeDriver: true,
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }).start();
-  }, [card.id, reducedMotion]);
-
-  const originVector = revealOriginOffset(origin);
-
-  return (
-    <Animated.View
-      style={{
-        opacity: progress,
-        transform: [
-          { translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [originVector.x, 0] }) },
-          { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [originVector.y, 0] }) },
-        ],
-      }}>
-      <PlayingCard card={card} size="small" />
-    </Animated.View>
-  );
-}
-
 function TrickCenter({
   state,
   seats,
@@ -409,7 +369,11 @@ function TrickCenter({
         ]}>
         {card ? (
           isPending ? (
-            <TravelCard card={card} origin={resolveRevealOrigin(playerId!, humanPlayerId, seats)} />
+            <TravelCard
+              originOffset={revealOriginOffset(resolveRevealOrigin(playerId!, humanPlayerId, seats))}
+              resetKey={card.id}>
+              <PlayingCard card={card} size="small" />
+            </TravelCard>
           ) : (
             <PlayingCard card={card} size="small" />
           )
