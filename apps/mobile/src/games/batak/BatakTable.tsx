@@ -29,6 +29,7 @@ import { DealFlightOverlay } from "../../table/DealFlightOverlay";
 import type { DealFlightSeat } from "../../table/DealFlightOverlay";
 import type { DealPhase } from "../../hooks/useDealSequence";
 import { TravelCard } from "../../table/TravelCard";
+import { GatherCard } from "../../table/GatherCard";
 import {
   assignSeats,
   fanCurveY,
@@ -124,6 +125,14 @@ export interface PendingBatakPlay {
   originOffset?: { x: number; y: number };
 }
 
+// All 4 plays of a just-completed trick, captured before performMove commits (which resolves
+// the trick atomically — winner computed and cards swept to won-<winner> within one call), so
+// TrickCenter has a stable snapshot to animate away from while engine state is still mid-trick.
+export interface GatheringTrick {
+  entries: { playerId: string; card: Card }[];
+  winnerId: string;
+}
+
 export type BatakDealPhase = DealPhase;
 
 export interface BatakTableProps {
@@ -141,6 +150,7 @@ export interface BatakTableProps {
   // when available.
   onPlayCard: (cardId: string, originOffset?: { x: number; y: number }) => void;
   pendingPlay?: PendingBatakPlay | null;
+  gatheringTrick?: GatheringTrick | null;
   dealPhase: BatakDealPhase;
 }
 
@@ -328,6 +338,7 @@ function TrickCenter({
   humanPlayerId,
   playerNames,
   pendingPlay,
+  gatheringTrick,
   destRef,
   onDestLayout,
 }: {
@@ -336,9 +347,15 @@ function TrickCenter({
   humanPlayerId: string;
   playerNames: Record<string, string>;
   pendingPlay?: PendingBatakPlay | null;
+  gatheringTrick?: GatheringTrick | null;
   destRef: React.RefObject<View | null>;
   onDestLayout: () => void;
 }) {
+  function trickPositionFor(playerId: string): TrickPosition {
+    if (playerId === humanPlayerId) return "bottom";
+    return seats.find((s) => s.playerId === playerId)?.position ?? "top";
+  }
+
   function cardFor(playerId: string): Card | null {
     if (pendingPlay != null && pendingPlay.playerId === playerId)
       return pendingPlay.card;
@@ -397,6 +414,10 @@ function TrickCenter({
     );
   }
 
+  const gatherDestinationOffset = gatheringTrick
+    ? revealOriginOffset(resolveRevealOrigin(gatheringTrick.winnerId, humanPlayerId, seats))
+    : null;
+
   return (
     <View style={styles.centerPanel}>
       <View style={styles.trumpRow}>
@@ -411,7 +432,22 @@ function TrickCenter({
         </Text>
       </View>
       <View style={styles.trickCross}>
-        {(["top", "left", "bottom", "right"] as TrickPosition[]).map(slotFor)}
+        {gatheringTrick
+          ? gatheringTrick.entries.map(({ playerId, card }) => {
+              const position = trickPositionFor(playerId);
+              const offset = TRICK_SLOT_OFFSETS[position];
+              return (
+                <View
+                  key={playerId}
+                  style={[
+                    styles.trickSlot,
+                    { transform: [{ translateX: offset.x }, { translateY: offset.y }] },
+                  ]}>
+                  <GatherCard card={card} destinationOffset={gatherDestinationOffset!} />
+                </View>
+              );
+            })
+          : (["top", "left", "bottom", "right"] as TrickPosition[]).map(slotFor)}
       </View>
     </View>
   );
@@ -568,6 +604,7 @@ export function BatakTable({
   onMove,
   onPlayCard,
   pendingPlay,
+  gatheringTrick,
   dealPhase,
 }: BatakTableProps) {
   const seats = assignSeats(opponentPlayerIds);
@@ -588,7 +625,7 @@ export function BatakTable({
   // trick-completing move (human's own or an AI's) is staged, engine state hasn't advanced past
   // the player who made it yet, so disabling on pendingPlay alone — not "is it revealing for the
   // human specifically" — is both correct and simpler than tracking whose reveal it is.
-  const isHumanInteractive = isHumanTurn && pendingPlay == null;
+  const isHumanInteractive = isHumanTurn && pendingPlay == null && gatheringTrick == null;
 
   const { selectedCardId, selectCard, clearSelection } = useCardSelection(playWithMeasuredOrigin);
   useEffect(() => {
@@ -704,6 +741,7 @@ export function BatakTable({
             humanPlayerId={humanPlayerId}
             playerNames={playerNames}
             pendingPlay={pendingPlay}
+            gatheringTrick={gatheringTrick}
             destRef={destRef}
             onDestLayout={handleDestLayout}
           />

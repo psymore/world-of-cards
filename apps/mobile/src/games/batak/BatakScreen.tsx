@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { LayoutAnimation } from 'react-native';
 import type { Difficulty, PlayerId, RNG } from '@world-cards/engine';
 import { createRng } from '@world-cards/engine';
-import { batakDescriptor, BatakState, BatakMove } from '@world-cards/engine/games/batak';
+import { batakDescriptor, BatakState, BatakMove, trickWinnerIndex } from '@world-cards/engine/games/batak';
 import { createGameSessionStore } from '../../state/createGameSessionStore';
 import { useSettingsStore } from '../../state/settingsStore';
 import { GameScreenLayout } from '../../components/GameScreenLayout';
@@ -10,8 +10,9 @@ import { GameResultModal } from '../../components/GameResultModal';
 import { useReducedMotion } from '../../components/useReducedMotion';
 import { useAITurn } from '../../hooks/useAITurn';
 import { useDealSequence } from '../../hooks/useDealSequence';
+import { CARD_TRAVEL_DURATION_MS } from '../../table/travelAnimation';
 import { BatakSetupView } from './BatakSetupView';
-import { BatakTable, PendingBatakPlay } from './BatakTable';
+import { BatakTable, PendingBatakPlay, GatheringTrick } from './BatakTable';
 import { BatakSettingsModal } from './BatakSettingsModal';
 
 const HUMAN_ID: PlayerId = 'human';
@@ -91,8 +92,10 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
   const state = useSessionStore((s) => s.state);
   const performMove = useSessionStore((s) => s.performMove);
   const [pendingPlay, setPendingPlay] = useState<PendingBatakPlay | null>(null);
+  const [gatheringTrick, setGatheringTrick] = useState<GatheringTrick | null>(null);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const pendingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gatherTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dealPhase = useDealSequence();
   const reducedMotion = useReducedMotion();
 
@@ -101,6 +104,7 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
   useEffect(() => {
     return () => {
       if (pendingTimeoutRef.current) clearTimeout(pendingTimeoutRef.current);
+      if (gatherTimeoutRef.current) clearTimeout(gatherTimeoutRef.current);
     };
   }, []);
 
@@ -115,7 +119,8 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
         performMove(move);
         return;
       }
-      const delay = state.currentTrick.length === 3 ? TRICK_COMPLETION_PAUSE_MS : PLAY_TRAVEL_DELAY_MS;
+      const isTrickCompleting = state.currentTrick.length === 3;
+      const delay = isTrickCompleting ? TRICK_COMPLETION_PAUSE_MS : PLAY_TRAVEL_DELAY_MS;
       // Only the human's own plays remove a card from BatakTable's rendered hand array (see
       // isPendingHuman in BatakTable.tsx) — AI plays never touch it, so they need no trigger.
       if (playerId === HUMAN_ID && !reducedMotion) {
@@ -129,8 +134,30 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
       }
       setPendingPlay({ playerId, card, originOffset });
       pendingTimeoutRef.current = setTimeout(() => {
-        performMove(move);
         setPendingPlay(null);
+        if (!isTrickCompleting) {
+          performMove(move);
+          return;
+        }
+        // The trick just completed: snapshot all 4 plays + the winner (computed with the exact same
+        // pure function the engine itself uses internally) before committing, so GatherCard has a
+        // stable 4-card view to animate away from while engine state is still mid-trick —
+        // performMove resolves a completed trick atomically and would otherwise leave nothing to
+        // animate.
+        const priorEntries = state.currentTrick;
+        const priorCards = priorEntries.map(
+          (e) => state.table.zones['trick'].cards.find((c) => c.id === e.cardId)!,
+        );
+        const fullTrickCards = [...priorCards, card];
+        const fullTrickPlayerIds = [...priorEntries.map((e) => e.playerId), playerId];
+        const winnerPos = trickWinnerIndex(fullTrickCards, state.trumpSuit!);
+        const winnerId = fullTrickPlayerIds[winnerPos];
+        const entries = fullTrickPlayerIds.map((pid, i) => ({ playerId: pid, card: fullTrickCards[i] }));
+        setGatheringTrick({ entries, winnerId });
+        gatherTimeoutRef.current = setTimeout(() => {
+          performMove(move);
+          setGatheringTrick(null);
+        }, CARD_TRAVEL_DURATION_MS);
       }, delay);
       return;
     }
@@ -155,7 +182,7 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
   }
 
   const legalMoves =
-    state.players[state.currentPlayerIndex] === HUMAN_ID && pendingPlay == null
+    state.players[state.currentPlayerIndex] === HUMAN_ID && pendingPlay == null && gatheringTrick == null
       ? batakDescriptor.ruleEngine.getLegalMoves(state, HUMAN_ID)
       : [];
 
@@ -177,6 +204,7 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
         onMove={handleHumanMove}
         onPlayCard={handleHumanPlayCard}
         pendingPlay={pendingPlay}
+        gatheringTrick={gatheringTrick}
         dealPhase={dealPhase}
       />
       {gameOver && (
