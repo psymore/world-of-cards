@@ -18,6 +18,8 @@ import {
   TableFelt,
   TableWoodCorners,
   TableEdgeRails,
+  HandFrame,
+  HAND_FRAME_PEAK_FRACTION,
   glowShadow,
 } from "@world-cards/ui";
 import { SelectableCard } from "../../components/SelectableCard";
@@ -47,10 +49,48 @@ function suitColor(suit: Suit): string {
 }
 
 const HUMAN_CARD_WIDTH = 94; // matches PlayingCard's 'normal' size width
+const HUMAN_CARD_HEIGHT = 132; // matches PlayingCard's 'normal' size height
 // A flatter arc than the opponents' default fan (half the rotation-per-card and curve
 // multiplier) — first-pass values, tune during the manual visual verification pass if needed.
 const HUMAN_HAND_DEGREES_PER_STEP = 4;
 const HUMAN_HAND_CURVE_MULTIPLIER = 1.5;
+// The bottom hand row overlaps the top row instead of sitting below it with a gap, so the two
+// rows read as one imbricated fan rather than two stacked blocks.
+const HAND_ROW_OVERLAP_FRACTION = 0.25;
+const HAND_ROW_OVERLAP_PX = Math.round(HUMAN_CARD_HEIGHT * HAND_ROW_OVERLAP_FRACTION);
+
+// First-pass constants for positioning HandFrame behind the two-row hand, derived from this
+// file's own layout below (not measured on a real device — tune these if the frame's arch peak
+// doesn't line up with the top row's peak once visually checked).
+const CONTAINER_BOTTOM_PADDING = 12; // matches styles.container.paddingVertical
+const HAND_AREA_HEIGHT = 300; // matches styles.handArea.minHeight
+const HAND_BADGE_HEIGHT = 34; // approx rendered height of PlayerBadge at normal size
+const HAND_AREA_CONTENT_GAP = 4; // matches styles.handArea.gap
+// Content centered inside handArea: badge + gap + the two-row fan (top row's full height, plus
+// the bottom row's additional visible height once the overlap above is applied).
+const HAND_CONTENT_HEIGHT =
+  HAND_BADGE_HEIGHT +
+  HAND_AREA_CONTENT_GAP +
+  HUMAN_CARD_HEIGHT +
+  (HUMAN_CARD_HEIGHT - HAND_ROW_OVERLAP_PX);
+const HAND_AREA_TOP_INSET = (HAND_AREA_HEIGHT - HAND_CONTENT_HEIGHT) / 2;
+// Distance from the container's true bottom edge (where HandFrame's own bottom:0 would sit,
+// since absolute positioning ignores the container's own paddingVertical) up to the top row's
+// peak — its center card's top edge, where curveOffsetY is 0.
+const TOP_ROW_PEAK_DISTANCE_FROM_BOTTOM =
+  CONTAINER_BOTTOM_PADDING +
+  HAND_AREA_HEIGHT -
+  HAND_AREA_TOP_INSET -
+  HAND_BADGE_HEIGHT -
+  HAND_AREA_CONTENT_GAP;
+// Peak-aligning the frame exactly to the top row's own top edge hides the frame's gold trim
+// behind the cards (they render in front, same height). This extra margin lifts the frame's
+// peak above the top row instead, so the trim clears the cards and stays visible.
+const HAND_FRAME_REVEAL_MARGIN = 14;
+// The frame's bottom edge sits this far below the screen's true bottom edge (rather than landing
+// exactly flush) so it's guaranteed to fully cover the bottom regardless of small per-device
+// rounding/safe-area differences — the overshoot itself is never visible, it's off-screen.
+const HAND_FRAME_BOTTOM_OVERSHOOT = 16;
 // Reserve a small ~4% gutter on each side (i.e. cards span the middle 92% of the hand area's
 // real width) instead of a fixed-percent overlap that doesn't adapt to device width — bumped
 // from 0.7 (15% gutter) to spread much closer to the Alper Games reference.
@@ -601,11 +641,20 @@ export function BatakTable({
   const topRowMargin = fillWidthMarginPx(HUMAN_CARD_WIDTH, topRow.length, handSpanTarget, HUMAN_HAND_MAX_GAP);
   const bottomRowMargin = fillWidthMarginPx(HUMAN_CARD_WIDTH, bottomRow.length, handSpanTarget, HUMAN_HAND_MAX_GAP);
 
+  // Anchored below the screen's true bottom edge (covers the full bottom side with margin to
+  // spare — the overshoot itself is off-screen) while keeping the peak at the same height as
+  // before. Width stays exactly windowWidth; only height is stretched (via HandFrame's `height`
+  // prop + resizeMode="stretch") to satisfy both constraints — see HandFrame's prop doc.
+  const handFramePeakTarget = TOP_ROW_PEAK_DISTANCE_FROM_BOTTOM + HAND_FRAME_REVEAL_MARGIN;
+  const handFrameBottomOffset = -HAND_FRAME_BOTTOM_OVERSHOOT;
+  const handFrameHeight =
+    (handFramePeakTarget + HAND_FRAME_BOTTOM_OVERSHOOT) / (1 - HAND_FRAME_PEAK_FRACTION);
+
   return (
     <DeselectableSurface style={styles.container} onDeselect={clearSelection}>
       <TableFelt />
-      <TableWoodCorners />
-      <TableEdgeRails />
+      <TableWoodCorners corners={['topLeft', 'topRight']} />
+      <TableEdgeRails edges={['top', 'left', 'right']} />
       <OpponentSeatGroup
         position="top"
         seats={seats}
@@ -653,6 +702,7 @@ export function BatakTable({
         />
       </View>
 
+      <HandFrame bottomOffset={handFrameBottomOffset} height={handFrameHeight} />
       <View style={styles.handArea} onLayout={handleHandAreaLayout}>
         <PlayerBadge
           name={playerNames[humanPlayerId] ?? "You"}
@@ -673,15 +723,17 @@ export function BatakTable({
             playEntrance={dealPhase === "revealing"}
             cardMarginLeft={topRowMargin}
           />
-          <HandRow
-            cards={bottomRow}
-            legalCardIds={legalCardIds}
-            isHumanInteractive={isHumanInteractive}
-            selectedCardId={selectedCardId}
-            selectCard={selectCard}
-            playEntrance={dealPhase === "revealing"}
-            cardMarginLeft={bottomRowMargin}
-          />
+          <View style={styles.bottomHandRow}>
+            <HandRow
+              cards={bottomRow}
+              legalCardIds={legalCardIds}
+              isHumanInteractive={isHumanInteractive}
+              selectedCardId={selectedCardId}
+              selectCard={selectCard}
+              playEntrance={dealPhase === "revealing"}
+              cardMarginLeft={bottomRowMargin}
+            />
+          </View>
         </View>
       </View>
       {dealPhase !== "revealing" && <DealFlightOverlay seats={dealSeats} />}
@@ -791,7 +843,10 @@ const styles = StyleSheet.create({
   },
   passButton: { borderColor: "rgba(192, 57, 43, 0.6)" },
   bidButtonText: { fontSize: 15, fontWeight: "700", color: "#f5f0e6" },
-  handFan: { alignItems: "center", gap: 6 },
+  handFan: { alignItems: "center" },
+  // Overlaps the bottom row up into the top row by HAND_ROW_OVERLAP_PX instead of the two rows
+  // sitting apart with a gap, so the fan reads as one imbricated hand.
+  bottomHandRow: { marginTop: -HAND_ROW_OVERLAP_PX },
   // No zIndex here — natural render order (top row's Views come before bottom row's in the
   // JSX) already makes a lifted bottom-row card paint over the top row on its own, with no
   // per-card override needed.

@@ -14,9 +14,13 @@ const GRAIN_COLOR = '#ffab6b';
 export interface TableEdgeRailsProps {
   // Same override contract as TableWoodCorners: undefined => today's hardcoded mahogany look.
   woodColor?: string;
+  // Which edges to render. Defaults to all 4 (today's behavior, unchanged for every existing
+  // caller). Batak passes ['top', 'left', 'right'] once the wooden hand-frame takes over the
+  // bottom edge.
+  edges?: Edge[];
 }
 
-type Edge = 'top' | 'bottom' | 'left' | 'right';
+export type Edge = 'top' | 'bottom' | 'left' | 'right';
 
 const EDGES: Edge[] = ['top', 'bottom', 'left', 'right'];
 
@@ -66,12 +70,12 @@ function Rail({ edge, woodLight, woodDark }: { edge: Edge; woodLight: string; wo
 
 // Zero props (aside from the same optional woodColor override TableWoodCorners takes), output
 // never changes — memoized so it paints once, same rule as TableFelt/TableWoodCorners.
-function TableEdgeRailsComponent({ woodColor }: TableEdgeRailsProps) {
+function TableEdgeRailsComponent({ woodColor, edges = EDGES }: TableEdgeRailsProps) {
   const woodLight = woodColor != null ? shadeColor(woodColor, 0.18) : DEFAULT_WOOD_LIGHT;
   const woodDark = woodColor != null ? shadeColor(woodColor, -0.25) : DEFAULT_WOOD_DARK;
   return (
     <AbsoluteOverlay>
-      {EDGES.map((edge) => (
+      {edges.map((edge) => (
         <Rail key={edge} edge={edge} woodLight={woodLight} woodDark={woodDark} />
       ))}
     </AbsoluteOverlay>

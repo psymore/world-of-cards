@@ -15,9 +15,13 @@ export interface TableWoodCornersProps {
   // it via shadeColor so the existing textured-wood look is preserved under any base hue.
   // Undefined => today's exact hardcoded mahogany look.
   woodColor?: string;
+  // Which corners to render. Defaults to all 4 (today's behavior, unchanged for every existing
+  // caller). Batak passes ['topLeft', 'topRight'] once the wooden hand-frame's own bottom
+  // corners take over the bottom two.
+  corners?: Corner[];
 }
 
-type Corner = 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight';
+export type Corner = 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight';
 
 interface WedgeGeometry {
   fillPath: string;
@@ -82,12 +86,12 @@ function Wedge({ corner, woodLight, woodDark }: { corner: Corner; woodLight: str
 
 // Zero props, output never changes — memoize so it paints once and is never redone by the
 // move-by-move re-renders that drive the rest of the table, same rule as TableFelt.
-function TableWoodCornersComponent({ woodColor }: TableWoodCornersProps) {
+function TableWoodCornersComponent({ woodColor, corners = CORNERS }: TableWoodCornersProps) {
   const woodLight = woodColor != null ? shadeColor(woodColor, 0.18) : DEFAULT_WOOD_LIGHT;
   const woodDark = woodColor != null ? shadeColor(woodColor, -0.25) : DEFAULT_WOOD_DARK;
   return (
     <AbsoluteOverlay>
-      {CORNERS.map((corner) => (
+      {corners.map((corner) => (
         <Wedge key={corner} corner={corner} woodLight={woodLight} woodDark={woodDark} />
       ))}
     </AbsoluteOverlay>
