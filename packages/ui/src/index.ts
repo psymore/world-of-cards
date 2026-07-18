@@ -9,7 +9,7 @@ export { TableEdgeRails } from './TableEdgeRails';
 export type { TableEdgeRailsProps, Edge } from './TableEdgeRails';
 export { HandFrame, HAND_FRAME_ASPECT_RATIO, HAND_FRAME_PEAK_FRACTION } from './HandFrame';
 export type { HandFrameProps } from './HandFrame';
-export { HeaderWoodFrame, HEADER_FRAME_ASPECT_RATIO, HEADER_FRAME_CROP_FRACTION } from './HeaderWoodFrame';
+export { HeaderWoodFrame } from './HeaderWoodFrame';
 export type { HeaderWoodFrameProps } from './HeaderWoodFrame';
 export { SettingsIcon } from './SettingsIcon';
 export type { SettingsIconProps } from './SettingsIcon';
