@@ -263,43 +263,46 @@ function BiddingCenter({
   );
 }
 
-function TrumpSelectionCenter({
+function TrumpWaitingCenter({
   state,
-  humanPlayerId,
   playerNames,
-  onMove,
 }: {
   state: BatakState;
-  humanPlayerId: string;
   playerNames: Record<string, string>;
-  onMove: (move: BatakMove) => void;
 }) {
-  if (state.bidWinner === humanPlayerId) {
-    return (
-      <View style={styles.centerPanel}>
-        <Text
-          style={
-            styles.centerHeading
-          }>{`Choose trump (contract: ${state.contract})`}</Text>
-        <View style={styles.suitRow}>
-          {SUITS.map(suit => (
-            <Pressable
-              key={suit}
-              onPress={() => onMove({ type: "selectTrump", suit })}
-              style={styles.suitButton}
-              accessibilityRole="button">
-              <SuitIcon suit={suit} size={28} color={suitColor(suit)} />
-            </Pressable>
-          ))}
-        </View>
-      </View>
-    );
-  }
   return (
     <View style={styles.centerPanel}>
       <Text style={styles.centerHeading}>
         {`${playerNames[state.bidWinner ?? ""] ?? state.bidWinner} is choosing trump…`}
       </Text>
+    </View>
+  );
+}
+
+function TrumpSuitPicker({
+  state,
+  onMove,
+}: {
+  state: BatakState;
+  onMove: (move: BatakMove) => void;
+}) {
+  return (
+    <View style={styles.modalCard}>
+      <Text
+        style={
+          styles.centerHeading
+        }>{`Choose trump (contract: ${state.contract})`}</Text>
+      <View style={styles.suitRow}>
+        {SUITS.map(suit => (
+          <Pressable
+            key={suit}
+            onPress={() => onMove({ type: "selectTrump", suit })}
+            style={styles.suitButton}
+            accessibilityRole="button">
+            <SuitIcon suit={suit} size={28} color={suitColor(suit)} />
+          </Pressable>
+        ))}
+      </View>
     </View>
   );
 }
@@ -691,13 +694,8 @@ export function BatakTable({
         {state.phase === "bidding" && (
           <BiddingCenter state={state} playerNames={playerNames} />
         )}
-        {state.phase === "trump-selection" && (
-          <TrumpSelectionCenter
-            state={state}
-            humanPlayerId={humanPlayerId}
-            playerNames={playerNames}
-            onMove={onMove}
-          />
+        {state.phase === "trump-selection" && state.bidWinner !== humanPlayerId && (
+          <TrumpWaitingCenter state={state} playerNames={playerNames} />
         )}
         {state.phase === "playing" && (
           <TrickCenter
@@ -756,6 +754,10 @@ export function BatakTable({
       {dealPhase !== "revealing" && <DealFlightOverlay seats={dealSeats} />}
       <CenteredDecisionModal visible={state.phase === "bidding" && isHumanInteractive}>
         <BidControls legalMoves={legalMoves} onMove={onMove} />
+      </CenteredDecisionModal>
+      <CenteredDecisionModal
+        visible={state.phase === "trump-selection" && state.bidWinner === humanPlayerId}>
+        <TrumpSuitPicker state={state} onMove={onMove} />
       </CenteredDecisionModal>
     </DeselectableSurface>
   );
