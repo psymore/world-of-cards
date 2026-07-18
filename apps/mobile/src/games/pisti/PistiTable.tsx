@@ -30,6 +30,7 @@ import type { DealPhase } from '../../hooks/useDealSequence';
 export interface PistiRevealCard {
   card: Card;
   playerId: string;
+  originOffset?: { x: number; y: number };
 }
 
 export interface PistiTableProps {
@@ -39,7 +40,7 @@ export interface PistiTableProps {
   // them left/top/right around the human (4-player table).
   opponentPlayerIds: string[];
   playerNames: Record<string, string>;
-  onPlayCard: (cardId: string) => void;
+  onPlayCard: (cardId: string, originOffset?: { x: number; y: number }) => void;
   bannerText?: string | null;
   revealCard?: PistiRevealCard | null;
   dealPhase: DealPhase;
@@ -97,7 +98,7 @@ function RevealCard({
   }, [revealCard.card.id, reducedMotion]);
 
   const offset = PILE_CARD_OFFSETS[MAX_STACKED_PILE_CARDS];
-  const origin = revealOriginOffset(originDirection);
+  const origin = revealCard.originOffset ?? revealOriginOffset(originDirection);
 
   return (
     <>
@@ -272,7 +273,7 @@ export function PistiTable({
   const stackedPile = pile.slice(-MAX_STACKED_PILE_CARDS);
   const capturedHuman = state.table.zones[`captured-${humanPlayerId}`].cards.length;
 
-  const { selectedCardId, selectCard, clearSelection } = useCardSelection(onPlayCard);
+  const { selectedCardId, selectCard, clearSelection } = useCardSelection(playWithMeasuredOrigin);
   useEffect(() => {
     if (!isHumanTurn) clearSelection();
   }, [isHumanTurn, clearSelection]);
@@ -286,6 +287,50 @@ export function PistiTable({
   const [middleRowHeight, setMiddleRowHeight] = useState(280);
   function handleMiddleRowLayout(event: LayoutChangeEvent) {
     setMiddleRowHeight(event.nativeEvent.layout.height);
+  }
+
+  // Destination for the human's play-travel origin delta: the pile's on-screen center,
+  // measured live (not derived from layout constants — see the design doc for why analytical
+  // computation was rejected) and re-measured on every layout pass so window resize/rotation
+  // can't leave it stale.
+  const destRef = useRef<View>(null);
+  const [destCenter, setDestCenter] = useState<{ x: number; y: number } | null>(null);
+  function handlePileMatLayout() {
+    destRef.current?.measureInWindow((x, y, width, height) => {
+      setDestCenter({ x: x + width / 2, y: y + height / 2 });
+    });
+  }
+
+  // One ref per currently-rendered human hand card, keyed by card id, so the confirming tap can
+  // measure that exact card's live position. Entries are added/removed as cards mount/unmount
+  // (played, or hand reshuffled) via the ref callback below.
+  const handCardRefs = useRef(new Map<string, View>()).current;
+  function registerHandCardRef(cardId: string, node: View | null) {
+    if (node) {
+      handCardRefs.set(cardId, node);
+    } else {
+      handCardRefs.delete(cardId);
+    }
+  }
+
+  // Replaces a direct onPlayCard(cardId) call: measures the tapped card's real on-screen
+  // position relative to the pile's, so the reveal travels from where the card actually was.
+  // Falls back to a plain onPlayCard(cardId) call (no origin — RevealCard then uses the fixed
+  // 'bottom' offset, same as today) whenever either measurement isn't ready, which is always the
+  // case in this project's Jest/RNTL tests (host refs never resolve there — no createNodeMock
+  // configured) and is a defensive path on a real device too.
+  function playWithMeasuredOrigin(cardId: string) {
+    const node = handCardRefs.get(cardId);
+    if (!node || !destCenter) {
+      onPlayCard(cardId);
+      return;
+    }
+    node.measureInWindow((x, y, width, height) => {
+      onPlayCard(cardId, {
+        x: x + width / 2 - destCenter.x,
+        y: y + height / 2 - destCenter.y,
+      });
+    });
   }
 
   // Deal order: human first, then opponents in existing turn order. Card counts come from the
@@ -325,7 +370,7 @@ export function PistiTable({
         />
 
         <View style={styles.pileArea}>
-          <View style={styles.pileMat}>
+          <View style={styles.pileMat} ref={destRef} onLayout={handlePileMatLayout}>
             <View style={styles.pileStack}>
               {stackedPile.map((card, i) => (
                 <View
@@ -377,7 +422,7 @@ export function PistiTable({
               // Off-turn "not tappable" styling comes from SelectableCard's own disabled scrim
               // now (a dark overlay keeping the card art fully visible), replacing the old
               // 0.5-opacity wrapper — keeping both would double-dim the hand.
-              <View key={card.id}>
+              <View key={card.id} ref={(node) => registerHandCardRef(card.id, node)}>
                 <SelectableCard
                   card={card}
                   selected={selectedCardId === card.id}

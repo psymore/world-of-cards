@@ -116,6 +116,7 @@ interface RevealedMove {
   move: PistiMove;
   card: Card;
   playerId: PlayerId;
+  originOffset?: { x: number; y: number };
 }
 
 function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgain, onBackHome }: ActiveGameProps) {
@@ -165,13 +166,13 @@ function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgai
 
   // Shared by both AI and human plays: show the chosen card traveling to the pile before actually
   // committing the move to engine state (see REVEAL_DELAY_MS above for why the pause exists).
-  function revealThenCommit(move: PistiMove, playerId: PlayerId) {
+  function revealThenCommit(move: PistiMove, playerId: PlayerId, originOffset?: { x: number; y: number }) {
     const playedCard = state.table.zones[`hand-${playerId}`].cards.find((c) => c.id === move.cardId);
     if (!playedCard) {
       applyMove(move, playerId);
       return;
     }
-    setRevealedMove({ move, card: playedCard, playerId });
+    setRevealedMove({ move, card: playedCard, playerId, originOffset });
     revealTimeoutRef.current = setTimeout(() => {
       applyMove(move, playerId);
       setRevealedMove(null);
@@ -187,8 +188,8 @@ function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgai
     onMove: revealThenCommit,
   });
 
-  function handlePlayCard(cardId: string) {
-    revealThenCommit({ type: 'play', cardId }, HUMAN_ID);
+  function handlePlayCard(cardId: string, originOffset?: { x: number; y: number }) {
+    revealThenCommit({ type: 'play', cardId }, HUMAN_ID, originOffset);
   }
 
   const gameOver = pistiDescriptor.ruleEngine.gameOver(state);
@@ -202,7 +203,11 @@ function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgai
         playerNames={playerNames}
         onPlayCard={handlePlayCard}
         bannerText={bannerText}
-        revealCard={revealedMove ? { card: revealedMove.card, playerId: revealedMove.playerId } : null}
+        revealCard={
+          revealedMove
+            ? { card: revealedMove.card, playerId: revealedMove.playerId, originOffset: revealedMove.originOffset }
+            : null
+        }
         dealPhase={dealPhase}
       />
       {gameOver && (
