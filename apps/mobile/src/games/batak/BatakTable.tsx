@@ -633,8 +633,12 @@ export function BatakTable({
   }, [isHumanInteractive, clearSelection]);
 
   const isPendingHuman = pendingPlay != null && pendingPlay.playerId === humanPlayerId;
+  const humanGatheringCardId = gatheringTrick?.entries.find(
+    (entry) => entry.playerId === humanPlayerId
+  )?.card.id;
   const humanHand = state.table.zones[`hand-${humanPlayerId}`].cards.filter(
-    (card) => !(isPendingHuman && card.id === pendingPlay!.card.id)
+    (card) =>
+      !(isPendingHuman && card.id === pendingPlay!.card.id) && card.id !== humanGatheringCardId
   );
   const sortedHand = sortHandForDisplay(humanHand);
   // splitTwoRows returns the larger half first; the bottom row (closer to the viewer) should get
