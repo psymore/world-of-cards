@@ -133,7 +133,9 @@ function RevealCard({
           styles.pileCardSlot,
           {
             zIndex: MAX_STACKED_PILE_CARDS + 1,
-            opacity: anim,
+            // Fully opaque/full-size for the entire flight (no fade-in or scale-up) so the card
+            // reads as physically traveling along the path, not materializing at the end of it —
+            // see docs/superpowers/specs/2026-07-18-card-travel-full-visibility-design.md.
             transform: [
               {
                 translateX: anim.interpolate({
@@ -147,7 +149,6 @@ function RevealCard({
                   outputRange: [offset.y + origin.y, offset.y],
                 }),
               },
-              { scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) },
             ],
           },
         ]}
@@ -479,7 +480,14 @@ const styles = StyleSheet.create({
   opponentAreaSide: { minHeight: 0, width: 96, paddingVertical: 4 },
   handArea: { minHeight: 177, justifyContent: 'center', borderRadius: 12, paddingVertical: 4 },
   activeArea: { backgroundColor: 'rgba(244, 197, 66, 0.14)' },
-  middleRow: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  // zIndex only orders direct siblings sharing a parent (here: the top opponent group, this row,
+  // and handArea, all children of the root container) — it does not let a deeply nested
+  // descendant "escape" and outrank an entirely different sibling subtree on its own. Without
+  // this, the RevealCard's own zIndex (scoped to its pileStack siblings) has no effect on whether
+  // it paints above or below handArea's cards, so mid-flight — since the reveal now travels from
+  // the card's real hand position, which visually overlaps handArea — it looked like it emerged
+  // from underneath the neighboring hand cards instead of lifting above them.
+  middleRow: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -505,7 +513,10 @@ const styles = StyleSheet.create({
   playerLabelCompact: { fontSize: 11 },
   opponentRow: { flexDirection: 'row', justifyContent: 'center' },
   opponentColumn: { flexDirection: 'column', alignItems: 'center' },
-  pileArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  // Same cross-subtree reasoning as middleRow above, one level down: outranks the left/right
+  // OpponentSeatGroup siblings within middleRow, so a reveal traveling from either side seat
+  // paints above that seat's own remaining cards too.
+  pileArea: { flex: 1, alignItems: 'center', justifyContent: 'center', zIndex: 10 },
   pileMat: {
     width: 195,
     height: 225,

@@ -55,7 +55,9 @@ export function TravelCard({ originOffset, resetKey, children }: TravelCardProps
   return (
     <Animated.View
       style={{
-        opacity: progress,
+        // Fully opaque for the entire flight (no fade-in) so the card reads as physically
+        // traveling along the path, not materializing at the end of it — see
+        // docs/superpowers/specs/2026-07-18-card-travel-full-visibility-design.md.
         transform: [
           {
             translateX: progress.interpolate({

@@ -782,11 +782,19 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     gap: 4,
   },
+  // zIndex only orders direct siblings sharing a parent (here: the top opponent group, this row,
+  // and handArea, all children of the root container) — it does not let a deeply nested
+  // descendant "escape" and outrank an entirely different sibling subtree on its own. Without
+  // this, TravelCard's own zIndex (scoped to its trickSlot siblings) has no effect on whether it
+  // paints above or below handArea's cards, so mid-flight — since the human's play now travels
+  // from the card's real hand position, which visually overlaps handArea — it looked like it
+  // emerged from underneath the neighboring hand cards instead of lifting above them.
   middleRow: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    zIndex: 10,
   },
   badge: {
     flexDirection: "row",
@@ -814,11 +822,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   playerLabelCompact: { fontSize: 11 },
+  // Same cross-subtree reasoning as middleRow above, one level down: outranks the left/right
+  // OpponentSeatGroup siblings within middleRow, so a card traveling from either side seat paints
+  // above that seat's own remaining cards too.
   centerPanel: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
+    zIndex: 10,
   },
   centerHeading: {
     fontSize: 16,
