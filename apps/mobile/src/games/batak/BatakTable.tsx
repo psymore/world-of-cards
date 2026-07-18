@@ -289,9 +289,9 @@ function TrumpSuitPicker({
   return (
     <View style={styles.modalCard}>
       <Text
-        style={
-          styles.centerHeading
-        }>{`Choose trump (contract: ${state.contract})`}</Text>
+        style={[styles.centerHeading, styles.trumpModalHeading]}>
+        {`Choose trump (contract: ${state.contract})`}
+      </Text>
       <View style={styles.suitRow}>
         {SUITS.map(suit => (
           <Pressable
@@ -774,8 +774,8 @@ const styles = StyleSheet.create({
   },
   opponentAreaSide: { minHeight: 0, width: 96, paddingVertical: 4 },
   // 300 hugs the playing-phase content at 'normal' card size (two 120px rows + 6px fan gap +
-  // 4px area gap + badge ≈ 296); during bidding the BidControls row grows the area past the
-  // minimum naturally, so bidding layout is unaffected.
+  // 4px area gap + badge ≈ 296). BidControls now renders in a CenteredDecisionModal rather than
+  // here, so this height applies uniformly across every phase.
   handArea: {
     minHeight: 300,
     justifyContent: "center",
@@ -866,8 +866,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  // Mahogany wood tone matching TableWoodCorners/TableEdgeRails/HandFrame's established wood
+  // palette elsewhere in this app (their own color constants aren't exported, so this is a
+  // hand-matched literal, not an import) — makes both decision modals read as part of the same
+  // wooden-table identity instead of an unrelated dark-green card.
   modalCard: {
-    backgroundColor: "rgba(11, 30, 20, 0.94)",
+    backgroundColor: "rgba(74, 36, 25, 0.94)",
     borderRadius: 16,
     borderWidth: 1.5,
     borderColor: "rgba(244, 197, 66, 0.5)",
@@ -876,13 +880,22 @@ const styles = StyleSheet.create({
     maxWidth: 320,
     alignItems: "center",
   },
+  // Only the trump modal's heading needs breathing room above the suit row — the bid modal has no
+  // heading of its own, and the ambient centerPanel instances already get spacing from their own
+  // `gap`, so this stays scoped here rather than added to the shared centerHeading style.
+  trumpModalHeading: { marginBottom: 12 },
   bidGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
     gap: 8,
   },
+  // Fixed width + centered text so every bid button (from "Bid 5" through "Bid 13") and Pass
+  // render as equal-sized rectangles in the grid, regardless of label length.
   bidButton: {
+    width: 72,
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "rgba(255, 255, 255, 0.12)",
     borderWidth: 1,
     borderColor: "rgba(244, 197, 66, 0.5)",
@@ -891,7 +904,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   passButton: { borderColor: "rgba(192, 57, 43, 0.6)" },
-  bidButtonText: { fontSize: 15, fontWeight: "700", color: "#f5f0e6" },
+  bidButtonText: { fontSize: 15, fontWeight: "700", color: "#f5f0e6", textAlign: "center" },
   handFan: { alignItems: "center" },
   // Overlaps the bottom row up into the top row by HAND_ROW_OVERLAP_PX instead of the two rows
   // sitting apart with a gap, so the fan reads as one imbricated hand.
