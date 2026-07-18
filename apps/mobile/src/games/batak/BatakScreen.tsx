@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { LayoutAnimation } from 'react-native';
 import type { Difficulty, PlayerId, RNG } from '@world-cards/engine';
 import { createRng } from '@world-cards/engine';
 import { batakDescriptor, BatakState, BatakMove } from '@world-cards/engine/games/batak';
@@ -6,6 +7,7 @@ import { createGameSessionStore } from '../../state/createGameSessionStore';
 import { useSettingsStore } from '../../state/settingsStore';
 import { GameScreenLayout } from '../../components/GameScreenLayout';
 import { GameResultModal } from '../../components/GameResultModal';
+import { useReducedMotion } from '../../components/useReducedMotion';
 import { useAITurn } from '../../hooks/useAITurn';
 import { useDealSequence } from '../../hooks/useDealSequence';
 import { BatakSetupView } from './BatakSetupView';
@@ -31,6 +33,9 @@ const TRICK_COMPLETION_PAUSE_MS = 1100;
 // play-travel animation (BatakTable's TrickCenter) time to finish before the card's resting state
 // takes over — roughly matches CARD_TRAVEL_DURATION_MS (apps/mobile/src/table/travelAnimation.ts).
 const PLAY_TRAVEL_DELAY_MS = 300;
+// Matches CenteredDecisionModal's own entrance duration (apps/mobile/src/components/
+// CenteredDecisionModal.tsx) so the two animations added in this pass feel consistent.
+const HAND_REFLOW_DURATION_MS = 220;
 
 export interface BatakScreenProps {
   onExitToHome: () => void;
@@ -89,6 +94,7 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
   const [settingsVisible, setSettingsVisible] = useState(false);
   const pendingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dealPhase = useDealSequence();
+  const reducedMotion = useReducedMotion();
 
   const aiStrategy = batakDescriptor.aiStrategies[difficulty];
 
@@ -110,6 +116,17 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
         return;
       }
       const delay = state.currentTrick.length === 3 ? TRICK_COMPLETION_PAUSE_MS : PLAY_TRAVEL_DELAY_MS;
+      // Only the human's own plays remove a card from BatakTable's rendered hand array (see
+      // isPendingHuman in BatakTable.tsx) — AI plays never touch it, so they need no trigger.
+      if (playerId === HUMAN_ID && !reducedMotion) {
+        LayoutAnimation.configureNext(
+          LayoutAnimation.create(
+            HAND_REFLOW_DURATION_MS,
+            LayoutAnimation.Types.easeInEaseOut,
+            LayoutAnimation.Properties.opacity,
+          ),
+        );
+      }
       setPendingPlay({ playerId, card, originOffset });
       pendingTimeoutRef.current = setTimeout(() => {
         performMove(move);
