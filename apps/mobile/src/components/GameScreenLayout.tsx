@@ -1,5 +1,6 @@
-import React from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
+import { HeaderWoodFrame, SettingsIcon } from '@world-cards/ui';
 
 export interface GameScreenLayoutProps {
   title: string;
@@ -27,14 +28,27 @@ export function GameScreenLayout({
     ]);
   }
 
+  // Sizes HeaderWoodFrame to the header row's own real rendered height (padding + title/icon
+  // row) rather than a hardcoded guess, so it stays correct if font scaling/accessibility
+  // settings change the title's rendered height — same pattern as BatakTable's handAreaWidth.
+  const [headerHeight, setHeaderHeight] = useState(0);
+  function handleHeaderLayout(event: LayoutChangeEvent) {
+    setHeaderHeight(event.nativeEvent.layout.height);
+  }
+
   return (
     <View style={[styles.container, backgroundColor ? { backgroundColor } : null]}>
-      <View style={styles.header}>
+      {/* Rendered at the container level (not inside header) so it also covers the container's
+          own paddingTop gap above the header row — an absolutely positioned child ignores its
+          parent's padding and anchors to the container's true top edge, same trick HandFrame
+          already relies on for its own bottom-edge coverage. */}
+      {headerHeight > 0 && <HeaderWoodFrame height={CONTAINER_PADDING_TOP + headerHeight} />}
+      <View style={styles.header} onLayout={handleHeaderLayout}>
         <Text style={[styles.title, titleColor ? { color: titleColor } : null]}>{title}</Text>
         <View style={styles.headerActions}>
           {onSettingsPress && (
             <Pressable onPress={onSettingsPress} accessibilityRole="button" testID="game-settings-button">
-              <Text style={styles.settingsIcon}>⚙</Text>
+              <SettingsIcon />
             </Pressable>
           )}
           <Pressable onPress={handleExitPress} accessibilityRole="button">
@@ -47,8 +61,12 @@ export function GameScreenLayout({
   );
 }
 
+// Matches styles.container's own paddingTop below — extracted so HeaderWoodFrame's height
+// calculation stays in sync with it instead of duplicating the literal.
+const CONTAINER_PADDING_TOP = 28;
+
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 28 },
+  container: { flex: 1, paddingTop: CONTAINER_PADDING_TOP },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -58,7 +76,6 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 16, fontWeight: 'bold' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  settingsIcon: { fontSize: 16 },
   exit: { fontSize: 14, color: '#c0392b' },
   content: { flex: 1 },
 });
