@@ -98,7 +98,7 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
     };
   }, []);
 
-  function commitMove(move: BatakMove, playerId: PlayerId) {
+  function commitMove(move: BatakMove, playerId: PlayerId, originOffset?: { x: number; y: number }) {
     // Every card play now gets staged (not just the trick-completing 4th) so the new play-travel
     // animation has something to animate from for every play; bid/pass/selectTrump still commit
     // instantly since engine state already reflects them visibly with nothing to bridge.
@@ -110,7 +110,7 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
         return;
       }
       const delay = state.currentTrick.length === 3 ? TRICK_COMPLETION_PAUSE_MS : PLAY_TRAVEL_DELAY_MS;
-      setPendingPlay({ playerId, card });
+      setPendingPlay({ playerId, card, originOffset });
       pendingTimeoutRef.current = setTimeout(() => {
         performMove(move);
         setPendingPlay(null);
@@ -131,6 +131,10 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
 
   function handleHumanMove(move: BatakMove) {
     commitMove(move, HUMAN_ID);
+  }
+
+  function handleHumanPlayCard(cardId: string, originOffset?: { x: number; y: number }) {
+    commitMove({ type: 'play', cardId }, HUMAN_ID, originOffset);
   }
 
   const legalMoves =
@@ -154,6 +158,7 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
         playerNames={PLAYER_NAMES}
         legalMoves={legalMoves}
         onMove={handleHumanMove}
+        onPlayCard={handleHumanPlayCard}
         pendingPlay={pendingPlay}
         dealPhase={dealPhase}
       />

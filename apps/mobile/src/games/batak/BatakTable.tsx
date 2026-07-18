@@ -123,6 +123,7 @@ function sortHandForDisplay(cards: Card[]): Card[] {
 export interface PendingBatakPlay {
   playerId: string;
   card: Card;
+  originOffset?: { x: number; y: number };
 }
 
 export type BatakDealPhase = DealPhase;
@@ -137,6 +138,10 @@ export interface BatakTableProps {
   // pending. Drives which bid amounts, trump suits, and hand cards are actually tappable.
   legalMoves: BatakMove[];
   onMove: (move: BatakMove) => void;
+  // Separate from onMove (which also carries bid/pass/selectTrump, none of which have an
+  // origin) — called only for the human's own card plays, with a measured travel-origin offset
+  // when available.
+  onPlayCard: (cardId: string, originOffset?: { x: number; y: number }) => void;
   pendingPlay?: PendingBatakPlay | null;
   dealPhase: BatakDealPhase;
 }
@@ -322,12 +327,16 @@ function TrickCenter({
   humanPlayerId,
   playerNames,
   pendingPlay,
+  destRef,
+  onDestLayout,
 }: {
   state: BatakState;
   seats: Seat[];
   humanPlayerId: string;
   playerNames: Record<string, string>;
   pendingPlay?: PendingBatakPlay | null;
+  destRef: React.RefObject<View | null>;
+  onDestLayout: () => void;
 }) {
   function cardFor(playerId: string): Card | null {
     if (pendingPlay != null && pendingPlay.playerId === playerId)
@@ -363,6 +372,8 @@ function TrickCenter({
       <View
         key={position}
         testID={`trick-slot-${position}`}
+        ref={position === "bottom" ? destRef : undefined}
+        onLayout={position === "bottom" ? onDestLayout : undefined}
         style={[
           styles.trickSlot,
           { zIndex, transform: [{ translateX: offset.x }, { translateY: offset.y }] },
@@ -370,7 +381,10 @@ function TrickCenter({
         {card ? (
           isPending ? (
             <TravelCard
-              originOffset={revealOriginOffset(resolveRevealOrigin(playerId!, humanPlayerId, seats))}
+              originOffset={
+                pendingPlay?.originOffset ??
+                revealOriginOffset(resolveRevealOrigin(playerId!, humanPlayerId, seats))
+              }
               resetKey={card.id}>
               <PlayingCard card={card} size="small" />
             </TravelCard>
@@ -447,6 +461,7 @@ function HandRow({
   selectCard,
   playEntrance,
   cardMarginLeft,
+  registerCardRef,
 }: {
   cards: Card[];
   legalCardIds: Set<string>;
@@ -455,29 +470,33 @@ function HandRow({
   selectCard: (cardId: string) => void;
   playEntrance: boolean;
   cardMarginLeft: number | undefined;
+  registerCardRef: (cardId: string, node: View | null) => void;
 }) {
   return (
     <View style={styles.handFanRow}>
       {cards.map((card, i) => {
         const interactive = isHumanInteractive && legalCardIds.has(card.id);
         return (
-          <EntranceCard key={card.id} index={i} playEntrance={playEntrance}>
-            <SelectableCard
-              card={card}
-              size="normal"
-              selected={selectedCardId === card.id}
-              disabled={!interactive}
-              onPress={() => selectCard(card.id)}
-              rotateDeg={fanRotationDeg(i, cards.length, HUMAN_HAND_DEGREES_PER_STEP)}
-              curveOffsetY={fanCurveY(i, cards.length, 1, HUMAN_HAND_CURVE_MULTIPLIER)}
-              marginLeft={i > 0 ? cardMarginLeft : undefined}
-              liftDistance={SELECTED_LIFT_DISTANCE}
-              // Kept even without the front-stacking zIndex below: it independently shrinks the
-              // selected card's own touch bounds, which is what actually prevents a stray tap
-              // from landing on it instead of an exposed neighbor — orthogonal to stacking order.
-              hitSlop={selectedCardId === card.id ? SELECTED_CARD_HIT_SLOP : undefined}
-            />
-          </EntranceCard>
+          <View key={card.id} ref={(node) => registerCardRef(card.id, node)}>
+            <EntranceCard index={i} playEntrance={playEntrance}>
+              <SelectableCard
+                card={card}
+                size="normal"
+                selected={selectedCardId === card.id}
+                disabled={!interactive}
+                onPress={() => selectCard(card.id)}
+                rotateDeg={fanRotationDeg(i, cards.length, HUMAN_HAND_DEGREES_PER_STEP)}
+                curveOffsetY={fanCurveY(i, cards.length, 1, HUMAN_HAND_CURVE_MULTIPLIER)}
+                marginLeft={i > 0 ? cardMarginLeft : undefined}
+                liftDistance={SELECTED_LIFT_DISTANCE}
+                // Kept even without the front-stacking zIndex below: it independently shrinks
+                // the selected card's own touch bounds, which is what actually prevents a stray
+                // tap from landing on it instead of an exposed neighbor — orthogonal to stacking
+                // order.
+                hitSlop={selectedCardId === card.id ? SELECTED_CARD_HIT_SLOP : undefined}
+              />
+            </EntranceCard>
+          </View>
         );
       })}
     </View>
@@ -547,6 +566,7 @@ export function BatakTable({
   playerNames,
   legalMoves,
   onMove,
+  onPlayCard,
   pendingPlay,
   dealPhase,
 }: BatakTableProps) {
@@ -570,9 +590,7 @@ export function BatakTable({
   // human specifically" — is both correct and simpler than tracking whose reveal it is.
   const isHumanInteractive = isHumanTurn && pendingPlay == null;
 
-  const { selectedCardId, selectCard, clearSelection } = useCardSelection(
-    cardId => onMove({ type: "play", cardId }),
-  );
+  const { selectedCardId, selectCard, clearSelection } = useCardSelection(playWithMeasuredOrigin);
   useEffect(() => {
     if (!isHumanInteractive) clearSelection();
   }, [isHumanInteractive, clearSelection]);
@@ -604,6 +622,45 @@ export function BatakTable({
   const handSpanTarget = handAreaWidth * HUMAN_HAND_SPREAD_FRACTION;
   const topRowMargin = fillWidthMarginPx(HUMAN_CARD_WIDTH, topRow.length, handSpanTarget, HUMAN_HAND_MAX_GAP);
   const bottomRowMargin = fillWidthMarginPx(HUMAN_CARD_WIDTH, bottomRow.length, handSpanTarget, HUMAN_HAND_MAX_GAP);
+
+  // Destination for the human's play-travel origin delta: the 'bottom' trick slot's on-screen
+  // center, measured live and re-measured on every layout pass. See
+  // docs/superpowers/specs/2026-07-18-human-hand-real-position-card-travel-design.md.
+  const destRef = useRef<View>(null);
+  const [destCenter, setDestCenter] = useState<{ x: number; y: number } | null>(null);
+  function handleDestLayout() {
+    destRef.current?.measureInWindow((x, y, width, height) => {
+      setDestCenter({ x: x + width / 2, y: y + height / 2 });
+    });
+  }
+
+  // One ref per currently-rendered human hand card, keyed by card id.
+  const handCardRefs = useRef(new Map<string, View>()).current;
+  function registerHandCardRef(cardId: string, node: View | null) {
+    if (node) {
+      handCardRefs.set(cardId, node);
+    } else {
+      handCardRefs.delete(cardId);
+    }
+  }
+
+  // Replaces a direct onPlayCard(cardId) call: measures the tapped card's real on-screen
+  // position relative to the trick slot's, so the travel animation starts from where the card
+  // actually was. Falls back to a plain onPlayCard(cardId) call (no origin — TravelCard then
+  // uses the fixed 'bottom' offset, same as today) whenever either measurement isn't ready.
+  function playWithMeasuredOrigin(cardId: string) {
+    const node = handCardRefs.get(cardId);
+    if (!node || !destCenter) {
+      onPlayCard(cardId);
+      return;
+    }
+    node.measureInWindow((x, y, width, height) => {
+      onPlayCard(cardId, {
+        x: x + width / 2 - destCenter.x,
+        y: y + height / 2 - destCenter.y,
+      });
+    });
+  }
 
   // Anchored below the screen's true bottom edge (covers the full bottom side with margin to
   // spare — the overshoot itself is off-screen) while keeping the peak at the same height as
@@ -654,6 +711,8 @@ export function BatakTable({
             humanPlayerId={humanPlayerId}
             playerNames={playerNames}
             pendingPlay={pendingPlay}
+            destRef={destRef}
+            onDestLayout={handleDestLayout}
           />
         )}
 
@@ -686,6 +745,7 @@ export function BatakTable({
             selectCard={selectCard}
             playEntrance={dealPhase === "revealing"}
             cardMarginLeft={topRowMargin}
+            registerCardRef={registerHandCardRef}
           />
           <View style={styles.bottomHandRow}>
             <HandRow
@@ -696,6 +756,7 @@ export function BatakTable({
               selectCard={selectCard}
               playEntrance={dealPhase === "revealing"}
               cardMarginLeft={bottomRowMargin}
+              registerCardRef={registerHandCardRef}
             />
           </View>
         </View>
