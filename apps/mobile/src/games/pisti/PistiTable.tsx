@@ -97,10 +97,15 @@ function RevealCard({
   revealCard,
   label,
   originDirection,
+  destinationOffset,
 }: {
   revealCard: PistiRevealCard;
   label: string;
   originDirection: RevealOrigin;
+  // The pile slot this card will actually rest at once it commits (see revealDestinationOffset
+  // where this is computed) — the flight must end exactly here, not a fixed "reserved slot", or
+  // the swap from this animated card to the real static one snaps by the difference.
+  destinationOffset: { x: number; y: number };
 }) {
   const anim = useRef(new Animated.Value(0)).current;
   const reducedMotion = useReducedMotion();
@@ -122,7 +127,7 @@ function RevealCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revealCard.card.id, reducedMotion]);
 
-  const offset = PILE_CARD_OFFSETS[MAX_STACKED_PILE_CARDS];
+  const offset = destinationOffset;
   const origin = revealCard.originOffset ?? revealOriginOffset(originDirection);
 
   return (
@@ -297,6 +302,14 @@ export function PistiTable({
   );
   const pile = state.table.zones['pile'].cards;
   const stackedPile = pile.slice(-MAX_STACKED_PILE_CARDS);
+  // Where the just-played card actually ends up once it commits and joins `pile`: stackedPile
+  // always renders the newest card at its own last index, which is `pile.length` (pre-commit)
+  // while the stack is still filling up, then pins to MAX_STACKED_PILE_CARDS - 1 once the pile
+  // has enough cards that older ones start falling out of the slice(-N) window. RevealCard's
+  // flight must target this same slot — a fixed "reserved 6th slot" only coincidentally matched
+  // it once the pile already held 5+ cards, and was off by one slot even then, so the flight
+  // eased to a stop at the wrong spot and then snapped to the real one once the card committed.
+  const revealDestinationOffset = PILE_CARD_OFFSETS[Math.min(pile.length, MAX_STACKED_PILE_CARDS - 1)];
   const capturedHuman = state.table.zones[`captured-${humanPlayerId}`].cards.length;
 
   const { selectedCardId, selectCard, clearSelection } = useCardSelection(playWithMeasuredOrigin);
@@ -423,6 +436,7 @@ export function PistiTable({
               {revealCard && (
                 <RevealCard
                   revealCard={revealCard}
+                  destinationOffset={revealDestinationOffset}
                   label={
                     revealCard.playerId === humanPlayerId
                       ? 'You played'

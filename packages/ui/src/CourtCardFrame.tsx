@@ -45,16 +45,16 @@ const GEOMETRY: Record<PlayingCardSize, FrameGeometry> = {
     height: 132,
     // Hand-tuned (2026-07-18) starting from the computed corner-index-block-midpoint baseline —
     // see the background note above.
-    topRightBracket: "M32.5,14 L75,14 L75,79.5",
-    bottomLeftBracket: "M15,48.5 L15,119 L63.5,119",
+    topRightBracket: "M28,14 L75.5,14 L75.5,83",
+    bottomLeftBracket: "M15.5,48.5 L15.5,119 L63.5,119",
     strokeWidth: 1.2,
   },
   small: {
     width: 64,
     height: 86,
     // Hand-tuned (2026-07-18), same basis as `normal` above.
-    topRightBracket: "M22,10 L51,10 L51,48",
-    bottomLeftBracket: "M9,34 L9,75 L42,75",
+    topRightBracket: "M20,10 L56,10 L56,63",
+    bottomLeftBracket: "M10.4,34 L10.4,85 L47,85",
     strokeWidth: 1,
   },
 };
