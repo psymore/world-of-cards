@@ -272,7 +272,11 @@ function CenterArt({
 
   if (courtArt != null) {
     return (
-      <View style={styles.courtArtFrame}>
+      <View
+        style={[
+          styles.courtArtFrame,
+          isFaceCard && styles.courtArtFrameEnlarged,
+        ]}>
         <Image
           testID="court-card-art"
           source={courtArt}
@@ -280,7 +284,11 @@ function CenterArt({
             styles.courtArtImage,
             isFaceCard && styles.courtArtImageEnlarged,
           ]}
-          resizeMode="contain"
+          // J/Q/K get "stretch" so their height can grow independently of width (see
+          // courtArtImageEnlarged below) — the Ace keeps "contain" so its own look is
+          // unaffected; both source from the same asset pipeline with no aspect-ratio metadata,
+          // so resizeMode is the only thing enforcing (or not) the source image's aspect ratio.
+          resizeMode={isFaceCard ? "stretch" : "contain"}
         />
       </View>
     );
@@ -470,9 +478,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  // K/Q/J only — taller than the base courtArtFrame (width unchanged) so the enlarged,
+  // now vertically-stretched art (courtArtImageEnlarged below) has room without being
+  // clipped or bleeding past this frame's own border.
+  courtArtFrameEnlarged: { height: "75%" },
   courtArtImage: { width: "70%", height: "70%" },
-  // K/Q/J art rendered 1.3x larger than the base 70% (Aces keep the base size).
-  courtArtImageEnlarged: { width: "81%", height: "81%" },
+  // K/Q/J art: width still 1.3x the base 70% (Aces keep the base size and resizeMode="contain",
+  // untouched), but height is now independently stretched taller (95% vs. the base 70%/width's
+  // own 81%) since resizeMode="stretch" (above) no longer preserves the source art's aspect
+  // ratio for face cards — first-pass value, tune once checked live.
+  courtArtImageEnlarged: { width: "81%", height: "95%" },
   red: { color: "#c0392b" },
   overlay: { position: "absolute" },
   // Explicit width/height (not just StyleSheet.absoluteFill's position:absolute + inset:0) is
