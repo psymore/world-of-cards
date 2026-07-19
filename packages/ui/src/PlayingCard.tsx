@@ -60,7 +60,7 @@ const WATERMARK_ICON_SIZE = { normal: 50, small: 31 };
 // 2026-07-17 deal/selection/trick-motion polish pass.
 const CARD_DIMS = {
   normal: { width: 94, height: 132 },
-  small: { width: 64, height: 86 },
+  small: { width: 70, height: 101 },
 };
 const DEFAULT_BORDERS: PlayingCardBorderSpec[] = [
   { width: 1, color: "#fff" },

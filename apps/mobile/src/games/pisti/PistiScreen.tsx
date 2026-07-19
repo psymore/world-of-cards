@@ -9,6 +9,7 @@ import { PistiSetupView, PistiPlayerCount, PistiFourPlayerMode } from './PistiSe
 import { PistiTable } from './PistiTable';
 import { useAITurn } from '../../hooks/useAITurn';
 import { useDealSequence } from '../../hooks/useDealSequence';
+import { CARD_TRAVEL_DURATION_MS } from '../../table/travelAnimation';
 import { PARTNER_SEAT_INDEX } from './pistiSeating';
 
 const HUMAN_ID: PlayerId = 'human';
@@ -51,9 +52,15 @@ function buildPlayerNames(aiIds: PlayerId[], teams: PlayerId[][] | undefined): R
 
 // Pause between a move being chosen (AI, via useAITurn's separate thinkingDelayMs, or the human,
 // on tap) and it actually being committed to game state, during which the chosen card is shown
-// traveling to the pile. Without this, the hand shrinking and the pile updating would happen in
-// the same instant, with no readable moment showing which card was played or by whom.
-const REVEAL_DELAY_MS = 550;
+// traveling to the pile (PistiTable's RevealCard). Without this, the hand shrinking and the pile
+// updating would happen in the same instant, with no readable moment showing which card was
+// played or by whom. Derived directly from CARD_TRAVEL_DURATION_MS (RevealCard's actual flight
+// duration) plus a real buffer, rather than a separately hand-picked number — this was previously
+// a bare 550 next to a 530ms flight, a 20ms margin easily eaten by the ordinary gap between
+// setRevealedMove being called here and RevealCard's own useEffect actually starting its native
+// animation, which sometimes let this timer fire before the flight finished and snapped the card
+// the rest of the way to its resting spot instead of easing in.
+const REVEAL_DELAY_MS = CARD_TRAVEL_DURATION_MS + 40;
 
 export interface PistiScreenProps {
   onExitToHome: () => void;
