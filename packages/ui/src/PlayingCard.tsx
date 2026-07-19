@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
   // K/Q/J only — taller than the base courtArtFrame (width unchanged) so the enlarged,
   // now vertically-stretched art (courtArtImageEnlarged below) has room without being
   // clipped or bleeding past this frame's own border.
-  courtArtFrameEnlarged: { height: "75%" },
+  courtArtFrameEnlarged: { height: "90%" },
   courtArtImage: { width: "70%", height: "70%" },
   // K/Q/J art: width still 1.3x the base 70% (Aces keep the base size and resizeMode="contain",
   // untouched), but height is now independently stretched taller (95% vs. the base 70%/width's
