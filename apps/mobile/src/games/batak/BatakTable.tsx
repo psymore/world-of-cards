@@ -1,13 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
+  Easing,
   Pressable,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from "react-native";
-import type { LayoutChangeEvent } from "react-native";
 import type { Card, Suit } from "@world-cards/engine";
 import type { BatakState, BatakMove } from "@world-cards/engine/games/batak";
 import { compareRanks } from "@world-cards/engine/games/batak";
@@ -35,7 +34,6 @@ import {
   fanCurveY,
   fanRotationDeg,
   splitTwoRows,
-  fillWidthMarginPx,
   resolveRevealOrigin,
   revealOriginOffset,
 } from "../../table/seating";
@@ -57,6 +55,11 @@ const HUMAN_HAND_CURVE_MULTIPLIER = 1.5;
 // rows read as one imbricated fan rather than two stacked blocks.
 const HAND_ROW_OVERLAP_FRACTION = 0.25;
 const HAND_ROW_OVERLAP_PX = Math.round(HUMAN_CARD_HEIGHT * HAND_ROW_OVERLAP_FRACTION);
+// Total footprint of the two-row fan (top row's full height, plus the bottom row's additional
+// visible height once the overlap above is applied) — given explicitly to styles.handFan since
+// its children are now absolutely positioned (see AnimatedFanCard) and can no longer contribute
+// to an auto-computed parent height the way normal-flow children would.
+const HAND_FAN_HEIGHT = HUMAN_CARD_HEIGHT + (HUMAN_CARD_HEIGHT - HAND_ROW_OVERLAP_PX);
 
 // First-pass constants for positioning HandFrame behind the two-row hand, derived from this
 // file's own layout below (not measured on a real device — tune these if the frame's arch peak
@@ -90,13 +93,24 @@ const HAND_FRAME_REVEAL_MARGIN = 14;
 // exactly flush) so it's guaranteed to fully cover the bottom regardless of small per-device
 // rounding/safe-area differences — the overshoot itself is never visible, it's off-screen.
 const HAND_FRAME_BOTTOM_OVERSHOOT = 16;
-// Reserve a small ~4% gutter on each side (i.e. cards span the middle 92% of the hand area's
-// real width) instead of a fixed-percent overlap that doesn't adapt to device width — bumped
-// from 0.7 (15% gutter) to spread much closer to the Alper Games reference.
-const HUMAN_HAND_SPREAD_FRACTION = 0.92;
-// Caps the per-card gap once a near-empty hand (1-2 cards left) would otherwise need to stretch
-// across the full target span with unnaturally large gaps.
-const HUMAN_HAND_MAX_GAP = 24;
+// Fixed per-card horizontal spacing (step between adjacent card slots) in the human's own hand —
+// deliberately NOT recomputed from the current row length (that previously made the fan spread
+// apart as cards were played, since fewer cards meant less overlap was needed to fit the same
+// target width). The top row is spaced slightly wider apart (less overlap) than the bottom row
+// for visual balance, mirroring HAND_ROW_OVERLAP_FRACTION's own intent for the vertical axis.
+const HUMAN_HAND_BOTTOM_ROW_OVERLAP_FRACTION = 0.5;
+const HUMAN_HAND_TOP_ROW_OVERLAP_FRACTION = 0.4;
+const HUMAN_HAND_BOTTOM_ROW_STEP = Math.round(
+  HUMAN_CARD_WIDTH * (1 - HUMAN_HAND_BOTTOM_ROW_OVERLAP_FRACTION),
+);
+const HUMAN_HAND_TOP_ROW_STEP = Math.round(
+  HUMAN_CARD_WIDTH * (1 - HUMAN_HAND_TOP_ROW_OVERLAP_FRACTION),
+);
+// Shared timing for every hand-card reposition (a card played, remaining cards sliding/rising to
+// close the gap) — see AnimatedFanCard. An ease-in-ease-out curve reads as a natural reflow
+// rather than either a sudden snap (no easing) or a bouncy entrance (an "out" curve alone).
+const HAND_CARD_REPOSITION_DURATION_MS = 220;
+const HAND_CARD_REPOSITION_EASING = Easing.inOut(Easing.ease);
 
 // 2.5x SelectableCard's own default (16px) lift — Batak-only override, see
 // docs/superpowers/specs/2026-07-17-batak-deal-selection-and-trick-motion-polish-design.md
@@ -489,52 +503,156 @@ function BidControls({
   );
 }
 
-function HandRow({
-  cards,
+// One human-hand card's slot: which row it's in, its index within that row, and how many cards
+// currently share that row (rowCount, not the initial deal size — the fan recenters as the row
+// shrinks, matching the pre-existing recentering behavior, just now animated instead of snapped).
+interface HandSlot {
+  card: Card;
+  row: "top" | "bottom";
+  indexInRow: number;
+  rowCount: number;
+}
+
+function slotStep(row: "top" | "bottom"): number {
+  return row === "top" ? HUMAN_HAND_TOP_ROW_STEP : HUMAN_HAND_BOTTOM_ROW_STEP;
+}
+
+// Horizontal offset from the row's own center — negative/positive symmetric around 0, so the row
+// stays centered under styles.fanCardSlot's left:'50%' anchor regardless of rowCount.
+function slotTargetX(slot: HandSlot): number {
+  const mid = (slot.rowCount - 1) / 2;
+  return (slot.indexInRow - mid) * slotStep(slot.row);
+}
+
+// Vertical offset from the fan's own top edge — the bottom row overlaps up into the top row by
+// HAND_ROW_OVERLAP_PX, matching the pre-existing two-row imbrication.
+function slotTargetY(slot: HandSlot): number {
+  return slot.row === "top" ? 0 : HUMAN_CARD_HEIGHT - HAND_ROW_OVERLAP_PX;
+}
+
+// A single human-hand card, absolutely positioned within the shared fan container and animated
+// (via its own persistent Animated.Value pair) whenever its target slot changes — e.g. a card
+// played elsewhere in the hand shifts every card after it to a new index, and shrinking a row can
+// even move a card from the top row to the bottom row (or vice versa). Because every card in both
+// rows now lives under one shared parent (HumanHandFan) instead of two separate row containers,
+// that row-crossing case animates smoothly too, rather than unmounting from one row's tree and
+// remounting in the other's.
+function AnimatedFanCard({
+  slot,
   legalCardIds,
   isHumanInteractive,
   selectedCardId,
   selectCard,
   playEntrance,
-  cardMarginLeft,
   registerCardRef,
 }: {
-  cards: Card[];
+  slot: HandSlot;
   legalCardIds: Set<string>;
   isHumanInteractive: boolean;
   selectedCardId: string | null;
   selectCard: (cardId: string) => void;
   playEntrance: boolean;
-  cardMarginLeft: number | undefined;
+  registerCardRef: (cardId: string, node: View | null) => void;
+}) {
+  const { card } = slot;
+  const targetX = slotTargetX(slot);
+  const targetY = slotTargetY(slot);
+  const x = useRef(new Animated.Value(targetX)).current;
+  const y = useRef(new Animated.Value(targetY)).current;
+  const mounted = useRef(false);
+  const reducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (!mounted.current) {
+      // First render for this card (the initial deal): jump straight to its slot — nothing to
+      // reflow from, and EntranceCard supplies the deal's own fade/scale/rise flourish.
+      mounted.current = true;
+      return;
+    }
+    if (reducedMotion) {
+      x.setValue(targetX);
+      y.setValue(targetY);
+      return;
+    }
+    Animated.parallel([
+      Animated.timing(x, {
+        toValue: targetX,
+        duration: HAND_CARD_REPOSITION_DURATION_MS,
+        easing: HAND_CARD_REPOSITION_EASING,
+        useNativeDriver: true,
+      }),
+      Animated.timing(y, {
+        toValue: targetY,
+        duration: HAND_CARD_REPOSITION_DURATION_MS,
+        easing: HAND_CARD_REPOSITION_EASING,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [targetX, targetY, reducedMotion, x, y]);
+
+  const interactive = isHumanInteractive && legalCardIds.has(card.id);
+
+  return (
+    <Animated.View
+      style={[styles.fanCardSlot, { transform: [{ translateX: x }, { translateY: y }] }]}>
+      <View ref={(node) => registerCardRef(card.id, node)}>
+        <EntranceCard index={slot.indexInRow} playEntrance={playEntrance}>
+          <SelectableCard
+            card={card}
+            size="normal"
+            selected={selectedCardId === card.id}
+            disabled={!interactive}
+            onPress={() => selectCard(card.id)}
+            rotateDeg={fanRotationDeg(slot.indexInRow, slot.rowCount, HUMAN_HAND_DEGREES_PER_STEP)}
+            curveOffsetY={fanCurveY(slot.indexInRow, slot.rowCount, 1, HUMAN_HAND_CURVE_MULTIPLIER)}
+            liftDistance={SELECTED_LIFT_DISTANCE}
+            // Kept even without the front-stacking zIndex below: it independently shrinks
+            // the selected card's own touch bounds, which is what actually prevents a stray
+            // tap from landing on it instead of an exposed neighbor — orthogonal to stacking
+            // order.
+            hitSlop={selectedCardId === card.id ? SELECTED_CARD_HIT_SLOP : undefined}
+          />
+        </EntranceCard>
+      </View>
+    </Animated.View>
+  );
+}
+
+// Renders every human-hand card (both rows) under one shared parent — see AnimatedFanCard's doc
+// comment for why that matters for the top/bottom row-crossing case. Render order (top row's
+// slots first) preserves the pre-existing "bottom row paints over the top row where they overlap"
+// stacking, since later JSX siblings paint on top with no zIndex needed.
+function HumanHandFan({
+  slots,
+  legalCardIds,
+  isHumanInteractive,
+  selectedCardId,
+  selectCard,
+  playEntrance,
+  registerCardRef,
+}: {
+  slots: HandSlot[];
+  legalCardIds: Set<string>;
+  isHumanInteractive: boolean;
+  selectedCardId: string | null;
+  selectCard: (cardId: string) => void;
+  playEntrance: boolean;
   registerCardRef: (cardId: string, node: View | null) => void;
 }) {
   return (
-    <View style={styles.handFanRow}>
-      {cards.map((card, i) => {
-        const interactive = isHumanInteractive && legalCardIds.has(card.id);
-        return (
-          <View key={card.id} ref={(node) => registerCardRef(card.id, node)}>
-            <EntranceCard index={i} playEntrance={playEntrance}>
-              <SelectableCard
-                card={card}
-                size="normal"
-                selected={selectedCardId === card.id}
-                disabled={!interactive}
-                onPress={() => selectCard(card.id)}
-                rotateDeg={fanRotationDeg(i, cards.length, HUMAN_HAND_DEGREES_PER_STEP)}
-                curveOffsetY={fanCurveY(i, cards.length, 1, HUMAN_HAND_CURVE_MULTIPLIER)}
-                marginLeft={i > 0 ? cardMarginLeft : undefined}
-                liftDistance={SELECTED_LIFT_DISTANCE}
-                // Kept even without the front-stacking zIndex below: it independently shrinks
-                // the selected card's own touch bounds, which is what actually prevents a stray
-                // tap from landing on it instead of an exposed neighbor — orthogonal to stacking
-                // order.
-                hitSlop={selectedCardId === card.id ? SELECTED_CARD_HIT_SLOP : undefined}
-              />
-            </EntranceCard>
-          </View>
-        );
-      })}
+    <View style={styles.handFan} testID="human-hand">
+      {slots.map((slot) => (
+        <AnimatedFanCard
+          key={slot.card.id}
+          slot={slot}
+          legalCardIds={legalCardIds}
+          isHumanInteractive={isHumanInteractive}
+          selectedCardId={selectedCardId}
+          selectCard={selectCard}
+          playEntrance={playEntrance}
+          registerCardRef={registerCardRef}
+        />
+      ))}
     </View>
   );
 }
@@ -641,12 +759,26 @@ export function BatakTable({
       !(isPendingHuman && card.id === pendingPlay!.card.id) && card.id !== humanGatheringCardId
   );
   const sortedHand = sortHandForDisplay(humanHand);
-  // splitTwoRows returns the larger half first; the bottom row (closer to the viewer) should get
-  // the extra card on an odd-sized hand, not the top row — e.g. 13 cards is 6 top / 7 bottom.
-  const [largerRowCount] = splitTwoRows(sortedHand.length);
-  const topRowCount = sortedHand.length - largerRowCount;
-  const topRow = sortedHand.slice(0, topRowCount);
-  const bottomRow = sortedHand.slice(topRowCount);
+  // Each card is assigned to a fixed top/bottom layer once — the first time this component sees
+  // it with a non-empty hand, i.e. the initial deal — and never reassigned afterward, so a card
+  // never crosses from one layer to the other as the hand shrinks (only its position *within* its
+  // own layer reflows). splitTwoRows returns the larger half first; the bottom layer (closer to
+  // the viewer) gets the extra card on an odd-sized hand, not the top — e.g. 13 cards is 6 top /
+  // 7 bottom.
+  const handLayerRef = useRef<Map<string, "top" | "bottom">>(new Map());
+  if (handLayerRef.current.size === 0 && sortedHand.length > 0) {
+    const [largerLayerCount] = splitTwoRows(sortedHand.length);
+    const initialTopCount = sortedHand.length - largerLayerCount;
+    sortedHand.forEach((card, i) => {
+      handLayerRef.current.set(card.id, i < initialTopCount ? "top" : "bottom");
+    });
+  }
+  const topRow = sortedHand.filter((card) => handLayerRef.current.get(card.id) === "top");
+  const bottomRow = sortedHand.filter((card) => handLayerRef.current.get(card.id) === "bottom");
+  const handSlots: HandSlot[] = [
+    ...topRow.map((card, i): HandSlot => ({ card, row: "top", indexInRow: i, rowCount: topRow.length })),
+    ...bottomRow.map((card, i): HandSlot => ({ card, row: "bottom", indexInRow: i, rowCount: bottomRow.length })),
+  ];
   const legalCardIds = new Set(
     legalMoves
       .filter(
@@ -654,15 +786,6 @@ export function BatakTable({
       )
       .map(m => m.cardId),
   );
-
-  const { width: windowWidth } = useWindowDimensions();
-  const [handAreaWidth, setHandAreaWidth] = useState(windowWidth);
-  function handleHandAreaLayout(event: LayoutChangeEvent) {
-    setHandAreaWidth(event.nativeEvent.layout.width);
-  }
-  const handSpanTarget = handAreaWidth * HUMAN_HAND_SPREAD_FRACTION;
-  const topRowMargin = fillWidthMarginPx(HUMAN_CARD_WIDTH, topRow.length, handSpanTarget, HUMAN_HAND_MAX_GAP);
-  const bottomRowMargin = fillWidthMarginPx(HUMAN_CARD_WIDTH, bottomRow.length, handSpanTarget, HUMAN_HAND_MAX_GAP);
 
   // Destination for the human's play-travel origin delta: the 'bottom' trick slot's on-screen
   // center, measured live and re-measured on every layout pass. See
@@ -761,37 +884,22 @@ export function BatakTable({
       </View>
 
       <HandFrame bottomOffset={handFrameBottomOffset} height={handFrameHeight} />
-      <View style={styles.handArea} onLayout={handleHandAreaLayout}>
+      <View style={styles.handArea}>
         <PlayerBadge
           name={playerNames[humanPlayerId] ?? "You"}
           statusText={statusTextFor(state, humanPlayerId)}
           active={isHumanTurn}
           isHuman
         />
-        <View style={styles.handFan} testID="human-hand">
-          <HandRow
-            cards={topRow}
-            legalCardIds={legalCardIds}
-            isHumanInteractive={isHumanInteractive}
-            selectedCardId={selectedCardId}
-            selectCard={selectCard}
-            playEntrance={dealPhase === "revealing"}
-            cardMarginLeft={topRowMargin}
-            registerCardRef={registerHandCardRef}
-          />
-          <View style={styles.bottomHandRow}>
-            <HandRow
-              cards={bottomRow}
-              legalCardIds={legalCardIds}
-              isHumanInteractive={isHumanInteractive}
-              selectedCardId={selectedCardId}
-              selectCard={selectCard}
-              playEntrance={dealPhase === "revealing"}
-              cardMarginLeft={bottomRowMargin}
-              registerCardRef={registerHandCardRef}
-            />
-          </View>
-        </View>
+        <HumanHandFan
+          slots={handSlots}
+          legalCardIds={legalCardIds}
+          isHumanInteractive={isHumanInteractive}
+          selectedCardId={selectedCardId}
+          selectCard={selectCard}
+          playEntrance={dealPhase === "revealing"}
+          registerCardRef={registerHandCardRef}
+        />
       </View>
       {dealPhase !== "revealing" && <DealFlightOverlay seats={dealSeats} />}
       <CenteredDecisionModal visible={state.phase === "bidding" && isHumanInteractive}>
@@ -947,12 +1055,19 @@ const styles = StyleSheet.create({
   },
   passButton: { borderColor: "rgba(192, 57, 43, 0.6)" },
   bidButtonText: { fontSize: 15, fontWeight: "700", color: "#f5f0e6", textAlign: "center" },
-  handFan: { alignItems: "center" },
-  // Overlaps the bottom row up into the top row by HAND_ROW_OVERLAP_PX instead of the two rows
-  // sitting apart with a gap, so the fan reads as one imbricated hand.
-  bottomHandRow: { marginTop: -HAND_ROW_OVERLAP_PX },
-  // No zIndex here — natural render order (top row's Views come before bottom row's in the
-  // JSX) already makes a lifted bottom-row card paint over the top row on its own, with no
-  // per-card override needed.
-  handFanRow: { flexDirection: "row", justifyContent: "center" },
+  // Fixed height since every card inside is now absolutely positioned (see AnimatedFanCard) and
+  // can no longer contribute to an auto-computed height the way normal-flow children would.
+  handFan: { height: HAND_FAN_HEIGHT },
+  // Each human-hand card's positioning anchor: centered horizontally (left:50% + a negative
+  // marginLeft of half the card's own width, the same "center-relative" convention already used
+  // by TrickCenter's trickSlot below), with AnimatedFanCard supplying the actual per-card
+  // translateX/Y offset from that center point. No zIndex — natural render order (HumanHandFan
+  // renders the top row's slots before the bottom row's) already makes a lifted bottom-row card
+  // paint over the top row on its own, with no per-card override needed.
+  fanCardSlot: {
+    position: "absolute",
+    left: "50%",
+    top: 0,
+    marginLeft: -HUMAN_CARD_WIDTH / 2,
+  },
 });
