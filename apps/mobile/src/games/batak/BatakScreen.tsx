@@ -144,6 +144,11 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
         // stable 4-card view to animate away from while engine state is still mid-trick —
         // performMove resolves a completed trick atomically and would otherwise leave nothing to
         // animate.
+        //
+        // The non-null assertions below are safe specifically because `state` here is the
+        // pre-4th-play snapshot (captured when this commitMove call started, before performMove
+        // has run): the trick zone is guaranteed to already hold the 3 prior cards, and trumpSuit
+        // is always set once the game has reached the playing phase.
         const priorEntries = state.currentTrick;
         const priorCards = priorEntries.map(
           (e) => state.table.zones['trick'].cards.find((c) => c.id === e.cardId)!,
@@ -154,10 +159,19 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
         const winnerId = fullTrickPlayerIds[winnerPos];
         const entries = fullTrickPlayerIds.map((pid, i) => ({ playerId: pid, card: fullTrickCards[i] }));
         setGatheringTrick({ entries, winnerId });
-        gatherTimeoutRef.current = setTimeout(() => {
+        if (reducedMotion) {
+          // GatherCard jumps straight to its faded-out end state under reduced motion (see
+          // GatherCard.tsx), so there's nothing left to wait for — arming the full-duration timer
+          // here would just leave an empty trick center for CARD_TRAVEL_DURATION_MS before the
+          // score updates, with no animation happening to justify the wait.
           performMove(move);
           setGatheringTrick(null);
-        }, CARD_TRAVEL_DURATION_MS);
+        } else {
+          gatherTimeoutRef.current = setTimeout(() => {
+            performMove(move);
+            setGatheringTrick(null);
+          }, CARD_TRAVEL_DURATION_MS);
+        }
       }, delay);
       return;
     }
