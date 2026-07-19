@@ -9,7 +9,15 @@ export function useCardSelection(onPlay: (cardId: string) => void) {
   const selectCard = useCallback(
     (cardId: string) => {
       if (selectedCardId === cardId) {
-        setSelectedCardId(null);
+        // Deliberately don't clear selection here. Doing so would flip the card's `selected`
+        // prop to false on the next render, which triggers SelectableCard's animated (not
+        // instant) "drop back to rest" — and callers that measure a real travel-origin via an
+        // async measureInWindow (see playWithMeasuredOrigin in BatakTable/PistiTable) would then
+        // often measure the card mid-drop instead of still lifted, producing a visible shake
+        // before the travel animation starts from the wrong position. Leaving selectedCardId
+        // as-is keeps the card visually static until the caller's own "turn ended" effect clears
+        // selection once the play has actually committed — by then this card has already been
+        // filtered out of the hand and unmounted, so the clear has nothing left to animate.
         onPlay(cardId);
       } else {
         setSelectedCardId(cardId);

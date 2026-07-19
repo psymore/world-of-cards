@@ -31,8 +31,11 @@ const PLAYER_NAMES: Record<PlayerId, string> = {
 const TRICK_COMPLETION_PAUSE_MS = 1100;
 // Pause before a non-trick-completing play (1st-3rd card of a trick) commits, giving the new
 // play-travel animation (BatakTable's TrickCenter) time to finish before the card's resting state
-// takes over — roughly matches CARD_TRAVEL_DURATION_MS (apps/mobile/src/table/travelAnimation.ts).
-const PLAY_TRAVEL_DELAY_MS = 300;
+// takes over. Derived directly from CARD_TRAVEL_DURATION_MS (the actual TravelCard flight
+// duration) plus a small buffer, rather than a separately hand-picked number — this was
+// previously a bare 300 next to a 530ms flight, so the commit fired ~230ms before TravelCard
+// finished, snapping the card the rest of the way to its resting spot instead of easing in.
+const PLAY_TRAVEL_DELAY_MS = CARD_TRAVEL_DURATION_MS + 40;
 
 export interface BatakScreenProps {
   onExitToHome: () => void;
