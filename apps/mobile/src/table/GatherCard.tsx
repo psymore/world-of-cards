@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet } from 'react-native';
 import type { Card } from '@world-cards/engine';
-import { PlayingCard } from '@world-cards/ui';
+import { PlayingCard, CARD_DIMS } from '@world-cards/ui';
 import { useReducedMotion } from '../components/useReducedMotion';
 import { CARD_TRAVEL_DURATION_MS, CARD_TRAVEL_EASING } from './travelAnimation';
 
@@ -16,11 +16,8 @@ export interface GatherCardProps {
   destinationOffset: { x: number; y: number };
 }
 
-// Matches PlayingCard's 'small' size (packages/ui/src/PlayingCard.tsx's CARD_DIMS.small), which
-// isn't exported from packages/ui — hardcoded here the same way BatakTable.tsx already hardcodes
-// its own HUMAN_CARD_WIDTH/HEIGHT for the 'normal' size.
-const GATHER_CARD_WIDTH = 64;
-const GATHER_CARD_HEIGHT = 86;
+const GATHER_CARD_WIDTH = CARD_DIMS.small.width;
+const GATHER_CARD_HEIGHT = CARD_DIMS.small.height;
 
 type FlipAxis = 'X' | 'Y';
 

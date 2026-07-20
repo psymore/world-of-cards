@@ -2,11 +2,14 @@ import React from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import Svg, { Defs, Line, LinearGradient, Pattern, Rect, Stop } from 'react-native-svg';
 import { shadeColor } from './colorUtils';
-
-const TRIM_COLOR = '#ffd966';
-const DEFAULT_WOOD_LIGHT = '#5c2a1e';
-const DEFAULT_WOOD_DARK = '#331209';
-const GRAIN_COLOR = '#ffab6b';
+import {
+  WOOD_TRIM_COLOR,
+  WOOD_DEFAULT_LIGHT,
+  WOOD_DEFAULT_DARK,
+  WOOD_GRAIN_COLOR,
+  WOOD_TRIM_STROKE_OPACITY,
+  WOOD_TRIM_STROKE_WIDTH,
+} from './woodPalette';
 
 export interface HeaderWoodFrameProps {
   // Target visible strip height in dp — the caller measures its own header row (e.g. via
@@ -23,8 +26,8 @@ export interface HeaderWoodFrameProps {
 // attempt (a cropped wooden-background.png), which this component no longer references.
 function HeaderWoodFrameComponent({ height, woodColor }: HeaderWoodFrameProps) {
   const { width } = useWindowDimensions();
-  const woodLight = woodColor != null ? shadeColor(woodColor, 0.18) : DEFAULT_WOOD_LIGHT;
-  const woodDark = woodColor != null ? shadeColor(woodColor, -0.25) : DEFAULT_WOOD_DARK;
+  const woodLight = woodColor != null ? shadeColor(woodColor, 0.18) : WOOD_DEFAULT_LIGHT;
+  const woodDark = woodColor != null ? shadeColor(woodColor, -0.25) : WOOD_DEFAULT_DARK;
 
   return (
     <View style={[styles.container, { height }]} pointerEvents="none">
@@ -40,7 +43,7 @@ function HeaderWoodFrameComponent({ height, woodColor }: HeaderWoodFrameProps) {
             height={6}
             patternUnits="userSpaceOnUse"
             patternTransform="rotate(35)">
-            <Line x1={0} y1={0} x2={0} y2={6} stroke={GRAIN_COLOR} strokeOpacity={0.1} strokeWidth={1} />
+            <Line x1={0} y1={0} x2={0} y2={6} stroke={WOOD_GRAIN_COLOR} strokeOpacity={0.1} strokeWidth={1} />
           </Pattern>
         </Defs>
         <Rect x={0} y={0} width={width} height={height} fill="url(#headerWoodGradient)" />
@@ -51,9 +54,9 @@ function HeaderWoodFrameComponent({ height, woodColor }: HeaderWoodFrameProps) {
           width={width}
           height={height}
           fill="none"
-          stroke={TRIM_COLOR}
-          strokeOpacity={0.85}
-          strokeWidth={2}
+          stroke={WOOD_TRIM_COLOR}
+          strokeOpacity={WOOD_TRIM_STROKE_OPACITY}
+          strokeWidth={WOOD_TRIM_STROKE_WIDTH}
         />
       </Svg>
     </View>
