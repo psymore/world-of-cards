@@ -4,12 +4,16 @@ import Svg, { Defs, Line, LinearGradient, Pattern, Rect, Stop } from 'react-nati
 import { AbsoluteOverlay } from './AbsoluteOverlay';
 import { CORNER_WEDGE_SIZE } from './TableWoodCorners';
 import { shadeColor } from './colorUtils';
+import {
+  WOOD_TRIM_COLOR,
+  WOOD_DEFAULT_LIGHT,
+  WOOD_DEFAULT_DARK,
+  WOOD_GRAIN_COLOR,
+  WOOD_TRIM_STROKE_OPACITY,
+  WOOD_TRIM_STROKE_WIDTH,
+} from './woodPalette';
 
 const RAIL_THICKNESS = 24;
-const TRIM_COLOR = '#ffd966';
-const DEFAULT_WOOD_LIGHT = '#5c2a1e';
-const DEFAULT_WOOD_DARK = '#331209';
-const GRAIN_COLOR = '#ffab6b';
 
 export interface TableEdgeRailsProps {
   // Same override contract as TableWoodCorners: undefined => today's hardcoded mahogany look.
@@ -57,12 +61,21 @@ function Rail({ edge, woodLight, woodDark }: { edge: Edge; woodLight: string; wo
             <Stop offset="100%" stopColor={woodDark} />
           </LinearGradient>
           <Pattern id={grainId} width={6} height={6} patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
-            <Line x1={0} y1={0} x2={0} y2={6} stroke={GRAIN_COLOR} strokeOpacity={0.1} strokeWidth={1} />
+            <Line x1={0} y1={0} x2={0} y2={6} stroke={WOOD_GRAIN_COLOR} strokeOpacity={0.1} strokeWidth={1} />
           </Pattern>
         </Defs>
         <Rect x={0} y={0} width="100%" height="100%" fill={`url(#${gradId})`} />
         <Rect x={0} y={0} width="100%" height="100%" fill={`url(#${grainId})`} />
-        <Rect x={0} y={0} width="100%" height="100%" fill="none" stroke={TRIM_COLOR} strokeOpacity={0.85} strokeWidth={2} />
+        <Rect
+          x={0}
+          y={0}
+          width="100%"
+          height="100%"
+          fill="none"
+          stroke={WOOD_TRIM_COLOR}
+          strokeOpacity={WOOD_TRIM_STROKE_OPACITY}
+          strokeWidth={WOOD_TRIM_STROKE_WIDTH}
+        />
       </Svg>
     </View>
   );
@@ -71,8 +84,8 @@ function Rail({ edge, woodLight, woodDark }: { edge: Edge; woodLight: string; wo
 // Zero props (aside from the same optional woodColor override TableWoodCorners takes), output
 // never changes — memoized so it paints once, same rule as TableFelt/TableWoodCorners.
 function TableEdgeRailsComponent({ woodColor, edges = EDGES }: TableEdgeRailsProps) {
-  const woodLight = woodColor != null ? shadeColor(woodColor, 0.18) : DEFAULT_WOOD_LIGHT;
-  const woodDark = woodColor != null ? shadeColor(woodColor, -0.25) : DEFAULT_WOOD_DARK;
+  const woodLight = woodColor != null ? shadeColor(woodColor, 0.18) : WOOD_DEFAULT_LIGHT;
+  const woodDark = woodColor != null ? shadeColor(woodColor, -0.25) : WOOD_DEFAULT_DARK;
   return (
     <AbsoluteOverlay>
       {edges.map((edge) => (

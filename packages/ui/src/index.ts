@@ -1,4 +1,4 @@
-export { PlayingCard } from './PlayingCard';
+export { PlayingCard, CARD_DIMS } from './PlayingCard';
 export type { PlayingCardProps, PlayingCardSize, PlayingCardBorderSpec, PlayingCardOverlayImage } from './PlayingCard';
 export { SuitIcon } from './SuitIcon';
 export type { SuitIconProps } from './SuitIcon';
@@ -18,3 +18,11 @@ export { CourtCardFrame } from './CourtCardFrame';
 export type { CourtCardFrameProps } from './CourtCardFrame';
 export { glowShadow } from './glowShadow';
 export { FONTS, CARD_RANK_FONT_FAMILY } from './fonts';
+export {
+  WOOD_TRIM_COLOR,
+  WOOD_DEFAULT_LIGHT,
+  WOOD_DEFAULT_DARK,
+  WOOD_GRAIN_COLOR,
+  WOOD_TRIM_STROKE_OPACITY,
+  WOOD_TRIM_STROKE_WIDTH,
+} from './woodPalette';

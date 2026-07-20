@@ -57,8 +57,10 @@ const CORNER_ICON_SIZE = { normal: 18, small: 12 };
 const CORNER_INDEX_WIDTH = { normal: 28, small: 19 };
 const WATERMARK_ICON_SIZE = { normal: 50, small: 31 };
 // +10% height vs. the original 120/78, and widened further per live visual feedback during the
-// 2026-07-17 deal/selection/trick-motion polish pass.
-const CARD_DIMS = {
+// 2026-07-17 deal/selection/trick-motion polish pass. Exported so call sites doing their own
+// layout math around a card (fan curves, trick-slot sizing, travel-card sizing) read the real
+// numbers instead of re-hardcoding a copy that can silently drift if these ever change again.
+export const CARD_DIMS = {
   normal: { width: 94, height: 132 },
   small: { width: 70, height: 101 },
 };

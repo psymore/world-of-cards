@@ -9,12 +9,13 @@ import {
 } from 'react-native';
 import type { Card } from '@world-cards/engine';
 import type { PistiState } from '@world-cards/engine/games/pisti';
-import { PlayingCard, TableFelt, HandFrame, HAND_FRAME_PEAK_FRACTION, glowShadow } from '@world-cards/ui';
+import { PlayingCard, TableFelt, HandFrame, HAND_FRAME_PEAK_FRACTION, CARD_DIMS } from '@world-cards/ui';
 import { SelectableCard } from '../../components/SelectableCard';
 import { DeselectableSurface } from '../../components/DeselectableSurface';
 import { useCardSelection } from '../../components/useCardSelection';
-import { PlayerAvatar } from '../../components/PlayerAvatar';
 import { useReducedMotion } from '../../components/useReducedMotion';
+import { PlayerBadge } from '../../table/PlayerBadge';
+import { OpponentSeatGroup, seatLayoutStyles } from '../../table/OpponentSeatGroup';
 import {
   assignSeats,
   fillWidthMarginPx,
@@ -57,8 +58,8 @@ const PILE_CARD_OFFSETS = Array.from({ length: MAX_STACKED_PILE_CARDS + 1 }, (_,
   y: i * -4.5,
 }));
 
-const SMALL_CARD_WIDTH = 64; // matches PlayingCard's 'small' size width
-const SMALL_CARD_HEIGHT = 86; // matches PlayingCard's 'small' size height
+const SMALL_CARD_WIDTH = CARD_DIMS.small.width;
+const SMALL_CARD_HEIGHT = CARD_DIMS.small.height;
 // Opponent hands render flat (no rotation/curve). Spacing auto-scales via fillWidthMarginPx: a
 // small hand (Pişti's max-4 opponent cards) spreads into an evenly-gapped row (capped at
 // *_MAX_GAP so it doesn't look sparse); a larger hand compresses into overlap automatically as
@@ -73,7 +74,7 @@ const SIDE_FAN_MAX_GAP = 10;
 // doesn't line up with the hand row once visually checked). Simpler than Batak's version: Pişti's
 // human hand is a single flat row (no curve/second row), so its "peak" is just the row's own top
 // edge, uniform across every card.
-const HUMAN_CARD_HEIGHT = 132; // matches PlayingCard's 'normal' size height
+const HUMAN_CARD_HEIGHT = CARD_DIMS.normal.height;
 const CONTAINER_BOTTOM_PADDING = 12; // matches styles.container.paddingVertical
 const HAND_AREA_HEIGHT = 177; // matches styles.handArea.minHeight
 const HAND_BADGE_HEIGHT = 34; // approx rendered height of PlayerBadge at normal size
@@ -164,27 +165,10 @@ function RevealCard({
   );
 }
 
-function PlayerBadge({
-  name,
-  capturedCount,
-  active,
-  isHuman,
-  compact,
-}: {
-  name: string;
-  capturedCount: number;
-  active: boolean;
-  isHuman: boolean;
-  // Width-constrained seats (the 96dp side seats in a 4-player table) need a smaller avatar and
-  // tighter spacing so the name/capture-count text still fits without wrapping onto several lines.
-  compact?: boolean;
-}) {
-  return (
-    <View style={[styles.badge, compact && styles.badgeCompact, active && styles.badgeActive]}>
-      <PlayerAvatar accent={isHuman} size={compact ? 'small' : 'normal'} />
-      <Text style={[styles.playerLabel, compact && styles.playerLabelCompact]} numberOfLines={1}>{`${name} · 🂠 ${capturedCount}`}</Text>
-    </View>
-  );
+// Pişti's badge shows a captured-card count (🂠 N) rather than Batak's bid/tricks text — each
+// game formats its own statusText string, the shared PlayerBadge just lays it out.
+function capturedStatusText(capturedCount: number): string {
+  return `🂠 ${capturedCount}`;
 }
 
 interface OpponentSeatProps {
@@ -227,10 +211,10 @@ function OpponentSeat({ seat, state, playerNames, revealCard, dealPhase, sideSta
   );
 
   return (
-    <View style={[styles.opponentArea, isSide && styles.opponentAreaSide, isCurrentTurn && styles.activeArea]}>
+    <View style={[styles.opponentArea, isSide && seatLayoutStyles.opponentAreaSide, isCurrentTurn && styles.activeArea]}>
       <PlayerBadge
         name={playerNames[playerId] ?? playerId}
-        capturedCount={capturedCount}
+        statusText={capturedStatusText(capturedCount)}
         active={isCurrentTurn}
         isHuman={false}
         compact={isSide}
@@ -241,42 +225,6 @@ function OpponentSeat({ seat, state, playerNames, revealCard, dealPhase, sideSta
         ))}
       </View>
     </View>
-  );
-}
-
-function OpponentSeatGroup({
-  position,
-  seats,
-  state,
-  playerNames,
-  revealCard,
-  dealPhase,
-  sideStackHeight,
-}: {
-  position: Seat['position'];
-  seats: Seat[];
-  state: PistiState;
-  playerNames: Record<string, string>;
-  revealCard?: PistiRevealCard | null;
-  dealPhase: DealPhase;
-  sideStackHeight: number;
-}) {
-  return (
-    <>
-      {seats
-        .filter((seat) => seat.position === position)
-        .map((seat) => (
-          <OpponentSeat
-            key={seat.playerId}
-            seat={seat}
-            state={state}
-            playerNames={playerNames}
-            revealCard={revealCard}
-            dealPhase={dealPhase}
-            sideStackHeight={sideStackHeight}
-          />
-        ))}
-    </>
   );
 }
 
@@ -398,22 +346,32 @@ export function PistiTable({
       <OpponentSeatGroup
         position="top"
         seats={seats}
-        state={state}
-        playerNames={playerNames}
-        revealCard={revealCard}
-        dealPhase={dealPhase}
-        sideStackHeight={middleRowHeight}
+        renderSeat={(seat) => (
+          <OpponentSeat
+            seat={seat}
+            state={state}
+            playerNames={playerNames}
+            revealCard={revealCard}
+            dealPhase={dealPhase}
+            sideStackHeight={middleRowHeight}
+          />
+        )}
       />
 
-      <View style={styles.middleRow} onLayout={handleMiddleRowLayout}>
+      <View style={seatLayoutStyles.middleRow} onLayout={handleMiddleRowLayout}>
         <OpponentSeatGroup
           position="left"
           seats={seats}
-          state={state}
-          playerNames={playerNames}
-          revealCard={revealCard}
-          dealPhase={dealPhase}
-          sideStackHeight={middleRowHeight}
+          renderSeat={(seat) => (
+            <OpponentSeat
+              seat={seat}
+              state={state}
+              playerNames={playerNames}
+              revealCard={revealCard}
+              dealPhase={dealPhase}
+              sideStackHeight={middleRowHeight}
+            />
+          )}
         />
 
         <View style={styles.pileArea}>
@@ -453,11 +411,16 @@ export function PistiTable({
         <OpponentSeatGroup
           position="right"
           seats={seats}
-          state={state}
-          playerNames={playerNames}
-          revealCard={revealCard}
-          dealPhase={dealPhase}
-          sideStackHeight={middleRowHeight}
+          renderSeat={(seat) => (
+            <OpponentSeat
+              seat={seat}
+              state={state}
+              playerNames={playerNames}
+              revealCard={revealCard}
+              dealPhase={dealPhase}
+              sideStackHeight={middleRowHeight}
+            />
+          )}
         />
       </View>
 
@@ -481,7 +444,7 @@ export function PistiTable({
               </View>
             ))}
         </View>
-        <PlayerBadge name={playerNames[humanPlayerId] ?? 'You'} capturedCount={capturedHuman} active={isHumanTurn} isHuman />
+        <PlayerBadge name={playerNames[humanPlayerId] ?? 'You'} statusText={capturedStatusText(capturedHuman)} active={isHumanTurn} isHuman />
       </View>
       {dealPhase !== 'revealing' && <DealFlightOverlay seats={dealSeats} />}
     </DeselectableSurface>
@@ -491,45 +454,13 @@ export function PistiTable({
 const styles = StyleSheet.create({
   container: { flex: 1, paddingVertical: 12 },
   opponentArea: { minHeight: 135, justifyContent: 'center', alignItems: 'center', borderRadius: 12, paddingVertical: 4 },
-  opponentAreaSide: { minHeight: 0, width: 96, paddingVertical: 4 },
   handArea: { minHeight: 177, justifyContent: 'center', borderRadius: 12, paddingVertical: 4 },
   activeArea: { backgroundColor: 'rgba(244, 197, 66, 0.14)' },
-  // zIndex only orders direct siblings sharing a parent (here: the top opponent group, this row,
-  // and handArea, all children of the root container) — it does not let a deeply nested
-  // descendant "escape" and outrank an entirely different sibling subtree on its own. Without
-  // this, the RevealCard's own zIndex (scoped to its pileStack siblings) has no effect on whether
-  // it paints above or below handArea's cards, so mid-flight — since the reveal now travels from
-  // the card's real hand position, which visually overlaps handArea — it looked like it emerged
-  // from underneath the neighboring hand cards instead of lifting above them.
-  middleRow: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'center',
-    marginVertical: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 999,
-    backgroundColor: 'rgba(0, 0, 0, 0.22)',
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-  },
-  badgeActive: {
-    borderColor: '#4ade80',
-    backgroundColor: 'rgba(34, 197, 94, 0.2)',
-    ...glowShadow('#4ade80', 8),
-  },
-  // The 96dp side seats have too little room for the default gap/padding plus a full-size
-  // avatar without the name/capture-count text wrapping onto several cramped lines.
-  badgeCompact: { gap: 3, paddingHorizontal: 5 },
-  playerLabel: { fontSize: 13, fontWeight: '700', color: '#f5f0e6', textAlign: 'center' },
-  playerLabelCompact: { fontSize: 11 },
   opponentRow: { flexDirection: 'row', justifyContent: 'center' },
   opponentColumn: { flexDirection: 'column', alignItems: 'center' },
-  // Same cross-subtree reasoning as middleRow above, one level down: outranks the left/right
-  // OpponentSeatGroup siblings within middleRow, so a reveal traveling from either side seat
-  // paints above that seat's own remaining cards too.
+  // Same cross-subtree reasoning as seatLayoutStyles.middleRow's own zIndex, one level down:
+  // outranks the left/right OpponentSeatGroup siblings within middleRow, so a reveal traveling
+  // from either side seat paints above that seat's own remaining cards too.
   pileArea: { flex: 1, alignItems: 'center', justifyContent: 'center', zIndex: 10 },
   pileMat: {
     width: 195,
