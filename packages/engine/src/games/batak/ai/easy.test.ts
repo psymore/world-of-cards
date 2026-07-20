@@ -27,6 +27,7 @@ function makeState(overrides: Partial<BatakState> & { table: TableState }): Bata
     currentTrick: [],
     trickLeader: null,
     tricksWon: Object.fromEntries(players.map((p) => [p, 0])),
+    kittyCardIds: null,
     ...overrides,
   };
 }
@@ -190,6 +191,47 @@ describe('batakEasyAI', () => {
       const legalMoves = batakGame.getLegalMoves(state, 'p1');
       const move = batakEasyAI.chooseMove(state, 'p1', legalMoves, createRng(seed));
       expect(move).toEqual({ type: 'play', cardId: 'a' });
+    }
+  });
+
+  it('discards a valid 4-card bury during kitty-exchange for a 3-player gömmeli game, preferring non-trump cards', () => {
+    const players = ['p1', 'p2', 'p3'];
+    const table = createTable([
+      createZone('hand-p1', true, [
+        card('nt1', '2', 'hearts'),
+        card('nt2', '5', 'diamonds'),
+        card('nt3', '9', 'clubs'),
+        card('nt4', 'K', 'clubs'),
+        card('trump1', '3', 'spades'),
+        card('trump2', 'A', 'spades'),
+      ]),
+      createZone('hand-p2', true, []),
+      createZone('hand-p3', true, []),
+      createZone('trick', true),
+      createZone('won-p1', true),
+      createZone('won-p2', true),
+      createZone('won-p3', true),
+      createZone('kitty', false),
+      createZone('buried', false),
+    ]);
+    const state = makeState({
+      table,
+      players,
+      phase: 'kitty-exchange',
+      bids: { p1: 8, p2: 'pass', p3: 'pass' },
+      highestBid: 8,
+      contract: 8,
+      bidWinner: 'p1',
+      trumpSuit: 'spades',
+      tricksWon: { p1: 0, p2: 0, p3: 0 },
+      kittyCardIds: ['nt1', 'nt2', 'nt3', 'nt4'],
+    });
+    const legalMoves = batakGame.getLegalMoves(state, 'p1');
+    const move = batakEasyAI.chooseMove(state, 'p1', legalMoves, createRng(1));
+    expect(batakGame.validateMove(state, move, 'p1')).toBe(true);
+    expect(move.type).toBe('bury');
+    if (move.type === 'bury') {
+      expect(move.cardIds.slice().sort()).toEqual(['nt1', 'nt2', 'nt3', 'nt4'].sort());
     }
   });
 });

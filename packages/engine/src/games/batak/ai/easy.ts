@@ -2,7 +2,8 @@ import { AIStrategy } from '../../../ai/types';
 import { pickRandom } from '../../../ai/weightedRandom';
 import { BatakState, BatakMove } from '../types';
 import { compareRanks } from '../ranking';
-import { chooseTrumpSuit } from './handStrength';
+import { ruleConstants } from '../rules';
+import { chooseTrumpSuit, chooseCardsToBury } from './handStrength';
 
 type PlayMove = Extract<BatakMove, { type: 'play' }>;
 
@@ -17,6 +18,17 @@ export const batakEasyAI: AIStrategy<BatakState, BatakMove> = {
 
     if (state.phase === 'trump-selection') {
       return { type: 'selectTrump', suit: chooseTrumpSuit(hand) };
+    }
+
+    if (state.phase === 'kitty-exchange') {
+      const { kittySize } = ruleConstants(state.players.length);
+      const cardIds = chooseCardsToBury(hand, state.trumpSuit!, kittySize).map((c) => c.id) as [
+        string,
+        string,
+        string,
+        string,
+      ];
+      return { type: 'bury', cardIds };
     }
 
     const playMoves = legalMoves.filter((m): m is PlayMove => m.type === 'play');
