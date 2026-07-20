@@ -28,7 +28,7 @@ function meetsEasyModeHandRequirements(hand: Card[]): boolean {
   return meetsHonorRequirement(hand) && meetsSuitConcentrationRequirement(hand);
 }
 
-interface RuleConstants {
+export interface RuleConstants {
   handSize: number;
   kittySize: number;
   bidFloor: number;
@@ -37,7 +37,7 @@ interface RuleConstants {
   bustThreshold: number;
 }
 
-function ruleConstants(playerCount: number): RuleConstants {
+export function ruleConstants(playerCount: number): RuleConstants {
   return playerCount === 3
     ? { handSize: 16, kittySize: 4, bidFloor: 8, maxBid: 16, forcedContract: 7, bustThreshold: 2 }
     : { handSize: 13, kittySize: 0, bidFloor: 5, maxBid: 13, forcedContract: 4, bustThreshold: 1 };
@@ -69,7 +69,7 @@ function trumpSelectionLegalMoves(state: BatakState, playerId: PlayerId): BatakM
   return SUITS.map((suit) => ({ type: 'selectTrump', suit }));
 }
 
-function fourCardCombinations(cards: Card[]): Card[][] {
+export function fourCardCombinations(cards: Card[]): Card[][] {
   const combos: Card[][] = [];
   for (let a = 0; a < cards.length; a++) {
     for (let b = a + 1; b < cards.length; b++) {
