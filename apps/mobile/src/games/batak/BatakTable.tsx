@@ -2,11 +2,21 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import Svg, {
+  Defs,
+  Line,
+  LinearGradient,
+  Pattern,
+  RadialGradient,
+  Rect,
+  Stop,
+} from "react-native-svg";
 import type { Card, Suit } from "@world-cards/engine";
 import type { BatakState, BatakMove } from "@world-cards/engine/games/batak";
 import { compareRanks } from "@world-cards/engine/games/batak";
@@ -54,12 +64,15 @@ const HUMAN_HAND_CURVE_MULTIPLIER = 1.5;
 // The bottom hand row overlaps the top row instead of sitting below it with a gap, so the two
 // rows read as one imbricated fan rather than two stacked blocks.
 const HAND_ROW_OVERLAP_FRACTION = 0.25;
-const HAND_ROW_OVERLAP_PX = Math.round(HUMAN_CARD_HEIGHT * HAND_ROW_OVERLAP_FRACTION);
+const HAND_ROW_OVERLAP_PX = Math.round(
+  HUMAN_CARD_HEIGHT * HAND_ROW_OVERLAP_FRACTION,
+);
 // Total footprint of the two-row fan (top row's full height, plus the bottom row's additional
 // visible height once the overlap above is applied) — given explicitly to styles.handFan since
 // its children are now absolutely positioned (see AnimatedFanCard) and can no longer contribute
 // to an auto-computed parent height the way normal-flow children would.
-const HAND_FAN_HEIGHT = HUMAN_CARD_HEIGHT + (HUMAN_CARD_HEIGHT - HAND_ROW_OVERLAP_PX);
+const HAND_FAN_HEIGHT =
+  HUMAN_CARD_HEIGHT + (HUMAN_CARD_HEIGHT - HAND_ROW_OVERLAP_PX);
 
 // First-pass constants for positioning HandFrame behind the two-row hand, derived from this
 // file's own layout below (not measured on a real device — tune these if the frame's arch peak
@@ -218,7 +231,12 @@ interface OpponentSeatProps {
   pendingPlay?: PendingBatakPlay | null;
 }
 
-function OpponentSeat({ seat, state, playerNames, pendingPlay }: OpponentSeatProps) {
+function OpponentSeat({
+  seat,
+  state,
+  playerNames,
+  pendingPlay,
+}: OpponentSeatProps) {
   const { position, playerId } = seat;
   const isSide = position !== "top";
   const isCurrentTurn =
@@ -287,6 +305,59 @@ function BiddingCenter({
   );
 }
 
+// The "platform" — the shared bid/trump decision panel (styles.modalCard) — gets the same
+// gradient+grain+trim wood recipe as TableWoodCorners/TableEdgeRails/HandFrame rather than a new
+// material, so it reads as part of the same wooden-table identity. Brainstormed via the visual
+// companion (mockup: .superpowers/brainstorm/994-1784508967/content/platform-style.html).
+const PLATFORM_WOOD_LIGHT = "#5c2a1e";
+const PLATFORM_WOOD_DARK = "#331209";
+const PLATFORM_GRAIN_COLOR = "#ffab6b";
+const PLATFORM_TRIM_COLOR = "rgba(255, 217, 102, 0.85)";
+// Raises the panel above CenteredDecisionModal's default dead-center resting spot, per the
+// approved mockup.
+const PLATFORM_RAISE_BY = 40;
+
+// Absolutely fills styles.modalCard (which clips via overflow:'hidden'). modalCard is a
+// shrink-to-fit box (its size varies between the bid grid and the narrower trump suit row), and
+// percentage width/height on <Svg> didn't reliably resolve against that dynamic parent size in
+// practice (left gaps at the edges) — so this measures its own rendered box via onLayout instead,
+// the same pattern already used for the trick center's destRef/handleDestLayout below, and gives
+// the Svg/Rect explicit pixel dimensions like BidButton's own Svg already does successfully.
+function PlatformWoodBackground() {
+  const [size, setSize] = useState<{ width: number; height: number } | null>(
+    null,
+  );
+  return (
+    <View
+      style={[StyleSheet.absoluteFill, styles.noPointerEvents]}
+      onLayout={e => {
+        const { width, height } = e.nativeEvent.layout;
+        setSize({ width, height });
+      }}>
+      {size && (
+        <Svg width={size.width} height={size.height}>
+          <Defs>
+            <LinearGradient id="platformWoodGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <Stop offset="0%" stopColor={PLATFORM_WOOD_LIGHT} />
+              <Stop offset="100%" stopColor={PLATFORM_WOOD_DARK} />
+            </LinearGradient>
+            <Pattern
+              id="platformWoodGrain"
+              width={6}
+              height={6}
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(35)">
+              <Line x1={0} y1={0} x2={0} y2={6} stroke={PLATFORM_GRAIN_COLOR} strokeOpacity={0.1} strokeWidth={1} />
+            </Pattern>
+          </Defs>
+          <Rect width={size.width} height={size.height} fill="url(#platformWoodGradient)" />
+          <Rect width={size.width} height={size.height} fill="url(#platformWoodGrain)" />
+        </Svg>
+      )}
+    </View>
+  );
+}
+
 function TrumpWaitingCenter({
   state,
   playerNames,
@@ -312,8 +383,8 @@ function TrumpSuitPicker({
 }) {
   return (
     <View style={styles.modalCard}>
-      <Text
-        style={[styles.centerHeading, styles.trumpModalHeading]}>
+      <PlatformWoodBackground />
+      <Text style={[styles.centerHeading, styles.trumpModalHeading]}>
         {`Choose trump (contract: ${state.contract})`}
       </Text>
       <View style={styles.suitRow}>
@@ -367,7 +438,7 @@ function TrickCenter({
 }) {
   function trickPositionFor(playerId: string): TrickPosition {
     if (playerId === humanPlayerId) return "bottom";
-    return seats.find((s) => s.playerId === playerId)?.position ?? "top";
+    return seats.find(s => s.playerId === playerId)?.position ?? "top";
   }
 
   function cardFor(playerId: string): Card | null {
@@ -396,7 +467,10 @@ function TrickCenter({
         ? humanPlayerId
         : seats.find(s => s.position === position)?.playerId;
     const card = playerId ? cardFor(playerId) : null;
-    const isPending = playerId != null && pendingPlay != null && pendingPlay.playerId === playerId;
+    const isPending =
+      playerId != null &&
+      pendingPlay != null &&
+      pendingPlay.playerId === playerId;
     const zIndex = playerId ? Math.max(playOrder.indexOf(playerId) + 1, 1) : 1;
     const offset = TRICK_SLOT_OFFSETS[position];
 
@@ -408,14 +482,19 @@ function TrickCenter({
         onLayout={position === "bottom" ? onDestLayout : undefined}
         style={[
           styles.trickSlot,
-          { zIndex, transform: [{ translateX: offset.x }, { translateY: offset.y }] },
+          {
+            zIndex,
+            transform: [{ translateX: offset.x }, { translateY: offset.y }],
+          },
         ]}>
         {card ? (
           isPending ? (
             <TravelCard
               originOffset={
                 pendingPlay?.originOffset ??
-                revealOriginOffset(resolveRevealOrigin(playerId!, humanPlayerId, seats))
+                revealOriginOffset(
+                  resolveRevealOrigin(playerId!, humanPlayerId, seats),
+                )
               }
               resetKey={card.id}>
               <PlayingCard card={card} size="small" />
@@ -429,7 +508,9 @@ function TrickCenter({
   }
 
   const gatherDestinationOffset = gatheringTrick
-    ? revealOriginOffset(resolveRevealOrigin(gatheringTrick.winnerId, humanPlayerId, seats))
+    ? revealOriginOffset(
+        resolveRevealOrigin(gatheringTrick.winnerId, humanPlayerId, seats),
+      )
     : null;
 
   return (
@@ -455,15 +536,162 @@ function TrickCenter({
                   key={playerId}
                   style={[
                     styles.trickSlot,
-                    { transform: [{ translateX: offset.x }, { translateY: offset.y }] },
+                    {
+                      transform: [
+                        { translateX: offset.x },
+                        { translateY: offset.y },
+                      ],
+                    },
                   ]}>
-                  <GatherCard card={card} destinationOffset={gatherDestinationOffset!} />
+                  <GatherCard
+                    card={card}
+                    destinationOffset={gatherDestinationOffset!}
+                  />
                 </View>
               );
             })
-          : (["top", "left", "bottom", "right"] as TrickPosition[]).map(slotFor)}
+          : (["top", "left", "bottom", "right"] as TrickPosition[]).map(
+              slotFor,
+            )}
       </View>
     </View>
+  );
+}
+
+// Baldur's Gate 3-inspired bid button palette
+// (docs/superpowers/specs/2026-07-19-batak-bid-button-redesign-design.md) — idle vs. "hover"
+// colors, where RN's touch-only Pressable has no real hover, so the reference's :hover state maps
+// onto Pressable's pressed state instead.
+interface BidButtonPalette {
+  fillTop: string;
+  fillBottom: string;
+  fillTopPressed: string;
+  fillBottomPressed: string;
+  borderIdle: string;
+  borderPressed: string;
+  textIdle: string;
+  textPressed: string;
+}
+
+const BID_NUMBER_PALETTE: BidButtonPalette = {
+  fillTop: "#31221B",
+  fillBottom: "#341307",
+  fillTopPressed: "#40291d",
+  fillBottomPressed: "#4a2a10",
+  borderIdle: "#B19B7E",
+  borderPressed: "#CEB390",
+  textIdle: "#cdaf87",
+  textPressed: "#ffe5c2",
+};
+
+const BID_PASS_PALETTE: BidButtonPalette = {
+  fillTop: "#31221B",
+  fillBottom: "#341307",
+  fillTopPressed: "#40291d",
+  fillBottomPressed: "#4a2a10",
+  borderIdle: "#8a5a4a",
+  borderPressed: "#c98a6f",
+  textIdle: "#d9a98f",
+  textPressed: "#f0c9b8",
+};
+
+const BID_BUTTON_SIZE = 56;
+const BID_BUTTON_RADIUS = 10;
+const PASS_BUTTON_HEIGHT = 44;
+const BID_GRID_COLUMNS = 3;
+const BID_GRID_GAP = 10;
+const BID_GRID_WIDTH =
+  BID_BUTTON_SIZE * BID_GRID_COLUMNS + BID_GRID_GAP * (BID_GRID_COLUMNS - 1);
+
+// The gradient fill/bevel/shine layers are drawn in react-native-svg (already a dependency, used
+// the same way by TableWoodCorners/HeaderWoodFrame) rather than a gradient-clipped text label —
+// this app has no masked-view dependency, so the label uses a solid idle/pressed color swap
+// instead of the reference's literal text gradient.
+function BidButton({
+  label,
+  onPress,
+  palette,
+  width,
+  height,
+  fontSize,
+}: {
+  label: string;
+  onPress: () => void;
+  palette: BidButtonPalette;
+  width: number;
+  height: number;
+  fontSize: number;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={{ width, height }}>
+      {({ pressed }) => {
+        const fillTop = pressed ? palette.fillTopPressed : palette.fillTop;
+        const fillBottom = pressed
+          ? palette.fillBottomPressed
+          : palette.fillBottom;
+        const borderColor = pressed
+          ? palette.borderPressed
+          : palette.borderIdle;
+        const textColor = pressed ? palette.textPressed : palette.textIdle;
+        return (
+          <View style={[styles.bidButtonShadow, { width, height }]}>
+            <View
+              style={[
+                styles.bidButtonClip,
+                pressed && glowShadow(borderColor, 8),
+                {
+                  width,
+                  height,
+                  borderColor,
+                  borderWidth: pressed ? 1.6 : 1.4,
+                },
+              ]}>
+              <Svg
+                width={width}
+                height={height}
+                style={StyleSheet.absoluteFill}>
+                <Defs>
+                  <LinearGradient id="bidFill" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset={0} stopColor={fillTop} />
+                    <Stop offset={1} stopColor={fillBottom} />
+                  </LinearGradient>
+                  <LinearGradient id="bidBevel" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset={0} stopColor="#ffffff" stopOpacity={0} />
+                    <Stop offset={0.5} stopColor="#ffffff" stopOpacity={0.4} />
+                    <Stop offset={0.5} stopColor="#000000" stopOpacity={0.3} />
+                    <Stop offset={1} stopColor="#000000" stopOpacity={0} />
+                  </LinearGradient>
+                  <RadialGradient
+                    id="bidShine"
+                    cx="50%"
+                    cy="0%"
+                    rx="70%"
+                    ry="60%">
+                    <Stop offset={0} stopColor="#ffffff" stopOpacity={0.35} />
+                    <Stop offset={1} stopColor="#ffffff" stopOpacity={0} />
+                  </RadialGradient>
+                </Defs>
+                <Rect width={width} height={height} fill="url(#bidFill)" />
+                <Rect width={width} height={height} fill="url(#bidBevel)" />
+                <Rect
+                  width={width}
+                  height={height}
+                  fill="url(#bidShine)"
+                  opacity={pressed ? 1 : 0.6}
+                />
+              </Svg>
+              <Text
+                style={[styles.bidButtonText, { fontSize, color: textColor }]}>
+                {label}
+              </Text>
+            </View>
+          </View>
+        );
+      }}
+    </Pressable>
   );
 }
 
@@ -480,25 +708,32 @@ function BidControls({
   const hasPass = legalMoves.some(m => m.type === "pass");
   return (
     <View style={styles.modalCard} testID="bid-controls">
+      <PlatformWoodBackground />
       <View style={styles.bidGrid}>
         {bidMoves.map(move => (
-          <Pressable
+          <BidButton
             key={move.amount}
+            label={`${move.amount}`}
             onPress={() => onMove(move)}
-            style={styles.bidButton}
-            accessibilityRole="button">
-            <Text style={styles.bidButtonText}>{`Bid ${move.amount}`}</Text>
-          </Pressable>
+            palette={BID_NUMBER_PALETTE}
+            width={BID_BUTTON_SIZE}
+            height={BID_BUTTON_SIZE}
+            fontSize={20}
+          />
         ))}
-        {hasPass && (
-          <Pressable
-            onPress={() => onMove({ type: "pass" })}
-            style={[styles.bidButton, styles.passButton]}
-            accessibilityRole="button">
-            <Text style={styles.bidButtonText}>Pass</Text>
-          </Pressable>
-        )}
       </View>
+      {hasPass && (
+        <View style={styles.passRow}>
+          <BidButton
+            label="Pass"
+            onPress={() => onMove({ type: "pass" })}
+            palette={BID_PASS_PALETTE}
+            width={BID_GRID_WIDTH}
+            height={PASS_BUTTON_HEIGHT}
+            fontSize={14}
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -594,8 +829,11 @@ function AnimatedFanCard({
 
   return (
     <Animated.View
-      style={[styles.fanCardSlot, { transform: [{ translateX: x }, { translateY: y }] }]}>
-      <View ref={(node) => registerCardRef(card.id, node)}>
+      style={[
+        styles.fanCardSlot,
+        { transform: [{ translateX: x }, { translateY: y }] },
+      ]}>
+      <View ref={node => registerCardRef(card.id, node)}>
         <EntranceCard index={slot.indexInRow} playEntrance={playEntrance}>
           <SelectableCard
             card={card}
@@ -603,14 +841,25 @@ function AnimatedFanCard({
             selected={selectedCardId === card.id}
             disabled={!interactive}
             onPress={() => selectCard(card.id)}
-            rotateDeg={fanRotationDeg(slot.indexInRow, slot.rowCount, HUMAN_HAND_DEGREES_PER_STEP)}
-            curveOffsetY={fanCurveY(slot.indexInRow, slot.rowCount, 1, HUMAN_HAND_CURVE_MULTIPLIER)}
+            rotateDeg={fanRotationDeg(
+              slot.indexInRow,
+              slot.rowCount,
+              HUMAN_HAND_DEGREES_PER_STEP,
+            )}
+            curveOffsetY={fanCurveY(
+              slot.indexInRow,
+              slot.rowCount,
+              1,
+              HUMAN_HAND_CURVE_MULTIPLIER,
+            )}
             liftDistance={SELECTED_LIFT_DISTANCE}
             // Kept even without the front-stacking zIndex below: it independently shrinks
             // the selected card's own touch bounds, which is what actually prevents a stray
             // tap from landing on it instead of an exposed neighbor — orthogonal to stacking
             // order.
-            hitSlop={selectedCardId === card.id ? SELECTED_CARD_HIT_SLOP : undefined}
+            hitSlop={
+              selectedCardId === card.id ? SELECTED_CARD_HIT_SLOP : undefined
+            }
           />
         </EntranceCard>
       </View>
@@ -641,7 +890,7 @@ function HumanHandFan({
 }) {
   return (
     <View style={styles.handFan} testID="human-hand">
-      {slots.map((slot) => (
+      {slots.map(slot => (
         <AnimatedFanCard
           key={slot.card.id}
           slot={slot}
@@ -731,8 +980,11 @@ export function BatakTable({
   // trick-motion-polish-design.md section D2. Card counts come from the real dealt hand size,
   // not a hardcoded 13, so this stays correct if hand size ever varies (e.g. the gömmeli variant).
   const dealSeats: DealFlightSeat[] = [
-    { origin: "bottom", cardCount: state.table.zones[`hand-${humanPlayerId}`].cards.length },
-    ...opponentPlayerIds.map((playerId) => ({
+    {
+      origin: "bottom",
+      cardCount: state.table.zones[`hand-${humanPlayerId}`].cards.length,
+    },
+    ...opponentPlayerIds.map(playerId => ({
       origin: resolveRevealOrigin(playerId, humanPlayerId, seats),
       cardCount: state.table.zones[`hand-${playerId}`].cards.length,
     })),
@@ -743,20 +995,25 @@ export function BatakTable({
   // trick-completing move (human's own or an AI's) is staged, engine state hasn't advanced past
   // the player who made it yet, so disabling on pendingPlay alone — not "is it revealing for the
   // human specifically" — is both correct and simpler than tracking whose reveal it is.
-  const isHumanInteractive = isHumanTurn && pendingPlay == null && gatheringTrick == null;
+  const isHumanInteractive =
+    isHumanTurn && pendingPlay == null && gatheringTrick == null;
 
-  const { selectedCardId, selectCard, clearSelection } = useCardSelection(playWithMeasuredOrigin);
+  const { selectedCardId, selectCard, clearSelection } = useCardSelection(
+    playWithMeasuredOrigin,
+  );
   useEffect(() => {
     if (!isHumanInteractive) clearSelection();
   }, [isHumanInteractive, clearSelection]);
 
-  const isPendingHuman = pendingPlay != null && pendingPlay.playerId === humanPlayerId;
+  const isPendingHuman =
+    pendingPlay != null && pendingPlay.playerId === humanPlayerId;
   const humanGatheringCardId = gatheringTrick?.entries.find(
-    (entry) => entry.playerId === humanPlayerId
+    entry => entry.playerId === humanPlayerId,
   )?.card.id;
   const humanHand = state.table.zones[`hand-${humanPlayerId}`].cards.filter(
-    (card) =>
-      !(isPendingHuman && card.id === pendingPlay!.card.id) && card.id !== humanGatheringCardId
+    card =>
+      !(isPendingHuman && card.id === pendingPlay!.card.id) &&
+      card.id !== humanGatheringCardId,
   );
   const sortedHand = sortHandForDisplay(humanHand);
   // Each card is assigned to a fixed top/bottom layer once — the first time this component sees
@@ -773,11 +1030,29 @@ export function BatakTable({
       handLayerRef.current.set(card.id, i < initialTopCount ? "top" : "bottom");
     });
   }
-  const topRow = sortedHand.filter((card) => handLayerRef.current.get(card.id) === "top");
-  const bottomRow = sortedHand.filter((card) => handLayerRef.current.get(card.id) === "bottom");
+  const topRow = sortedHand.filter(
+    card => handLayerRef.current.get(card.id) === "top",
+  );
+  const bottomRow = sortedHand.filter(
+    card => handLayerRef.current.get(card.id) === "bottom",
+  );
   const handSlots: HandSlot[] = [
-    ...topRow.map((card, i): HandSlot => ({ card, row: "top", indexInRow: i, rowCount: topRow.length })),
-    ...bottomRow.map((card, i): HandSlot => ({ card, row: "bottom", indexInRow: i, rowCount: bottomRow.length })),
+    ...topRow.map(
+      (card, i): HandSlot => ({
+        card,
+        row: "top",
+        indexInRow: i,
+        rowCount: topRow.length,
+      }),
+    ),
+    ...bottomRow.map(
+      (card, i): HandSlot => ({
+        card,
+        row: "bottom",
+        indexInRow: i,
+        rowCount: bottomRow.length,
+      }),
+    ),
   ];
   const legalCardIds = new Set(
     legalMoves
@@ -791,7 +1066,9 @@ export function BatakTable({
   // center, measured live and re-measured on every layout pass. See
   // docs/superpowers/specs/2026-07-18-human-hand-real-position-card-travel-design.md.
   const destRef = useRef<View>(null);
-  const [destCenter, setDestCenter] = useState<{ x: number; y: number } | null>(null);
+  const [destCenter, setDestCenter] = useState<{ x: number; y: number } | null>(
+    null,
+  );
   function handleDestLayout() {
     destRef.current?.measureInWindow((x, y, width, height) => {
       setDestCenter({ x: x + width / 2, y: y + height / 2 });
@@ -830,10 +1107,12 @@ export function BatakTable({
   // spare — the overshoot itself is off-screen) while keeping the peak at the same height as
   // before. Width stays exactly windowWidth; only height is stretched (via HandFrame's `height`
   // prop + resizeMode="stretch") to satisfy both constraints — see HandFrame's prop doc.
-  const handFramePeakTarget = TOP_ROW_PEAK_DISTANCE_FROM_BOTTOM + HAND_FRAME_REVEAL_MARGIN;
+  const handFramePeakTarget =
+    TOP_ROW_PEAK_DISTANCE_FROM_BOTTOM + HAND_FRAME_REVEAL_MARGIN;
   const handFrameBottomOffset = -HAND_FRAME_BOTTOM_OVERSHOOT;
   const handFrameHeight =
-    (handFramePeakTarget + HAND_FRAME_BOTTOM_OVERSHOOT) / (1 - HAND_FRAME_PEAK_FRACTION);
+    (handFramePeakTarget + HAND_FRAME_BOTTOM_OVERSHOOT) /
+    (1 - HAND_FRAME_PEAK_FRACTION);
 
   return (
     <DeselectableSurface style={styles.container} onDeselect={clearSelection}>
@@ -858,9 +1137,10 @@ export function BatakTable({
         {state.phase === "bidding" && (
           <BiddingCenter state={state} playerNames={playerNames} />
         )}
-        {state.phase === "trump-selection" && state.bidWinner !== humanPlayerId && (
-          <TrumpWaitingCenter state={state} playerNames={playerNames} />
-        )}
+        {state.phase === "trump-selection" &&
+          state.bidWinner !== humanPlayerId && (
+            <TrumpWaitingCenter state={state} playerNames={playerNames} />
+          )}
         {state.phase === "playing" && (
           <TrickCenter
             state={state}
@@ -883,7 +1163,10 @@ export function BatakTable({
         />
       </View>
 
-      <HandFrame bottomOffset={handFrameBottomOffset} height={handFrameHeight} />
+      <HandFrame
+        bottomOffset={handFrameBottomOffset}
+        height={handFrameHeight}
+      />
       <View style={styles.handArea}>
         <PlayerBadge
           name={playerNames[humanPlayerId] ?? "You"}
@@ -902,11 +1185,22 @@ export function BatakTable({
         />
       </View>
       {dealPhase !== "revealing" && <DealFlightOverlay seats={dealSeats} />}
-      <CenteredDecisionModal visible={state.phase === "bidding" && isHumanInteractive}>
+      <CenteredDecisionModal
+        raiseBy={PLATFORM_RAISE_BY}
+        visible={
+          state.phase === "bidding" &&
+          isHumanInteractive &&
+          dealPhase === "revealing"
+        }>
         <BidControls legalMoves={legalMoves} onMove={onMove} />
       </CenteredDecisionModal>
       <CenteredDecisionModal
-        visible={state.phase === "trump-selection" && state.bidWinner === humanPlayerId}>
+        raiseBy={PLATFORM_RAISE_BY}
+        visible={
+          state.phase === "trump-selection" &&
+          state.bidWinner === humanPlayerId &&
+          dealPhase === "revealing"
+        }>
         <TrumpSuitPicker state={state} onMove={onMove} />
       </CenteredDecisionModal>
     </DeselectableSurface>
@@ -1016,45 +1310,56 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  // Mahogany wood tone matching TableWoodCorners/TableEdgeRails/HandFrame's established wood
-  // palette elsewhere in this app (their own color constants aren't exported, so this is a
-  // hand-matched literal, not an import) — makes both decision modals read as part of the same
-  // wooden-table identity instead of an unrelated dark-green card.
+  // The wood-grain fill (PlatformWoodBackground, rendered as this View's first child) needs
+  // overflow:'hidden' to clip to the rounded corners; it also makes this the single wood
+  // treatment shared by both decision modals (bid + trump), so they read as one cohesive
+  // wooden-table identity instead of two separately-styled cards.
   modalCard: {
-    backgroundColor: "rgba(74, 36, 25, 0.94)",
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: "rgba(244, 197, 66, 0.5)",
+    borderColor: PLATFORM_TRIM_COLOR,
     paddingVertical: 20,
     paddingHorizontal: 20,
     maxWidth: 320,
     alignItems: "center",
+    overflow: "hidden",
   },
   // Only the trump modal's heading needs breathing room above the suit row — the bid modal has no
   // heading of its own, and the ambient centerPanel instances already get spacing from their own
   // `gap`, so this stays scoped here rather than added to the shared centerHeading style.
   trumpModalHeading: { marginBottom: 12 },
+  // Fixed 3-column grid (5/6/7, 8/9/10, 11/12/13 — Batak's real bid range) rather than a
+  // flex-wrap row, so the layout stays a clean 3-wide rectangle regardless of how many bid
+  // amounts are currently legal, per the bid-button redesign spec.
   bidGrid: {
+    width: BID_GRID_WIDTH,
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 8,
+    gap: BID_GRID_GAP,
   },
-  // Fixed width + centered text so every bid button (from "Bid 5" through "Bid 13") and Pass
-  // render as equal-sized rectangles in the grid, regardless of label length.
-  bidButton: {
-    width: 72,
+  passRow: { width: BID_GRID_WIDTH, marginTop: BID_GRID_GAP },
+  // Outer wrapper carries the drop shadow only (no overflow/borderRadius) — combining overflow:
+  // 'hidden' with an elevation-based Android shadow on the same View clips the shadow itself.
+  bidButtonShadow: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.45,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  // Inner wrapper clips the SVG fill/bevel/shine layers to the rounded border.
+  bidButtonClip: {
+    borderRadius: BID_BUTTON_RADIUS,
+    overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(244, 197, 66, 0.5)",
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
   },
-  passButton: { borderColor: "rgba(192, 57, 43, 0.6)" },
-  bidButtonText: { fontSize: 15, fontWeight: "700", color: "#f5f0e6", textAlign: "center" },
+  bidButtonText: {
+    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  noPointerEvents: { pointerEvents: "none" },
   // Fixed height since every card inside is now absolutely positioned (see AnimatedFanCard) and
   // can no longer contribute to an auto-computed height the way normal-flow children would.
   handFan: { height: HAND_FAN_HEIGHT },
