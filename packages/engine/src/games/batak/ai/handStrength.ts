@@ -1,5 +1,6 @@
 import { Card, Suit } from '../../../core/types';
 import { ruleConstants } from '../rules';
+import { compareRanks } from '../ranking';
 
 const SUITS: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
 
@@ -51,4 +52,27 @@ export function estimateBidDecision(
     return { type: 'bid', amount: estimatedTricks };
   }
   return { type: 'pass' };
+}
+
+export function chooseCardsToBury(hand: Card[], trumpSuit: Suit, buryCount: number): Card[] {
+  const sorted = [...hand].sort((a, b) => {
+    const aIsTrump = a.suit === trumpSuit;
+    const bIsTrump = b.suit === trumpSuit;
+    if (aIsTrump !== bIsTrump) return aIsTrump ? 1 : -1; // non-trump sorts first (bury priority)
+    return compareRanks(a.rank, b.rank); // ascending: lowest rank first within each group
+  });
+  return sorted.slice(0, buryCount);
+}
+
+// Deliberately subordinate to honor points (a trump Ace is worth 4, one extra length card is
+// worth 0.5) — "length points": a suit held 5+ deep has latent late-trick-winning potential once
+// opponents run out of it, even without honors, but it's a secondary signal, not a primary one.
+const LENGTH_BONUS_WEIGHT = 0.5;
+
+export function scoreHandForBury(hand: Card[], trumpSuit: Suit): number {
+  const lengthBonus = SUITS.reduce((sum, suit) => {
+    const suitLength = hand.filter((c) => c.suit === suit).length;
+    return sum + Math.max(0, suitLength - 4) * LENGTH_BONUS_WEIGHT;
+  }, 0);
+  return estimateHandStrength(hand, trumpSuit) + lengthBonus;
 }

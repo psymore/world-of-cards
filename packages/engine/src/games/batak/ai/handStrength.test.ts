@@ -1,5 +1,5 @@
 import { Card, Suit } from '../../../core/types';
-import { chooseTrumpSuit, estimateBidDecision } from './handStrength';
+import { chooseTrumpSuit, estimateBidDecision, chooseCardsToBury, scoreHandForBury } from './handStrength';
 
 const card = (id: string, rank: Card['rank'], suit: Suit): Card => ({ id, suit, rank });
 
@@ -137,5 +137,90 @@ describe('estimateBidDecision', () => {
     expect(estimateBidDecision(hand, 0, 4)).toEqual({ type: 'bid', amount: 13 }); // 4-player cap
     expect(estimateBidDecision(hand, 0, 3)).toEqual({ type: 'bid', amount: 14 }); // 3-player, uncapped by the old 13-limit
     expect(estimateBidDecision(hand, 0)).toEqual({ type: 'bid', amount: 13 }); // default playerCount is still 4
+  });
+});
+
+describe('chooseCardsToBury', () => {
+  it('discards the lowest-rank non-trump cards before touching any trump card', () => {
+    const hand: Card[] = [
+      card('trumpLow', '2', 'spades'),
+      card('trumpHigh', 'A', 'spades'),
+      card('nt1', '2', 'hearts'),
+      card('nt2', '5', 'hearts'),
+      card('nt3', '9', 'diamonds'),
+      card('nt4', 'K', 'clubs'),
+    ];
+    const buried = chooseCardsToBury(hand, 'spades', 4);
+    expect(buried.map((c) => c.id).sort()).toEqual(['nt1', 'nt2', 'nt3', 'nt4'].sort());
+  });
+
+  it('discards non-trump cards in ascending rank order when there are more than buryCount of them', () => {
+    const hand: Card[] = [
+      card('nt1', '2', 'hearts'),
+      card('nt2', '5', 'hearts'),
+      card('nt3', '9', 'diamonds'),
+      card('nt4', 'K', 'clubs'),
+      card('nt5', 'A', 'clubs'),
+    ];
+    const buried = chooseCardsToBury(hand, 'spades', 4);
+    // nt5 (Ace) is the highest-ranked non-trump card and is kept; the 4 lowest are buried.
+    expect(buried.map((c) => c.id).sort()).toEqual(['nt1', 'nt2', 'nt3', 'nt4'].sort());
+  });
+
+  it('falls back to the lowest-rank trump cards once non-trump cards run out', () => {
+    const hand: Card[] = [
+      card('nt1', '2', 'hearts'),
+      card('nt2', '5', 'diamonds'),
+      card('trumpLow', '3', 'spades'),
+      card('trumpMid', '9', 'spades'),
+      card('trumpHigh1', 'K', 'spades'),
+      card('trumpHigh2', 'A', 'spades'),
+    ];
+    const buried = chooseCardsToBury(hand, 'spades', 4);
+    // Only 2 non-trump cards exist; the other 2 buried slots come from trump, lowest rank first
+    // (trumpLow, trumpMid), keeping the two trump honors (K, A).
+    expect(buried.map((c) => c.id).sort()).toEqual(['nt1', 'nt2', 'trumpLow', 'trumpMid'].sort());
+  });
+});
+
+describe('scoreHandForBury', () => {
+  it('scores a hand with a 5-card suit higher than an otherwise-identical hand with only 4 cards in that suit', () => {
+    const trumpSuit: Suit = 'spades';
+    const fiveCardSuitHand: Card[] = [
+      card('h1', '2', 'hearts'),
+      card('h2', '3', 'hearts'),
+      card('h3', '4', 'hearts'),
+      card('h4', '5', 'hearts'),
+      card('h5', '6', 'hearts'),
+    ];
+    const fourCardSuitHand: Card[] = [
+      card('h1', '2', 'hearts'),
+      card('h2', '3', 'hearts'),
+      card('h3', '4', 'hearts'),
+      card('h4', '5', 'hearts'),
+    ];
+    expect(scoreHandForBury(fiveCardSuitHand, trumpSuit)).toBeGreaterThan(scoreHandForBury(fourCardSuitHand, trumpSuit));
+  });
+
+  it('weighs the length bonus below a single honor point, so an extra honor always outscores an extra length card', () => {
+    const trumpSuit: Suit = 'spades';
+    const handWithHonor: Card[] = [
+      card('h1', '2', 'hearts'),
+      card('h2', '3', 'hearts'),
+      card('h3', '4', 'hearts'),
+      card('h4', 'K', 'hearts'),
+      card('h5', '5', 'hearts'), // 5th heart -> +0.5 length bonus, plus the King's 1 honor point
+    ];
+    const handWithLength: Card[] = [
+      card('h1', '2', 'hearts'),
+      card('h2', '3', 'hearts'),
+      card('h3', '4', 'hearts'),
+      card('h4', '6', 'hearts'),
+      card('h5', '5', 'hearts'),
+      card('h6', '7', 'hearts'), // 6th heart -> +1.0 length bonus, but no honor cards at all
+    ];
+    // handWithHonor: 1 honor point (K) + 0.5 length bonus = 1.5
+    // handWithLength: 0 honor points + 1.0 length bonus = 1.0
+    expect(scoreHandForBury(handWithHonor, trumpSuit)).toBeGreaterThan(scoreHandForBury(handWithLength, trumpSuit));
   });
 });
