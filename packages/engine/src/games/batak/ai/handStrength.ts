@@ -1,4 +1,5 @@
 import { Card, Suit } from '../../../core/types';
+import { ruleConstants } from '../rules';
 
 const SUITS: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
 
@@ -38,12 +39,14 @@ function estimateHandStrength(hand: Card[], trumpSuit: Suit): number {
 
 export function estimateBidDecision(
   hand: Card[],
-  currentHighestBid: number
+  currentHighestBid: number,
+  playerCount: number = 4
 ): { type: 'bid'; amount: number } | { type: 'pass' } {
   const trumpSuit = chooseTrumpSuit(hand);
   const totalStrength = estimateHandStrength(hand, trumpSuit);
-  const estimatedTricks = Math.min(13, Math.max(0, Math.round(totalStrength / 2)));
-  const minBid = Math.max(5, currentHighestBid + 1);
+  const { bidFloor, maxBid } = ruleConstants(playerCount);
+  const estimatedTricks = Math.min(maxBid, Math.max(0, Math.round(totalStrength / 2)));
+  const minBid = Math.max(bidFloor, currentHighestBid + 1);
   if (estimatedTricks >= minBid) {
     return { type: 'bid', amount: estimatedTricks };
   }
