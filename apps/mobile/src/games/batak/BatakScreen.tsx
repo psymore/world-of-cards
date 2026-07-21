@@ -13,14 +13,27 @@ import { CARD_TRAVEL_DURATION_MS } from '../../table/travelAnimation';
 import { BatakSetupView } from './BatakSetupView';
 import { BatakTable, PendingBatakPlay, GatheringTrick } from './BatakTable';
 import { BatakSettingsModal } from './BatakSettingsModal';
+import type { BatakVariant } from './batakVariant';
 
 const HUMAN_ID: PlayerId = 'human';
-const AI_IDS: PlayerId[] = ['ai-1', 'ai-2', 'ai-3'];
-const PLAYER_NAMES: Record<PlayerId, string> = {
-  [HUMAN_ID]: 'You',
-  'ai-1': 'AI 1',
-  'ai-2': 'AI 2',
-  'ai-3': 'AI 3',
+
+const AI_IDS_BY_VARIANT: Record<BatakVariant, PlayerId[]> = {
+  standard: ['ai-1', 'ai-2', 'ai-3'],
+  gomeli: ['ai-1', 'ai-2'],
+};
+
+const PLAYER_NAMES_BY_VARIANT: Record<BatakVariant, Record<PlayerId, string>> = {
+  standard: {
+    [HUMAN_ID]: 'You',
+    'ai-1': 'AI 1',
+    'ai-2': 'AI 2',
+    'ai-3': 'AI 3',
+  },
+  gomeli: {
+    [HUMAN_ID]: 'You',
+    'ai-1': 'AI 1',
+    'ai-2': 'AI 2',
+  },
 };
 
 // Pause before a trick-completing 4th play actually commits, so the full 4-card trick is
@@ -43,6 +56,7 @@ export interface BatakScreenProps {
 
 interface BatakSession {
   difficulty: Difficulty;
+  variant: BatakVariant;
   rng: RNG;
   useSessionStore: ReturnType<typeof createGameSessionStore<BatakState, BatakMove>>;
 }
@@ -52,14 +66,15 @@ export function BatakScreen({ onExitToHome }: BatakScreenProps) {
   const [sessionKey, setSessionKey] = useState(0);
   const defaultDifficulty = useSettingsStore((s) => s.defaultDifficulty);
 
-  function startGame(difficulty: Difficulty) {
+  function startGame(difficulty: Difficulty, variant: BatakVariant) {
     const rng = createRng(Date.now());
+    const aiIds = AI_IDS_BY_VARIANT[variant];
     const initialState = batakDescriptor.ruleEngine.setup(
-      { players: [HUMAN_ID, ...AI_IDS], guaranteeStrongHand: difficulty === 'easy' },
+      { players: [HUMAN_ID, ...aiIds], guaranteeStrongHand: difficulty === 'easy' },
       rng
     );
     const useSessionStore = createGameSessionStore(batakDescriptor.ruleEngine, initialState);
-    setSession({ difficulty, rng, useSessionStore });
+    setSession({ difficulty, variant, rng, useSessionStore });
     setSessionKey((k) => k + 1);
   }
 
@@ -71,9 +86,10 @@ export function BatakScreen({ onExitToHome }: BatakScreenProps) {
     <ActiveGame
       key={sessionKey}
       difficulty={session.difficulty}
+      variant={session.variant}
       rng={session.rng}
       useSessionStore={session.useSessionStore}
-      onPlayAgain={() => startGame(session.difficulty)}
+      onPlayAgain={() => startGame(session.difficulty, session.variant)}
       onBackHome={onExitToHome}
     />
   );
@@ -81,13 +97,16 @@ export function BatakScreen({ onExitToHome }: BatakScreenProps) {
 
 interface ActiveGameProps {
   difficulty: Difficulty;
+  variant: BatakVariant;
   rng: RNG;
   useSessionStore: ReturnType<typeof createGameSessionStore<BatakState, BatakMove>>;
   onPlayAgain: () => void;
   onBackHome: () => void;
 }
 
-function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome }: ActiveGameProps) {
+function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, onBackHome }: ActiveGameProps) {
+  const aiIds = AI_IDS_BY_VARIANT[variant];
+  const playerNames = PLAYER_NAMES_BY_VARIANT[variant];
   const state = useSessionStore((s) => s.state);
   const performMove = useSessionStore((s) => s.performMove);
   const [pendingPlay, setPendingPlay] = useState<PendingBatakPlay | null>(null);
@@ -118,7 +137,9 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
         performMove(move);
         return;
       }
-      const isTrickCompleting = state.currentTrick.length === 3;
+      // Generalized from the old hardcoded `=== 3` (which only worked for the fixed 4-player
+      // game): a trick completes once every player but the current one has already played.
+      const isTrickCompleting = state.currentTrick.length === state.players.length - 1;
       const delay = isTrickCompleting ? TRICK_COMPLETION_PAUSE_MS : PLAY_TRAVEL_DELAY_MS;
       // The human hand's own reflow (remaining cards sliding/rising into their new slots) is now
       // animated internally by BatakTable's AnimatedFanCard, driven directly off the shrinking
@@ -171,7 +192,7 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
 
   useAITurn({
     state,
-    aiPlayerIds: AI_IDS,
+    aiPlayerIds: aiIds,
     aiStrategy,
     ruleEngine: batakDescriptor.ruleEngine,
     rng,
@@ -203,8 +224,8 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
       <BatakTable
         state={state}
         humanPlayerId={HUMAN_ID}
-        opponentPlayerIds={AI_IDS}
-        playerNames={PLAYER_NAMES}
+        opponentPlayerIds={aiIds}
+        playerNames={playerNames}
         legalMoves={legalMoves}
         onMove={handleHumanMove}
         onPlayCard={handleHumanPlayCard}
@@ -216,7 +237,7 @@ function ActiveGame({ difficulty, rng, useSessionStore, onPlayAgain, onBackHome 
         <GameResultModal
           scores={batakDescriptor.ruleEngine.calculateScore(state)}
           winners={batakDescriptor.ruleEngine.determineWinner(state) ?? []}
-          playerNames={PLAYER_NAMES}
+          playerNames={playerNames}
           humanPlayerId={HUMAN_ID}
           onPlayAgain={onPlayAgain}
           onBackHome={onBackHome}
