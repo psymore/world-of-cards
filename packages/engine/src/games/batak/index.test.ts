@@ -6,7 +6,7 @@ describe('batak registration', () => {
     expect(getGame('batak')).toBe(batakDescriptor);
     expect(batakDescriptor.displayName).toBe('Batak');
     expect(batakDescriptor.category).toBe('trick-taking');
-    expect(batakDescriptor.minPlayers).toBe(4);
+    expect(batakDescriptor.minPlayers).toBe(3);
     expect(batakDescriptor.maxPlayers).toBe(4);
     expect(batakDescriptor.aiStrategies.easy.difficulty).toBe('easy');
     expect(batakDescriptor.aiStrategies.medium.difficulty).toBe('medium');
