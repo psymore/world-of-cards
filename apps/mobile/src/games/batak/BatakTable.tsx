@@ -2,7 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { BatakState, BatakMove } from '@world-cards/engine/games/batak';
 import { ruleConstants } from '@world-cards/engine/games/batak';
-import { TableFelt, HandFrame, HAND_FRAME_PEAK_FRACTION, CARD_DIMS } from '@world-cards/ui';
+import {
+  TableFelt,
+  HandFrame,
+  HAND_FRAME_PEAK_FRACTION,
+  CARD_DIMS,
+  CONTAINER_BOTTOM_PADDING,
+  HAND_BADGE_HEIGHT,
+  HAND_FRAME_REVEAL_MARGIN,
+  HAND_FRAME_BOTTOM_OVERSHOOT,
+} from '@world-cards/ui';
 import { DeselectableSurface } from '../../components/DeselectableSurface';
 import { useCardSelection } from '../../components/useCardSelection';
 import { CenteredDecisionModal } from '../../components/CenteredDecisionModal';
@@ -37,9 +46,7 @@ const HUMAN_CARD_HEIGHT = CARD_DIMS.normal.height;
 // First-pass constants for positioning HandFrame behind the two-row hand, derived from this
 // file's own layout below (not measured on a real device — tune these if the frame's arch peak
 // doesn't line up with the top row's peak once visually checked).
-const CONTAINER_BOTTOM_PADDING = 12; // matches styles.container.paddingVertical
 const HAND_AREA_HEIGHT = 300; // matches styles.handArea.minHeight
-const HAND_BADGE_HEIGHT = 34; // approx rendered height of PlayerBadge at normal size
 const HAND_AREA_CONTENT_GAP = 4; // matches styles.handArea.gap
 // Content centered inside handArea: badge + gap + the two-row fan (top row's full height, plus
 // the bottom row's additional visible height once the overlap above is applied).
@@ -51,14 +58,6 @@ const HAND_AREA_TOP_INSET = (HAND_AREA_HEIGHT - HAND_CONTENT_HEIGHT) / 2;
 // peak — its center card's top edge, where curveOffsetY is 0.
 const TOP_ROW_PEAK_DISTANCE_FROM_BOTTOM =
   CONTAINER_BOTTOM_PADDING + HAND_AREA_HEIGHT - HAND_AREA_TOP_INSET - HAND_BADGE_HEIGHT - HAND_AREA_CONTENT_GAP;
-// Peak-aligning the frame exactly to the top row's own top edge hides the frame's gold trim
-// behind the cards (they render in front, same height). This extra margin lifts the frame's
-// peak above the top row instead, so the trim clears the cards and stays visible.
-const HAND_FRAME_REVEAL_MARGIN = 14;
-// The frame's bottom edge sits this far below the screen's true bottom edge (rather than landing
-// exactly flush) so it's guaranteed to fully cover the bottom regardless of small per-device
-// rounding/safe-area differences — the overshoot itself is never visible, it's off-screen.
-const HAND_FRAME_BOTTOM_OVERSHOOT = 16;
 
 export type BatakDealPhase = DealPhase;
 
