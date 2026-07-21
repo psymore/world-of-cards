@@ -8,13 +8,14 @@ import { batakHardAI } from './ai/hard';
 
 export * from './types';
 export { compareRanks } from './ranking';
-export { trickWinnerIndex } from './rules';
+export { trickWinnerIndex, ruleConstants } from './rules';
+export type { RuleConstants } from './rules';
 
 export const batakDescriptor: GameDescriptor<BatakState, BatakMove> = {
   id: 'batak',
   displayName: 'Batak',
   category: 'trick-taking',
-  minPlayers: 4,
+  minPlayers: 3,
   maxPlayers: 4,
   ruleEngine: batakGame,
   aiStrategies: {

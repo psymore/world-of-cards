@@ -34,6 +34,16 @@ const HUMAN_HAND_BOTTOM_ROW_OVERLAP_FRACTION = 0.5;
 const HUMAN_HAND_TOP_ROW_OVERLAP_FRACTION = 0.4;
 const HUMAN_HAND_BOTTOM_ROW_STEP = Math.round(HUMAN_CARD_WIDTH * (1 - HUMAN_HAND_BOTTOM_ROW_OVERLAP_FRACTION));
 const HUMAN_HAND_TOP_ROW_STEP = Math.round(HUMAN_CARD_WIDTH * (1 - HUMAN_HAND_TOP_ROW_OVERLAP_FRACTION));
+// Batak gömmeli's hand runs materially larger than Standard Batak's fixed 13-card hand (16 cards
+// steady-state, up to 20 mid-kitty-exchange while choosing what to bury) — the two fractions
+// above were tuned for Standard's max row of 7 and visibly overflow gömmeli's max row of 10.
+// Gömmeli-only overrides, applied via HumanHandFan's `compact` prop (set by BatakTable based on
+// opponentPlayerIds.length === 2); Standard Batak's own look, and Pişti's separate hand UI, are
+// completely untouched. First-pass values — tune further once checked live.
+const GOMELI_HAND_BOTTOM_ROW_OVERLAP_FRACTION = 0.75;
+const GOMELI_HAND_TOP_ROW_OVERLAP_FRACTION = 0.68;
+const GOMELI_HAND_BOTTOM_ROW_STEP = Math.round(HUMAN_CARD_WIDTH * (1 - GOMELI_HAND_BOTTOM_ROW_OVERLAP_FRACTION));
+const GOMELI_HAND_TOP_ROW_STEP = Math.round(HUMAN_CARD_WIDTH * (1 - GOMELI_HAND_TOP_ROW_OVERLAP_FRACTION));
 // Shared timing for every hand-card reposition (a card played, remaining cards sliding/rising to
 // close the gap) — see AnimatedFanCard. An ease-in-ease-out curve reads as a natural reflow
 // rather than either a sudden snap (no easing) or a bouncy entrance (an "out" curve alone).
@@ -67,17 +77,24 @@ export interface HandSlot {
   row: 'top' | 'bottom';
   indexInRow: number;
   rowCount: number;
+  // Non-null only for a card returning to the hand from a Batak gömmeli bury slot — makes its
+  // very first render (in this component instance's lifetime — it was unmounted while placed in
+  // a slot, so this genuinely is a fresh mount) animate in from this offset using the exact same
+  // reposition timing/easing every other hand reflow already uses, instead of the initial-deal
+  // behavior of snapping straight to its slot with no animation.
+  enterFromOffset?: { x: number; y: number } | null;
 }
 
-function slotStep(row: 'top' | 'bottom'): number {
+function slotStep(row: 'top' | 'bottom', compact: boolean): number {
+  if (compact) return row === 'top' ? GOMELI_HAND_TOP_ROW_STEP : GOMELI_HAND_BOTTOM_ROW_STEP;
   return row === 'top' ? HUMAN_HAND_TOP_ROW_STEP : HUMAN_HAND_BOTTOM_ROW_STEP;
 }
 
 // Horizontal offset from the row's own center — negative/positive symmetric around 0, so the row
 // stays centered under styles.fanCardSlot's left:'50%' anchor regardless of rowCount.
-function slotTargetX(slot: HandSlot): number {
+function slotTargetX(slot: HandSlot, compact: boolean): number {
   const mid = (slot.rowCount - 1) / 2;
-  return (slot.indexInRow - mid) * slotStep(slot.row);
+  return (slot.indexInRow - mid) * slotStep(slot.row, compact);
 }
 
 // Vertical offset from the fan's own top edge — the bottom row overlaps up into the top row by
@@ -101,6 +118,7 @@ function AnimatedFanCard({
   selectCard,
   playEntrance,
   registerCardRef,
+  compact,
 }: {
   slot: HandSlot;
   legalCardIds: Set<string>;
@@ -109,9 +127,10 @@ function AnimatedFanCard({
   selectCard: (cardId: string) => void;
   playEntrance: boolean;
   registerCardRef: (cardId: string, node: View | null) => void;
+  compact: boolean;
 }) {
   const { card } = slot;
-  const targetX = slotTargetX(slot);
+  const targetX = slotTargetX(slot, compact);
   const targetY = slotTargetY(slot);
   const x = useRef(new Animated.Value(targetX)).current;
   const y = useRef(new Animated.Value(targetY)).current;
@@ -120,9 +139,29 @@ function AnimatedFanCard({
 
   useEffect(() => {
     if (!mounted.current) {
-      // First render for this card (the initial deal): jump straight to its slot — nothing to
-      // reflow from, and EntranceCard supplies the deal's own fade/scale/rise flourish.
       mounted.current = true;
+      if (slot.enterFromOffset && !reducedMotion) {
+        // A card returning from a bury slot: start offset from its true target and animate in,
+        // reusing the exact same reposition timing/easing as an ordinary reflow.
+        x.setValue(targetX + slot.enterFromOffset.x);
+        y.setValue(targetY + slot.enterFromOffset.y);
+        Animated.parallel([
+          Animated.timing(x, {
+            toValue: targetX,
+            duration: HAND_CARD_REPOSITION_DURATION_MS,
+            easing: HAND_CARD_REPOSITION_EASING,
+            useNativeDriver: true,
+          }),
+          Animated.timing(y, {
+            toValue: targetY,
+            duration: HAND_CARD_REPOSITION_DURATION_MS,
+            easing: HAND_CARD_REPOSITION_EASING,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+      // Plain first render for a genuinely new card (the initial deal, or reducedMotion): jump
+      // straight to its slot — EntranceCard supplies the deal's own fade/scale/rise flourish.
       return;
     }
     if (reducedMotion) {
@@ -144,6 +183,7 @@ function AnimatedFanCard({
         useNativeDriver: true,
       }),
     ]).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetX, targetY, reducedMotion, x, y]);
 
   const interactive = isHumanInteractive && legalCardIds.has(card.id);
@@ -230,6 +270,7 @@ export function HumanHandFan({
   selectCard,
   playEntrance,
   registerCardRef,
+  compact = false,
 }: {
   slots: HandSlot[];
   legalCardIds: Set<string>;
@@ -238,6 +279,10 @@ export function HumanHandFan({
   selectCard: (cardId: string) => void;
   playEntrance: boolean;
   registerCardRef: (cardId: string, node: View | null) => void;
+  // Tighter horizontal card spacing for Batak gömmeli's larger hand — see the
+  // GOMELI_HAND_*_OVERLAP_FRACTION constants above. Defaults to false (Standard Batak's and
+  // Pişti's existing spacing, byte-identical to before this prop existed).
+  compact?: boolean;
 }) {
   return (
     <View style={styles.handFan} testID="human-hand">
@@ -251,6 +296,7 @@ export function HumanHandFan({
           selectCard={selectCard}
           playEntrance={playEntrance}
           registerCardRef={registerCardRef}
+          compact={compact}
         />
       ))}
     </View>

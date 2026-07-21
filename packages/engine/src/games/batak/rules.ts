@@ -83,9 +83,20 @@ export function fourCardCombinations(cards: Card[]): Card[][] {
   return combos;
 }
 
+// The bidder can never legally bury one of the kitty cards they just picked up — burying is only
+// ever a choice among the cards they originally held. Returns the full hand unfiltered when
+// kittyCardIds is null (every non-gömmeli phase/variant, and any hand-crafted test state that
+// doesn't set it), so this has no effect outside gömmeli's kitty-exchange phase.
+export function buriableCards(state: BatakState, playerId: PlayerId): Card[] {
+  const hand = state.table.zones[`hand-${playerId}`].cards;
+  if (!state.kittyCardIds) return hand;
+  const kittyIds = new Set(state.kittyCardIds);
+  return hand.filter((c) => !kittyIds.has(c.id));
+}
+
 function kittyExchangeLegalMoves(state: BatakState, playerId: PlayerId): BatakMove[] {
   if (playerId !== state.bidWinner) return [];
-  const hand = state.table.zones[`hand-${playerId}`].cards;
+  const hand = buriableCards(state, playerId);
   return fourCardCombinations(hand).map((combo) => ({
     type: 'bury' as const,
     cardIds: combo.map((c) => c.id) as [string, string, string, string],
