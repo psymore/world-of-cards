@@ -256,11 +256,22 @@ export function BatakTable({
   // can overlap (the human may have chosen to bury some of the actual kitty cards) — a Set
   // naturally dedupes that.
   const kittyExchangeHiddenCardIds = new Set<string>();
+  if (isHumanBidderInKittyExchange && state.kittyCardIds) {
+    // The bidder chooses their bury from their ORIGINAL cards only (see rules.ts's
+    // buriableCards) — the 4 kitty cards they just picked up (already merged into state via
+    // selectTrump; the engine is always fully omniscient, same as every opponent hand) stay
+    // hidden from the ordinary hand render for the entire kitty-exchange phase, not just once the
+    // reveal animation starts. isHumanBidderInKittyExchange stays true through every stage of
+    // pendingBury too (state.phase only advances to 'playing' once the staged sequence's final
+    // performMove commits), so this single unconditional check already covers the old
+    // "only once stage !== 'burying'" case below — that nested check is now provably redundant
+    // and removed. Kitty cards become visible again only once the staged sequence actually
+    // delivers them (pendingBury clears and phase advances, at which point
+    // isHumanBidderInKittyExchange is false).
+    state.kittyCardIds.forEach((id) => kittyExchangeHiddenCardIds.add(id));
+  }
   if (pendingBury && pendingBury.playerId === humanPlayerId) {
     pendingBury.cardIds.forEach((id) => kittyExchangeHiddenCardIds.add(id));
-    if (pendingBury.stage !== 'burying' && state.kittyCardIds) {
-      state.kittyCardIds.forEach((id) => kittyExchangeHiddenCardIds.add(id));
-    }
   }
   const humanHand = state.table.zones[`hand-${humanPlayerId}`].cards.filter(
     (card) =>
