@@ -3,9 +3,9 @@ import { AIStrategy } from '../ai/types';
 import { createRng } from '../core/rng';
 import { allCards } from '../core/table';
 
-export interface SimulateGamesOptions<TState extends GameState, TMove> {
-  ruleEngine: RuleEngine<TState, TMove>;
-  setupOptions: unknown;
+export interface SimulateGamesOptions<TState extends GameState, TMove, TOptions = unknown> {
+  ruleEngine: RuleEngine<TState, TMove, TOptions>;
+  setupOptions: TOptions;
   aiStrategies: Record<PlayerId, AIStrategy<TState, TMove>>;
   count: number;
   seedStart: number;
@@ -33,8 +33,8 @@ export function assertCardsConserved(before: GameState, after: GameState): void 
   }
 }
 
-export function simulateGames<TState extends GameState, TMove>(
-  options: SimulateGamesOptions<TState, TMove>
+export function simulateGames<TState extends GameState, TMove, TOptions = unknown>(
+  options: SimulateGamesOptions<TState, TMove, TOptions>
 ): SimulateGamesResult<TState> {
   const { ruleEngine, setupOptions, aiStrategies, count, seedStart, maxMoves = 1000 } = options;
   const finalStates: TState[] = [];
