@@ -23,16 +23,15 @@ export function cardValue(rank: Rank): number {
   return RANK_VALUES[rank];
 }
 
-export const cardDraftGame: RuleEngine<CardDraftState, CardDraftMove> = {
-  setup(options: unknown, rng: RNG): CardDraftState {
-    const opts = options as CardDraftSetupOptions;
+export const cardDraftGame: RuleEngine<CardDraftState, CardDraftMove, CardDraftSetupOptions> = {
+  setup(options: CardDraftSetupOptions, rng: RNG): CardDraftState {
     const deck = shuffle(createDeck({ deckCount: 1, includeJokers: false }), rng);
-    const zoneIds = ['row', ...opts.players.map((p) => `hand-${p}`)];
+    const zoneIds = ['row', ...options.players.map((p) => `hand-${p}`)];
     const emptyTable = createTable(zoneIds.map((id) => createZone(id, true)));
-    const { table } = dealToZones(deck, emptyTable, [{ zoneId: 'row', count: opts.rowSize }]);
+    const { table } = dealToZones(deck, emptyTable, [{ zoneId: 'row', count: options.rowSize }]);
     return {
       gameId: 'card-draft-fixture',
-      players: opts.players,
+      players: options.players,
       currentPlayerIndex: 0,
       table,
       rngState: rng.getState(),
