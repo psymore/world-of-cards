@@ -9,7 +9,17 @@ import {
 } from 'react-native';
 import type { Card } from '@world-cards/engine';
 import type { PistiState } from '@world-cards/engine/games/pisti';
-import { PlayingCard, TableFelt, HandFrame, HAND_FRAME_PEAK_FRACTION, CARD_DIMS } from '@world-cards/ui';
+import {
+  PlayingCard,
+  TableFelt,
+  HandFrame,
+  HAND_FRAME_PEAK_FRACTION,
+  CARD_DIMS,
+  CONTAINER_BOTTOM_PADDING,
+  HAND_BADGE_HEIGHT,
+  HAND_FRAME_REVEAL_MARGIN,
+  HAND_FRAME_BOTTOM_OVERSHOOT,
+} from '@world-cards/ui';
 import { SelectableCard } from '../../components/SelectableCard';
 import { DeselectableSurface } from '../../components/DeselectableSurface';
 import { useCardSelection } from '../../components/useCardSelection';
@@ -75,9 +85,7 @@ const SIDE_FAN_MAX_GAP = 10;
 // human hand is a single flat row (no curve/second row), so its "peak" is just the row's own top
 // edge, uniform across every card.
 const HUMAN_CARD_HEIGHT = CARD_DIMS.normal.height;
-const CONTAINER_BOTTOM_PADDING = 12; // matches styles.container.paddingVertical
 const HAND_AREA_HEIGHT = 177; // matches styles.handArea.minHeight
-const HAND_BADGE_HEIGHT = 34; // approx rendered height of PlayerBadge at normal size
 const HAND_CONTENT_HEIGHT = HAND_BADGE_HEIGHT + HUMAN_CARD_HEIGHT;
 const HAND_AREA_TOP_INSET = (HAND_AREA_HEIGHT - HAND_CONTENT_HEIGHT) / 2;
 // Distance from the container's true bottom edge (where HandFrame's own bottom:0 would sit,
@@ -85,14 +93,6 @@ const HAND_AREA_TOP_INSET = (HAND_AREA_HEIGHT - HAND_CONTENT_HEIGHT) / 2;
 // top edge.
 const HAND_ROW_PEAK_DISTANCE_FROM_BOTTOM =
   CONTAINER_BOTTOM_PADDING + HAND_AREA_HEIGHT - HAND_AREA_TOP_INSET - HAND_BADGE_HEIGHT;
-// Peak-aligning the frame exactly to the hand row's own top edge hides the frame's gold trim
-// behind the cards (they render in front, same height). This extra margin lifts the frame's peak
-// above the row instead, so the trim clears the cards and stays visible.
-const HAND_FRAME_REVEAL_MARGIN = 14;
-// The frame's bottom edge sits this far below the screen's true bottom edge (rather than landing
-// exactly flush) so it's guaranteed to fully cover the bottom regardless of small per-device
-// rounding/safe-area differences — the overshoot itself is never visible, it's off-screen.
-const HAND_FRAME_BOTTOM_OVERSHOOT = 16;
 
 function RevealCard({
   revealCard,
