@@ -32,10 +32,9 @@ function withStock(table: TableState, remainingDeck: Card[]): TableState {
   };
 }
 
-export const pistiGame: RuleEngine<PistiState, PistiMove> = {
-  setup(options: unknown, rng: RNG): PistiState {
-    const opts = options as PistiSetupOptions;
-    const { players } = opts;
+export const pistiGame: RuleEngine<PistiState, PistiMove, PistiSetupOptions> = {
+  setup(options: PistiSetupOptions, rng: RNG): PistiState {
+    const { players } = options;
 
     let deck = shuffle(createDeck({ deckCount: 1, includeJokers: false }), rng);
     let dealt = dealToZones(deck, makeEmptyTable(players), [{ zoneId: 'pile', count: 4 }]);
@@ -61,7 +60,7 @@ export const pistiGame: RuleEngine<PistiState, PistiMove> = {
       status: 'in-progress',
       lastCapturedBy: null,
       pistiBonusPoints: Object.fromEntries(players.map((p) => [p, 0])),
-      teams: opts.teams ?? null,
+      teams: options.teams ?? null,
     };
   },
 
