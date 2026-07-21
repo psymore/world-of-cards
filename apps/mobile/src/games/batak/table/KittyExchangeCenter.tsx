@@ -4,6 +4,9 @@ import type { Card } from '@world-cards/engine';
 import type { BatakState } from '@world-cards/engine/games/batak';
 import { centerPanelStyles } from './centerPanelStyles';
 import { BurySlots } from './BurySlots';
+import { GatherCard } from '../../../table/GatherCard';
+import { revealOriginOffset } from '../../../table/seating';
+import type { PendingBury } from '../BatakScreen';
 
 export function KittyExchangeCenter({
   state,
@@ -14,6 +17,7 @@ export function KittyExchangeCenter({
   onTapSlotCard,
   canConfirm,
   onConfirm,
+  pendingBury,
 }: {
   state: BatakState;
   playerNames: Record<string, string>;
@@ -23,16 +27,33 @@ export function KittyExchangeCenter({
   onTapSlotCard: (cardId: string) => void;
   canConfirm: boolean;
   onConfirm: () => void;
+  pendingBury?: PendingBury | null;
 }) {
   const isHumanBidder = state.bidWinner === humanPlayerId;
   const statusText = isHumanBidder
     ? 'Choose four cards to bury.'
     : `${playerNames[state.bidWinner ?? ''] ?? state.bidWinner} is choosing four cards to bury…`;
 
+  if (pendingBury && pendingBury.stage === 'burying') {
+    const buriedCards = pendingBury.cardIds
+      .map((id) => state.table.zones[`hand-${pendingBury.playerId}`].cards.find((c) => c.id === id))
+      .filter((c): c is Card => c != null);
+    return (
+      <View style={centerPanelStyles.centerPanel}>
+        <Text style={centerPanelStyles.centerHeading}>{statusText}</Text>
+        <View style={styles.buryFlightRow} testID="kitty-burying">
+          {buriedCards.map((card) => (
+            <GatherCard key={card.id} card={card} destinationOffset={revealOriginOffset('top')} />
+          ))}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={centerPanelStyles.centerPanel}>
       <Text style={centerPanelStyles.centerHeading}>{statusText}</Text>
-      {isHumanBidder && (
+      {isHumanBidder && !pendingBury && (
         <>
           <BurySlots slotCardIds={slotCardIds} cardsById={cardsById} onTapCard={onTapSlotCard} />
           <Pressable
@@ -49,6 +70,7 @@ export function KittyExchangeCenter({
 }
 
 const styles = StyleSheet.create({
+  buryFlightRow: { flexDirection: 'row', gap: 10, minHeight: 56 },
   confirmButton: {
     marginTop: 4,
     paddingVertical: 8,

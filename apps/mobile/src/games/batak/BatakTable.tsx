@@ -22,6 +22,9 @@ import type { PendingBatakPlay, GatheringTrick } from './table/types';
 import { KittyPile, kittyPileCards } from './table/KittyPile';
 import { useBurySlots } from './table/useBurySlots';
 import { KittyExchangeCenter } from './table/KittyExchangeCenter';
+import { KittyRevealCard, KittyCollectCard } from '../../table/KittyRevealCard';
+import { revealOriginOffset } from '../../table/seating';
+import type { PendingBury } from './BatakScreen';
 
 // Re-exported so existing call sites (BatakScreen.tsx) can keep importing these from
 // './BatakTable' unchanged — the actual definitions live in ./table/types now, shared with
@@ -78,6 +81,7 @@ export interface BatakTableProps {
   onBury: (cardIds: [string, string, string, string]) => void;
   pendingPlay?: PendingBatakPlay | null;
   gatheringTrick?: GatheringTrick | null;
+  pendingBury?: PendingBury | null;
   dealPhase: BatakDealPhase;
 }
 
@@ -117,6 +121,56 @@ function OpponentSeat({ seat, state, playerNames, pendingPlay }: OpponentSeatPro
   );
 }
 
+// Renders the vacant top slot across the kitty-exchange sequence (see
+// docs/superpowers/specs/2026-07-21-batak-gomeli-ui-design.md Section 4): the untouched
+// face-down pile before anything is staging, and while the 'burying' leg is in progress (that
+// leg's own flying-away cards render in the center panel instead — see KittyExchangeCenter, Step
+// 3 above — since that's literally where they started; nothing at the pile itself changes until
+// they'd actually arrive); the original kitty cards flipping face-up and holding during
+// 'revealing' (KittyRevealCard); and those same cards flying out toward wherever the bidder
+// actually is — the human's hand (bottom) or the bidding AI's own seat (left/right) — during
+// 'collecting' (KittyCollectCard).
+function KittyExchangeStagedPile({
+  state,
+  pendingBury,
+  humanPlayerId,
+  seats,
+}: {
+  state: BatakState;
+  pendingBury?: PendingBury | null;
+  humanPlayerId: string;
+  seats: Seat[];
+}) {
+  if (!pendingBury || pendingBury.stage === 'burying') {
+    return <KittyPile cards={kittyPileCards(state)} />;
+  }
+
+  const kittyCards = kittyPileCards(state);
+
+  if (pendingBury.stage === 'revealing') {
+    return (
+      <View style={styles.pile} testID="kitty-pile-revealing">
+        {kittyCards.map((card) => (
+          <KittyRevealCard key={card.id} card={card} />
+        ))}
+      </View>
+    );
+  }
+
+  // 'collecting'
+  const destinationOffset =
+    pendingBury.playerId === humanPlayerId
+      ? revealOriginOffset('bottom')
+      : revealOriginOffset(resolveRevealOrigin(pendingBury.playerId, humanPlayerId, seats));
+  return (
+    <View style={styles.pile} testID="kitty-pile-collecting">
+      {kittyCards.map((card) => (
+        <KittyCollectCard key={card.id} card={card} destinationOffset={destinationOffset} />
+      ))}
+    </View>
+  );
+}
+
 export function BatakTable({
   state,
   humanPlayerId,
@@ -128,6 +182,7 @@ export function BatakTable({
   onBury,
   pendingPlay,
   gatheringTrick,
+  pendingBury,
   dealPhase,
 }: BatakTableProps) {
   const seats = assignSeats(opponentPlayerIds);
@@ -151,7 +206,8 @@ export function BatakTable({
   // trick-completing move (human's own or an AI's) is staged, engine state hasn't advanced past
   // the player who made it yet, so disabling on pendingPlay alone — not "is it revealing for the
   // human specifically" — is both correct and simpler than tracking whose reveal it is.
-  const isHumanInteractive = isHumanTurn && pendingPlay == null && gatheringTrick == null;
+  const isHumanInteractive =
+    isHumanTurn && pendingPlay == null && gatheringTrick == null && pendingBury == null;
 
   const { selectedCardId, selectCard, clearSelection } = useCardSelection(playWithMeasuredOrigin);
   useEffect(() => {
@@ -189,11 +245,25 @@ export function BatakTable({
 
   const isPendingHuman = pendingPlay != null && pendingPlay.playerId === humanPlayerId;
   const humanGatheringCardId = gatheringTrick?.entries.find((entry) => entry.playerId === humanPlayerId)?.card.id;
+  // While the human's own bury is staging, both the just-buried cards (hidden forever once
+  // committed) and — once the reveal stage starts — the original kitty cards are shown instead
+  // by the staged pile visuals (Step 3 below), so they're filtered out of the ordinary hand
+  // render for the same reason a pending play/gathering card already is above. The two id sets
+  // can overlap (the human may have chosen to bury some of the actual kitty cards) — a Set
+  // naturally dedupes that.
+  const kittyExchangeHiddenCardIds = new Set<string>();
+  if (pendingBury && pendingBury.playerId === humanPlayerId) {
+    pendingBury.cardIds.forEach((id) => kittyExchangeHiddenCardIds.add(id));
+    if (pendingBury.stage !== 'burying' && state.kittyCardIds) {
+      state.kittyCardIds.forEach((id) => kittyExchangeHiddenCardIds.add(id));
+    }
+  }
   const humanHand = state.table.zones[`hand-${humanPlayerId}`].cards.filter(
     (card) =>
       !(isPendingHuman && card.id === pendingPlay!.card.id) &&
       card.id !== humanGatheringCardId &&
-      !burySlots.isPlaced(card.id),
+      !burySlots.isPlaced(card.id) &&
+      !kittyExchangeHiddenCardIds.has(card.id),
   );
   const sortedHand = sortHandForDisplay(humanHand);
   // Each card is assigned to a fixed top/bottom layer once — the first time this component sees
@@ -293,7 +363,14 @@ export function BatakTable({
           <OpponentSeat seat={seat} state={state} playerNames={playerNames} pendingPlay={pendingPlay} />
         )}
       />
-      {opponentPlayerIds.length === 2 && <KittyPile cards={kittyPileCards(state)} />}
+      {opponentPlayerIds.length === 2 && (
+        <KittyExchangeStagedPile
+          state={state}
+          pendingBury={pendingBury}
+          humanPlayerId={humanPlayerId}
+          seats={seats}
+        />
+      )}
 
       <View style={seatLayoutStyles.middleRow}>
         <OpponentSeatGroup
@@ -318,6 +395,7 @@ export function BatakTable({
             onTapSlotCard={handleBurySlotTap}
             canConfirm={burySlots.canConfirm}
             onConfirm={burySlots.confirm}
+            pendingBury={pendingBury}
           />
         )}
         {state.phase === 'playing' && (
@@ -384,6 +462,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 4,
   },
+  pile: { alignItems: 'center', justifyContent: 'center', minHeight: 56 },
   // 300 hugs the playing-phase content at 'normal' card size (two 120px rows + 6px fan gap +
   // 4px area gap + badge ≈ 296). BidControls now renders in a CenteredDecisionModal rather than
   // here, so this height applies uniformly across every phase.
