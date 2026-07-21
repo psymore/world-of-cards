@@ -15,6 +15,15 @@ export interface TravelCardProps {
   // for a future caller that keeps the wrapper mounted and only swaps its `children`.
   resetKey: string | number;
   children: React.ReactNode;
+  // Rotation (degrees) and scale the card visually had at departure, interpolated down to 0deg /
+  // restScale as it travels. All three default to no-op values (0deg, scale 1→1) so every
+  // pre-existing consumer is byte-identical to before these props existed. First real use:
+  // Batak's own played card, which departs from its rotated, lifted-scale in-hand appearance
+  // rather than a flat, unscaled one — see
+  // docs/superpowers/specs/2026-07-21-batak-card-play-animation-smoothness-design.md.
+  originRotateDeg?: number;
+  originScale?: number;
+  restScale?: number;
 }
 
 // Not exported: the reset/timing lifecycle (create the progress value, reset+animate on
@@ -48,8 +57,16 @@ function useTravelProgress(resetKey: string | number): Animated.Value {
 // caller renders this component) — opacity fades in alongside the translate. Shared by every
 // game's "just-played card travels from its seat to its resting spot" motion (first use:
 // Batak's trick cross; Pişti's own reveal-to-pile animation is a separate, untouched
-// implementation for now).
-export function TravelCard({ originOffset, resetKey, children }: TravelCardProps) {
+// implementation for now). Rotation/scale interpolation is additive and optional (see
+// TravelCardProps) — omitting them reproduces the original translate-only behavior exactly.
+export function TravelCard({
+  originOffset,
+  resetKey,
+  children,
+  originRotateDeg = 0,
+  originScale = 1,
+  restScale = 1,
+}: TravelCardProps) {
   const progress = useTravelProgress(resetKey);
 
   return (
@@ -58,6 +75,11 @@ export function TravelCard({ originOffset, resetKey, children }: TravelCardProps
         // Fully opaque for the entire flight (no fade-in) so the card reads as physically
         // traveling along the path, not materializing at the end of it — see
         // docs/superpowers/specs/2026-07-18-card-travel-full-visibility-design.md.
+        //
+        // All four transforms are driven by the same `progress` value (never separate
+        // Animated.Values), so they are guaranteed frame-perfect in sync on the native thread —
+        // rotate/scale interpolating even a few frames out of step with translate would itself
+        // read as a wobble during flight.
         transform: [
           {
             translateX: progress.interpolate({
@@ -69,6 +91,18 @@ export function TravelCard({ originOffset, resetKey, children }: TravelCardProps
             translateY: progress.interpolate({
               inputRange: [0, 1],
               outputRange: [originOffset.y, 0],
+            }),
+          },
+          {
+            rotate: progress.interpolate({
+              inputRange: [0, 1],
+              outputRange: [`${originRotateDeg}deg`, '0deg'],
+            }),
+          },
+          {
+            scale: progress.interpolate({
+              inputRange: [0, 1],
+              outputRange: [originScale, restScale],
             }),
           },
         ],
