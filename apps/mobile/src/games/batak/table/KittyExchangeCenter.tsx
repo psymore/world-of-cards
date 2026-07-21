@@ -5,6 +5,7 @@ import type { BatakState } from '@world-cards/engine/games/batak';
 import { centerPanelStyles } from './centerPanelStyles';
 import { BurySlots } from './BurySlots';
 import { GatherCard } from '../../../table/GatherCard';
+import { KittyCollectCard } from '../../../table/KittyRevealCard';
 import { revealOriginOffset } from '../../../table/seating';
 import type { PendingBury } from '../BatakScreen';
 
@@ -42,9 +43,18 @@ export function KittyExchangeCenter({
       <View style={centerPanelStyles.centerPanel}>
         <Text style={centerPanelStyles.centerHeading}>{statusText}</Text>
         <View style={styles.buryFlightRow} testID="kitty-burying">
-          {buriedCards.map((card) => (
-            <GatherCard key={card.id} card={card} destinationOffset={revealOriginOffset('top')} />
-          ))}
+          {buriedCards.map((card) =>
+            isHumanBidder ? (
+              <GatherCard key={card.id} card={card} destinationOffset={revealOriginOffset('top')} />
+            ) : (
+              <KittyCollectCard
+                key={card.id}
+                card={card}
+                destinationOffset={revealOriginOffset('top')}
+                faceDown
+              />
+            ),
+          )}
         </View>
       </View>
     );

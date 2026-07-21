@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { BatakState, BatakMove } from '@world-cards/engine/games/batak';
+import { ruleConstants } from '@world-cards/engine/games/batak';
 import { TableFelt, HandFrame, HAND_FRAME_PEAK_FRACTION, CARD_DIMS } from '@world-cards/ui';
 import { DeselectableSurface } from '../../components/DeselectableSurface';
 import { useCardSelection } from '../../components/useCardSelection';
@@ -215,7 +216,10 @@ export function BatakTable({
   }, [isHumanInteractive, clearSelection]);
 
   const isHumanBidderInKittyExchange = state.phase === 'kitty-exchange' && state.bidWinner === humanPlayerId;
-  const burySlots = useBurySlots(4, (cardIds) => onBury(cardIds as [string, string, string, string]));
+  const burySlots = useBurySlots(
+    ruleConstants(3).kittySize,
+    (cardIds) => onBury(cardIds as [string, string, string, string]),
+  );
   useEffect(() => {
     if (!isHumanBidderInKittyExchange) burySlots.clear();
     // eslint-disable-next-line react-hooks/exhaustive-deps

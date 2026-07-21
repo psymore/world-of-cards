@@ -56,19 +56,23 @@ export function KittyRevealCard({ card }: { card: Card }) {
   );
 }
 
-// Flies a face-up card from its rendered position toward destinationOffset and fades out over
-// the last third — the "collecting" leg of the kitty-exchange sequence, once the reveal hold is
-// over. Deliberately GatherCard's exact shape minus the flip (see this task's note on why
-// GatherCard itself doesn't fit): these cards are already face-up from the reveal stage and must
-// stay that way while merging into the bidder's hand (or, for an AI bidder, simply disappearing
-// toward their seat — opponent hands render only a badge, per the 2026-07-18
-// turn-indicator-simplification pass).
+// Flies a card from its rendered position toward destinationOffset and fades out over the last
+// third — no flip, deliberately GatherCard's exact translate/fade shape minus the flip. Two
+// distinct uses: (1) the "collecting" leg of the kitty-exchange sequence (face-up, the default —
+// these cards are already face-up from the reveal stage and must stay that way while merging into
+// the bidder's hand); (2) the AI-bidder path of the "burying" leg (faceDown=true — unlike the
+// human bidder, whose chosen cards were already shown face-up in the bury slots before Confirm,
+// the AI's discards must never be shown face-up at all, so this renders them face-down for their
+// entire flight instead of using GatherCard's face-up-then-flip, which would otherwise leak the
+// AI's card choice to the human for roughly the first half of the animation).
 export function KittyCollectCard({
   card,
   destinationOffset,
+  faceDown = false,
 }: {
   card: Card;
   destinationOffset: { x: number; y: number };
+  faceDown?: boolean;
 }) {
   const progress = useRef(new Animated.Value(0)).current;
   const reducedMotion = useReducedMotion();
@@ -93,7 +97,7 @@ export function KittyCollectCard({
 
   return (
     <Animated.View style={{ transform: [{ translateX }, { translateY }], opacity }}>
-      <PlayingCard card={card} size="small" />
+      <PlayingCard card={card} faceDown={faceDown} size="small" />
     </Animated.View>
   );
 }
