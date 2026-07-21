@@ -194,7 +194,7 @@ describe('batakEasyAI', () => {
     }
   });
 
-  it('discards a valid 4-card bury during kitty-exchange for a 3-player gömmeli game, preferring non-trump cards', () => {
+  it('discards a valid 4-card bury during kitty-exchange for a 3-player gömmeli game, preferring non-trump cards and never burying a kitty card', () => {
     const players = ['p1', 'p2', 'p3'];
     const table = createTable([
       createZone('hand-p1', true, [
@@ -202,8 +202,13 @@ describe('batakEasyAI', () => {
         card('nt2', '5', 'diamonds'),
         card('nt3', '9', 'clubs'),
         card('nt4', 'K', 'clubs'),
+        card('nt5', '4', 'diamonds'),
         card('trump1', '3', 'spades'),
         card('trump2', 'A', 'spades'),
+        card('kitty1', '2', 'clubs'),
+        card('kitty2', '3', 'clubs'),
+        card('kitty3', '4', 'clubs'),
+        card('kitty4', '5', 'clubs'),
       ]),
       createZone('hand-p2', true, []),
       createZone('hand-p3', true, []),
@@ -224,14 +229,18 @@ describe('batakEasyAI', () => {
       bidWinner: 'p1',
       trumpSuit: 'spades',
       tricksWon: { p1: 0, p2: 0, p3: 0 },
-      kittyCardIds: ['nt1', 'nt2', 'nt3', 'nt4'],
+      kittyCardIds: ['kitty1', 'kitty2', 'kitty3', 'kitty4'],
     });
     const legalMoves = batakGame.getLegalMoves(state, 'p1');
+    expect(legalMoves).toHaveLength(35); // C(7,4) — 7 non-kitty cards remain buriable
     const move = batakEasyAI.chooseMove(state, 'p1', legalMoves, createRng(1));
     expect(batakGame.validateMove(state, move, 'p1')).toBe(true);
     expect(move.type).toBe('bury');
     if (move.type === 'bury') {
-      expect(move.cardIds.slice().sort()).toEqual(['nt1', 'nt2', 'nt3', 'nt4'].sort());
+      // The 4 lowest-ranked non-trump cards among the 7 non-kitty candidates (nt1=2, nt5=4, nt2=5,
+      // nt3=9 — nt4=K and both trump cards are not among the 4 lowest, so they're kept).
+      expect(move.cardIds.slice().sort()).toEqual(['nt1', 'nt2', 'nt3', 'nt5'].sort());
+      expect(move.cardIds.some((id) => id.startsWith('kitty'))).toBe(false);
     }
   });
 });
