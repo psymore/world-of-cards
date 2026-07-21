@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { BatakState, BatakMove } from '@world-cards/engine/games/batak';
 import { ruleConstants } from '@world-cards/engine/games/batak';
@@ -17,7 +17,7 @@ import { BiddingCenter, TrumpWaitingCenter, TrumpSuitPicker } from './table/Phas
 import { TrickCenter } from './table/TrickCenter';
 import { BidControls } from './table/BidControls';
 import { PLATFORM_RAISE_BY } from './table/DecisionPanel';
-import { HumanHandFan, HAND_ROW_OVERLAP_PX, sortHandForDisplay } from './table/HumanHandFan';
+import { HumanHandFan, HAND_ROW_OVERLAP_PX, sortHandForDisplay, handCardRotationDeg } from './table/HumanHandFan';
 import type { HandSlot } from './table/HumanHandFan';
 import type { PendingBatakPlay, GatheringTrick } from './table/types';
 import { KittyPile, kittyPileCards } from './table/KittyPile';
@@ -75,7 +75,7 @@ export interface BatakTableProps {
   // Separate from onMove (which also carries bid/pass/selectTrump, none of which have an
   // origin) — called only for the human's own card plays, with a measured travel-origin offset
   // when available.
-  onPlayCard: (cardId: string, originOffset?: { x: number; y: number }) => void;
+  onPlayCard: (cardId: string, originOffset?: { x: number; y: number }, originRotateDeg?: number) => void;
   // Human's confirmed 4-card bury during 'kitty-exchange' — separate from onMove for the same
   // reason onPlayCard is: BatakScreen stages this into a multi-step animation before it actually
   // reaches performMove, exactly like onPlayCard's trick-completion staging.
@@ -210,11 +210,6 @@ export function BatakTable({
   const isHumanInteractive =
     isHumanTurn && pendingPlay == null && gatheringTrick == null && pendingBury == null;
 
-  const { selectedCardId, selectCard, clearSelection } = useCardSelection(playWithMeasuredOrigin);
-  useEffect(() => {
-    if (!isHumanInteractive) clearSelection();
-  }, [isHumanInteractive, clearSelection]);
-
   const isHumanBidderInKittyExchange = state.phase === 'kitty-exchange' && state.bidWinner === humanPlayerId;
   const burySlots = useBurySlots(
     ruleConstants(3).kittySize,
@@ -244,9 +239,6 @@ export function BatakTable({
       setReturningCardIds((prev) => new Set(prev).add(cardId));
     }
   }
-  const activeSelectedCardId = isHumanBidderInKittyExchange ? null : selectedCardId;
-  const activeSelectCard = isHumanBidderInKittyExchange ? handleBurySlotTap : selectCard;
-
   const isPendingHuman = pendingPlay != null && pendingPlay.playerId === humanPlayerId;
   const humanGatheringCardId = gatheringTrick?.entries.find((entry) => entry.playerId === humanPlayerId)?.card.id;
   // While the human's own bury is staging, both the just-buried cards (hidden forever once
@@ -348,31 +340,62 @@ export function BatakTable({
 
   // One ref per currently-rendered human hand card, keyed by card id.
   const handCardRefs = useRef(new Map<string, View>()).current;
-  function registerHandCardRef(cardId: string, node: View | null) {
+  const registerHandCardRef = useCallback((cardId: string, node: View | null) => {
     if (node) {
       handCardRefs.set(cardId, node);
     } else {
       handCardRefs.delete(cardId);
     }
-  }
+  }, [handCardRefs]);
+
+  // Mirrors handSlots/destCenter into refs, read only inside playWithMeasuredOrigin (an event
+  // handler, never during render) — lets that callback stay referentially stable (see its own
+  // useCallback below) without ever reading stale data, using the same "keep a ref in sync during
+  // render" pattern this file already uses for handLayerRef above.
+  const handSlotsRef = useRef(handSlots);
+  handSlotsRef.current = handSlots;
+  const destCenterRef = useRef(destCenter);
+  destCenterRef.current = destCenter;
 
   // Replaces a direct onPlayCard(cardId) call: measures the tapped card's real on-screen
   // position relative to the trick slot's, so the travel animation starts from where the card
-  // actually was. Falls back to a plain onPlayCard(cardId) call (no origin — TravelCard then
-  // uses the fixed 'bottom' offset, same as today) whenever either measurement isn't ready.
-  function playWithMeasuredOrigin(cardId: string) {
-    const node = handCardRefs.get(cardId);
-    if (!node || !destCenter) {
-      onPlayCard(cardId);
-      return;
-    }
-    node.measureInWindow((x, y, width, height) => {
-      onPlayCard(cardId, {
-        x: x + width / 2 - destCenter.x,
-        y: y + height / 2 - destCenter.y,
+  // actually was, and computes the card's real fan-rotation angle from its current hand slot so
+  // the travel animation can ease from that angle down to flat instead of snapping to 0deg. Falls
+  // back to a plain onPlayCard(cardId) call (no origin — TravelCard then uses the fixed 'bottom'
+  // offset, same as today) whenever either measurement isn't ready.
+  const playWithMeasuredOrigin = useCallback(
+    (cardId: string) => {
+      const slot = handSlotsRef.current.find((s) => s.card.id === cardId);
+      const originRotateDeg = slot ? handCardRotationDeg(slot.indexInRow, slot.rowCount) : undefined;
+      const node = handCardRefs.get(cardId);
+      const dest = destCenterRef.current;
+      if (!node || !dest) {
+        onPlayCard(cardId, undefined, originRotateDeg);
+        return;
+      }
+      node.measureInWindow((x, y, width, height) => {
+        onPlayCard(
+          cardId,
+          { x: x + width / 2 - dest.x, y: y + height / 2 - dest.y },
+          originRotateDeg
+        );
       });
-    });
-  }
+    },
+    [handCardRefs, onPlayCard]
+  );
+
+  // Relocated here (from immediately after isHumanInteractive) because playWithMeasuredOrigin is
+  // now a useCallback-produced const rather than a hoisted function declaration — passing it to
+  // useCardSelection above its own declaration would be a genuine TDZ error ("used before its
+  // declaration"), not just a style nit; TypeScript itself rejects it (TS2448/TS2454). Nothing
+  // between the original call site and here reads selectedCardId/selectCard/clearSelection, so
+  // this move changes nothing at runtime.
+  const { selectedCardId, selectCard, clearSelection } = useCardSelection(playWithMeasuredOrigin);
+  useEffect(() => {
+    if (!isHumanInteractive) clearSelection();
+  }, [isHumanInteractive, clearSelection]);
+  const activeSelectedCardId = isHumanBidderInKittyExchange ? null : selectedCardId;
+  const activeSelectCard = isHumanBidderInKittyExchange ? handleBurySlotTap : selectCard;
 
   // Anchored below the screen's true bottom edge (covers the full bottom side with margin to
   // spare — the overshoot itself is off-screen) while keeping the peak at the same height as

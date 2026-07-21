@@ -144,7 +144,12 @@ function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, on
     };
   }, []);
 
-  function commitMove(move: BatakMove, playerId: PlayerId, originOffset?: { x: number; y: number }) {
+  function commitMove(
+    move: BatakMove,
+    playerId: PlayerId,
+    originOffset?: { x: number; y: number },
+    originRotateDeg?: number
+  ) {
     if (move.type === 'bury') {
       setPendingBury({ playerId, cardIds: move.cardIds, stage: 'burying' });
       buryTimeoutRef.current = setTimeout(() => {
@@ -176,7 +181,7 @@ function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, on
       // The human hand's own reflow (remaining cards sliding/rising into their new slots) is now
       // animated internally by BatakTable's AnimatedFanCard, driven directly off the shrinking
       // hand array — no LayoutAnimation trigger needed here anymore.
-      setPendingPlay({ playerId, card, originOffset });
+      setPendingPlay({ playerId, card, originOffset, originRotateDeg });
       pendingTimeoutRef.current = setTimeout(() => {
         setPendingPlay(null);
         if (!isTrickCompleting) {
@@ -235,8 +240,8 @@ function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, on
     commitMove(move, HUMAN_ID);
   }
 
-  function handleHumanPlayCard(cardId: string, originOffset?: { x: number; y: number }) {
-    commitMove({ type: 'play', cardId }, HUMAN_ID, originOffset);
+  function handleHumanPlayCard(cardId: string, originOffset?: { x: number; y: number }, originRotateDeg?: number) {
+    commitMove({ type: 'play', cardId }, HUMAN_ID, originOffset, originRotateDeg);
   }
 
   function handleHumanBury(cardIds: [string, string, string, string]) {
