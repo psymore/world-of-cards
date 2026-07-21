@@ -1,7 +1,7 @@
 import { AIStrategy } from '../../../ai/types';
 import { minimaxChooseMove } from '../../../ai/minimax';
 import { BatakState, BatakMove } from '../types';
-import { batakGame, fourCardCombinations } from '../rules';
+import { batakGame, buriableCards, fourCardCombinations } from '../rules';
 import { chooseTrumpSuit, estimateBidDecision, scoreHandForBury } from './handStrength';
 
 const BURY_SHORTLIST_SIZE = 8;
@@ -54,7 +54,7 @@ export const batakHardAI: AIStrategy<BatakState, BatakMove> = {
 
     if (state.phase === 'kitty-exchange') {
       const trumpSuit = state.trumpSuit!;
-      const scoredCombos = fourCardCombinations(hand)
+      const scoredCombos = fourCardCombinations(buriableCards(state, playerId))
         .map((combo) => {
           const buriedIds = new Set(combo.map((c) => c.id));
           const resultingHand = hand.filter((c) => !buriedIds.has(c.id));
