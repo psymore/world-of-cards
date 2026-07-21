@@ -1,7 +1,7 @@
 import { AIStrategy } from '../../../ai/types';
 import { minimaxChooseMove } from '../../../ai/minimax';
 import { BatakState, BatakMove } from '../types';
-import { batakGame, buriableCards, fourCardCombinations } from '../rules';
+import { batakGame, buriableCards, fourCardCombinations, toBuryCardIds } from '../rules';
 import { chooseTrumpSuit, estimateBidDecision, scoreHandForBury } from './handStrength';
 
 const BURY_SHORTLIST_SIZE = 8;
@@ -63,7 +63,7 @@ export const batakHardAI: AIStrategy<BatakState, BatakMove> = {
         .sort((a, b) => b.score - a.score);
       const shortlist: BatakMove[] = scoredCombos.slice(0, BURY_SHORTLIST_SIZE).map(({ combo }) => ({
         type: 'bury',
-        cardIds: combo.map((c) => c.id) as [string, string, string, string],
+        cardIds: toBuryCardIds(combo),
       }));
       return minimaxChooseMove(state, playerId, shortlist, {
         ruleEngine: batakGame,

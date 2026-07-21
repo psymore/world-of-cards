@@ -94,12 +94,20 @@ export function buriableCards(state: BatakState, playerId: PlayerId): Card[] {
   return hand.filter((c) => !kittyIds.has(c.id));
 }
 
+// The 4-card bury/tuple-cast pattern below is duplicated across this function and all 3 AI
+// difficulty files (easy.ts, medium.ts, hard.ts) — centralized here since they already import
+// from this module. Not generalized to a variable tuple length: Batak's kitty size is fixed at 4
+// everywhere this is called.
+export function toBuryCardIds(cards: Card[]): [string, string, string, string] {
+  return cards.map((c) => c.id) as [string, string, string, string];
+}
+
 function kittyExchangeLegalMoves(state: BatakState, playerId: PlayerId): BatakMove[] {
   if (playerId !== state.bidWinner) return [];
   const hand = buriableCards(state, playerId);
   return fourCardCombinations(hand).map((combo) => ({
     type: 'bury' as const,
-    cardIds: combo.map((c) => c.id) as [string, string, string, string],
+    cardIds: toBuryCardIds(combo),
   }));
 }
 

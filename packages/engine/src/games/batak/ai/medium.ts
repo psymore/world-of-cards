@@ -1,7 +1,7 @@
 import { AIStrategy } from '../../../ai/types';
 import { pickRandom } from '../../../ai/weightedRandom';
 import { BatakState, BatakMove } from '../types';
-import { trickWinnerIndex, ruleConstants, buriableCards } from '../rules';
+import { trickWinnerIndex, ruleConstants, buriableCards, toBuryCardIds } from '../rules';
 import { compareRanks } from '../ranking';
 import { chooseTrumpSuit, estimateBidDecision, chooseCardsToBury } from './handStrength';
 
@@ -22,9 +22,7 @@ export const batakMediumAI: AIStrategy<BatakState, BatakMove> = {
 
     if (state.phase === 'kitty-exchange') {
       const { kittySize } = ruleConstants(state.players.length);
-      const cardIds = chooseCardsToBury(buriableCards(state, playerId), state.trumpSuit!, kittySize).map(
-        (c) => c.id
-      ) as [string, string, string, string];
+      const cardIds = toBuryCardIds(chooseCardsToBury(buriableCards(state, playerId), state.trumpSuit!, kittySize));
       return { type: 'bury', cardIds };
     }
 
