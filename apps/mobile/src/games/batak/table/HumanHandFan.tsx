@@ -61,6 +61,13 @@ const SELECTED_LIFT_DISTANCE = 40;
 const SELECTED_CARD_HIT_SLOP = { left: -20, right: -20 };
 const HAND_SUIT_ORDER = ['hearts', 'spades', 'diamonds', 'clubs'] as const;
 
+// Exported so BatakTable can compute a card's real fan angle at the moment it's tapped (for the
+// played-card travel animation's origin rotation) without duplicating
+// HUMAN_HAND_DEGREES_PER_STEP or reimplementing the fan formula.
+export function handCardRotationDeg(indexInRow: number, rowCount: number): number {
+  return fanRotationDeg(indexInRow, rowCount, HUMAN_HAND_DEGREES_PER_STEP);
+}
+
 export function sortHandForDisplay(cards: Card[]): Card[] {
   return [...cards].sort((a, b) => {
     const suitDiff = HAND_SUIT_ORDER.indexOf(a.suit as Suit) - HAND_SUIT_ORDER.indexOf(b.suit as Suit);

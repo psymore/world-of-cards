@@ -31,7 +31,9 @@ const LIFT_ANIM_DURATION_MS = 150;
 // Matches PlayingCard's default CARD_RADIUS, used when the caller doesn't override cardRadius.
 const DEFAULT_CARD_RADIUS = 6;
 // How much a selected card scales up, on top of its lift, to read as moving toward the camera.
-const SELECTED_SCALE = 1.05;
+// Exported: Batak's played-card travel animation departs from this exact scale (a played card is
+// always selected/lifted at the moment of the second tap) — see TrickCenter.tsx.
+export const SELECTED_SCALE = 1.05;
 
 export function SelectableCard({
   selected = false,
