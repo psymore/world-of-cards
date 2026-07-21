@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Difficulty } from '@world-cards/engine';
 import { useSettingsStore } from '../../state/settingsStore';
+import type { BatakVariant } from './batakVariant';
 
 export interface BatakSetupViewProps {
   defaultDifficulty: Difficulty;
-  onStart: (difficulty: Difficulty) => void;
+  onStart: (difficulty: Difficulty, variant: BatakVariant) => void;
   onBack: () => void;
 }
 
@@ -15,10 +16,17 @@ const DIFFICULTIES: { value: Difficulty; label: string }[] = [
   { value: 'hard', label: 'Hard' },
 ];
 
+const VARIANTS: { value: BatakVariant; label: string; description: string }[] = [
+  { value: 'standard', label: 'Standard', description: '4 players' },
+  { value: 'gomeli', label: 'Gömmeli', description: '3 players, buried kitty' },
+];
+
 export function BatakSetupView({ defaultDifficulty, onStart, onBack }: BatakSetupViewProps) {
+  const [variant, setVariant] = useState<BatakVariant>('standard');
+
   function handlePress(value: Difficulty) {
     useSettingsStore.getState().setDefaultDifficulty(value);
-    onStart(value);
+    onStart(value, variant);
   }
 
   return (
@@ -29,6 +37,19 @@ export function BatakSetupView({ defaultDifficulty, onStart, onBack }: BatakSetu
           <Text style={styles.backLink}>‹ Home</Text>
         </Pressable>
       </View>
+
+      <Text style={styles.title}>Choose a variant</Text>
+      {VARIANTS.map(({ value, label, description }) => (
+        <Pressable
+          key={value}
+          onPress={() => setVariant(value)}
+          style={[styles.option, value === variant && styles.optionDefault]}
+          testID={`batak-variant-${value}`}
+        >
+          <Text style={styles.optionText}>{label}</Text>
+          <Text style={styles.variantDescription}>{description}</Text>
+        </Pressable>
+      ))}
 
       <Text style={styles.title}>Choose a difficulty</Text>
       {DIFFICULTIES.map(({ value, label }) => (
@@ -62,7 +83,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 6,
   },
   backLink: { fontSize: 15, fontWeight: '600', color: '#cbb98a' },
-  title: { fontSize: 18, fontWeight: '600', marginBottom: 16, textAlign: 'center', color: '#f5f0e6' },
+  title: { fontSize: 18, fontWeight: '600', marginBottom: 16, marginTop: 8, textAlign: 'center', color: '#f5f0e6' },
   option: {
     backgroundColor: '#1e1e33',
     borderWidth: 1,
@@ -74,5 +95,6 @@ const styles = StyleSheet.create({
   },
   optionDefault: { borderColor: '#f4c542', backgroundColor: 'rgba(244, 197, 66, 0.14)' },
   optionText: { fontSize: 18, color: '#eee' },
+  variantDescription: { fontSize: 13, color: '#cbb98a', marginTop: 2 },
   defaultBadge: { fontSize: 12, color: '#f4c542', marginTop: 2 },
 });
