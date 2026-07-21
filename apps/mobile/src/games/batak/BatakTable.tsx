@@ -19,6 +19,7 @@ import { PLATFORM_RAISE_BY } from './table/DecisionPanel';
 import { HumanHandFan, HAND_ROW_OVERLAP_PX, sortHandForDisplay } from './table/HumanHandFan';
 import type { HandSlot } from './table/HumanHandFan';
 import type { PendingBatakPlay, GatheringTrick } from './table/types';
+import { KittyPile, kittyPileCards } from './table/KittyPile';
 
 // Re-exported so existing call sites (BatakScreen.tsx) can keep importing these from
 // './BatakTable' unchanged — the actual definitions live in ./table/types now, shared with
@@ -237,6 +238,7 @@ export function BatakTable({
           <OpponentSeat seat={seat} state={state} playerNames={playerNames} pendingPlay={pendingPlay} />
         )}
       />
+      {opponentPlayerIds.length === 2 && <KittyPile cards={kittyPileCards(state)} />}
 
       <View style={seatLayoutStyles.middleRow}>
         <OpponentSeatGroup
