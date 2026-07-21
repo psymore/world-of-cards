@@ -231,7 +231,7 @@ describe('batakGame (rule engine)', () => {
       expect(batakGame.getLegalMoves(state, 'p2')).toEqual([]);
     });
 
-    it('returns exactly C(20,4) = 4845 combinations, each of 4 distinct cards from the hand', () => {
+    it('returns exactly C(16,4) = 1820 combinations, each of 4 distinct non-kitty cards from the hand', () => {
       const hand = twentyCards();
       const table = batakTable3({ 'hand-p1': hand });
       const state = makeState({
@@ -240,16 +240,55 @@ describe('batakGame (rule engine)', () => {
         phase: 'kitty-exchange',
         bidWinner: 'p1',
         currentPlayerIndex: 0,
+        kittyCardIds: ['c16', 'c17', 'c18', 'c19'],
       });
       const moves = batakGame.getLegalMoves(state, 'p1');
-      expect(moves).toHaveLength(4845);
+      expect(moves).toHaveLength(1820);
+      const kittyIds = new Set(['c16', 'c17', 'c18', 'c19']);
       for (const move of moves) {
         if (move.type !== 'bury') throw new Error('expected only bury moves');
         expect(new Set(move.cardIds).size).toBe(4);
         for (const id of move.cardIds) {
           expect(hand.some((c) => c.id === id)).toBe(true);
+          expect(kittyIds.has(id)).toBe(false);
         }
       }
+    });
+
+    it('excludes every combination containing a kitty card, even alongside an otherwise-legal combo', () => {
+      const hand = twentyCards();
+      const table = batakTable3({ 'hand-p1': hand });
+      const state = makeState({
+        table,
+        players: PLAYERS3,
+        phase: 'kitty-exchange',
+        bidWinner: 'p1',
+        currentPlayerIndex: 0,
+        kittyCardIds: ['c16', 'c17', 'c18', 'c19'],
+      });
+      const moves = batakGame.getLegalMoves(state, 'p1');
+      // c0,c1,c2 are legal alongside a 4th non-kitty card (c3) but never alongside a kitty card —
+      // a genuinely discriminating check, not just "no combo contains c16 anywhere in isolation".
+      expect(moves).toContainEqual({ type: 'bury', cardIds: ['c0', 'c1', 'c2', 'c3'] });
+      expect(moves.some((m) => m.type === 'bury' && m.cardIds.includes('c16'))).toBe(false);
+      expect(moves.some((m) => m.type === 'bury' && m.cardIds.includes('c17'))).toBe(false);
+      expect(moves.some((m) => m.type === 'bury' && m.cardIds.includes('c18'))).toBe(false);
+      expect(moves.some((m) => m.type === 'bury' && m.cardIds.includes('c19'))).toBe(false);
+    });
+
+    it('falls back to allowing any 4 cards when kittyCardIds is null (keeps buriableCards total; this state should not occur in a real game)', () => {
+      const hand = twentyCards();
+      const table = batakTable3({ 'hand-p1': hand });
+      const state = makeState({
+        table,
+        players: PLAYERS3,
+        phase: 'kitty-exchange',
+        bidWinner: 'p1',
+        currentPlayerIndex: 0,
+        kittyCardIds: null,
+      });
+      const moves = batakGame.getLegalMoves(state, 'p1');
+      expect(moves).toHaveLength(4845);
     });
 
     it('includes a specific known combination and excludes one containing a card not in hand', () => {
@@ -280,6 +319,7 @@ describe('batakGame (rule engine)', () => {
         phase: 'kitty-exchange' as const,
         bidWinner: 'p1',
         currentPlayerIndex: 0,
+        kittyCardIds: ['c16', 'c17', 'c18', 'c19'],
       });
       return { hand, state };
     }
@@ -317,6 +357,13 @@ describe('batakGame (rule engine)', () => {
       const { state } = kittyExchangeState();
       expect(
         batakGame.validateMove(state, { type: 'bury', cardIds: ['c0', 'c0', 'c1', 'c2'] }, 'p1')
+      ).toBe(false);
+    });
+
+    it('rejects a bury naming one of the kitty cards', () => {
+      const { state } = kittyExchangeState();
+      expect(
+        batakGame.validateMove(state, { type: 'bury', cardIds: ['c0', 'c1', 'c2', 'c16'] }, 'p1')
       ).toBe(false);
     });
   });
