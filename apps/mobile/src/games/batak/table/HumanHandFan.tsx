@@ -61,6 +61,13 @@ const SELECTED_LIFT_DISTANCE = 40;
 const SELECTED_CARD_HIT_SLOP = { left: -20, right: -20 };
 const HAND_SUIT_ORDER = ['hearts', 'spades', 'diamonds', 'clubs'] as const;
 
+// Exported so BatakTable can compute a card's real fan angle at the moment it's tapped (for the
+// played-card travel animation's origin rotation) without duplicating
+// HUMAN_HAND_DEGREES_PER_STEP or reimplementing the fan formula.
+export function handCardRotationDeg(indexInRow: number, rowCount: number): number {
+  return fanRotationDeg(indexInRow, rowCount, HUMAN_HAND_DEGREES_PER_STEP);
+}
+
 export function sortHandForDisplay(cards: Card[]): Card[] {
   return [...cards].sort((a, b) => {
     const suitDiff = HAND_SUIT_ORDER.indexOf(a.suit as Suit) - HAND_SUIT_ORDER.indexOf(b.suit as Suit);
@@ -110,25 +117,25 @@ function slotTargetY(slot: HandSlot): number {
 // rows now lives under one shared parent (HumanHandFan) instead of two separate row containers,
 // that row-crossing case animates smoothly too, rather than unmounting from one row's tree and
 // remounting in the other's.
-function AnimatedFanCard({
-  slot,
-  legalCardIds,
-  isHumanInteractive,
-  selectedCardId,
-  selectCard,
-  playEntrance,
-  registerCardRef,
-  compact,
-}: {
+interface AnimatedFanCardProps {
   slot: HandSlot;
-  legalCardIds: Set<string>;
-  isHumanInteractive: boolean;
-  selectedCardId: string | null;
+  interactive: boolean;
+  selected: boolean;
   selectCard: (cardId: string) => void;
   playEntrance: boolean;
   registerCardRef: (cardId: string, node: View | null) => void;
   compact: boolean;
-}) {
+}
+
+function AnimatedFanCardComponent({
+  slot,
+  interactive,
+  selected,
+  selectCard,
+  playEntrance,
+  registerCardRef,
+  compact,
+}: AnimatedFanCardProps) {
   const { card } = slot;
   const targetX = slotTargetX(slot, compact);
   const targetY = slotTargetY(slot);
@@ -186,8 +193,6 @@ function AnimatedFanCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetX, targetY, reducedMotion, x, y]);
 
-  const interactive = isHumanInteractive && legalCardIds.has(card.id);
-
   return (
     <Animated.View style={[styles.fanCardSlot, { transform: [{ translateX: x }, { translateY: y }] }]}>
       <View ref={(node) => registerCardRef(card.id, node)}>
@@ -195,7 +200,7 @@ function AnimatedFanCard({
           <SelectableCard
             card={card}
             size="normal"
-            selected={selectedCardId === card.id}
+            selected={selected}
             disabled={!interactive}
             onPress={() => selectCard(card.id)}
             rotateDeg={fanRotationDeg(slot.indexInRow, slot.rowCount, HUMAN_HAND_DEGREES_PER_STEP)}
@@ -204,13 +209,42 @@ function AnimatedFanCard({
             // Kept even without front-stacking zIndex: it independently shrinks the selected
             // card's own touch bounds, which is what actually prevents a stray tap from landing
             // on it instead of an exposed neighbor — orthogonal to stacking order.
-            hitSlop={selectedCardId === card.id ? SELECTED_CARD_HIT_SLOP : undefined}
+            hitSlop={selected ? SELECTED_CARD_HIT_SLOP : undefined}
           />
         </EntranceCard>
       </View>
     </Animated.View>
   );
 }
+
+// Batak is strictly turn-based: only one player's action is ever in flight, and while this
+// specific card's `selected`/`interactive` props are unchanged, no engine state that
+// `selectCard`/`registerCardRef` close over can have changed in a way that affects THIS card's
+// behavior either (the human's own turn, and any card sitting selected during it, is
+// uninterrupted the whole time). So it's safe to skip re-rendering — and therefore keep a
+// technically-stale `selectCard`/`registerCardRef` closure — whenever slot/interactive/selected/
+// compact/playEntrance are all unchanged; those closures behave identically for this card either
+// way. Deliberately NOT comparing selectCard/registerCardRef by reference: BatakTable recreates
+// selectCard's underlying dependency chain on most renders, so comparing it would defeat the memo
+// on nearly every re-render, including the "an AI played elsewhere and nothing about this card
+// changed" case this exists to fix — see
+// docs/superpowers/specs/2026-07-21-batak-card-play-animation-smoothness-design.md.
+function areFanCardPropsEqual(prev: AnimatedFanCardProps, next: AnimatedFanCardProps): boolean {
+  return (
+    prev.slot.card.id === next.slot.card.id &&
+    prev.slot.row === next.slot.row &&
+    prev.slot.indexInRow === next.slot.indexInRow &&
+    prev.slot.rowCount === next.slot.rowCount &&
+    prev.slot.enterFromOffset?.x === next.slot.enterFromOffset?.x &&
+    prev.slot.enterFromOffset?.y === next.slot.enterFromOffset?.y &&
+    prev.interactive === next.interactive &&
+    prev.selected === next.selected &&
+    prev.compact === next.compact &&
+    prev.playEntrance === next.playEntrance
+  );
+}
+
+const AnimatedFanCard = React.memo(AnimatedFanCardComponent, areFanCardPropsEqual);
 
 // Plays a one-shot fade+scale+rise entrance the first time `playEntrance` becomes true (the
 // moment the deal sequence reaches 'revealing'), then stays static — re-renders after that
@@ -290,9 +324,8 @@ export function HumanHandFan({
         <AnimatedFanCard
           key={slot.card.id}
           slot={slot}
-          legalCardIds={legalCardIds}
-          isHumanInteractive={isHumanInteractive}
-          selectedCardId={selectedCardId}
+          interactive={isHumanInteractive && legalCardIds.has(slot.card.id)}
+          selected={selectedCardId === slot.card.id}
           selectCard={selectCard}
           playEntrance={playEntrance}
           registerCardRef={registerCardRef}

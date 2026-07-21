@@ -4,6 +4,7 @@ import type { Card } from '@world-cards/engine';
 import type { BatakState } from '@world-cards/engine/games/batak';
 import { PlayingCard, SuitIcon, CARD_DIMS } from '@world-cards/ui';
 import { TravelCard } from '../../../table/TravelCard';
+import { SELECTED_SCALE } from '../../../components/SelectableCard';
 import { GatherCard } from '../../../table/GatherCard';
 import { resolveRevealOrigin, revealOriginOffset } from '../../../table/seating';
 import type { Seat, SeatPosition } from '../../../table/seating';
@@ -24,6 +25,13 @@ const TRICK_SLOT_OFFSETS: Record<TrickPosition, { x: number; y: number }> = {
   left: { x: -30, y: 0 },
   right: { x: 30, y: 0 },
 };
+
+// The played card travels at its real, in-hand `size="normal"` for the whole flight (never
+// swapping the underlying `size` prop mid-flight, which would force a layout recalculation
+// instead of a cheap transform) and is scaled down to this ratio by the time it lands, so it
+// occupies the exact same footprint as the real `size="small"` resting trick card. See
+// docs/superpowers/specs/2026-07-21-batak-card-play-animation-smoothness-design.md.
+const NORMAL_TO_SMALL_SCALE = CARD_DIMS.small.width / CARD_DIMS.normal.width;
 
 export function TrickCenter({
   state,
@@ -70,6 +78,7 @@ export function TrickCenter({
     const playerId = position === 'bottom' ? humanPlayerId : seats.find((s) => s.position === position)?.playerId;
     const card = playerId ? cardFor(playerId) : null;
     const isPending = playerId != null && pendingPlay != null && pendingPlay.playerId === playerId;
+    const isHumanPending = isPending && playerId === humanPlayerId;
     const zIndex = playerId ? Math.max(playOrder.indexOf(playerId) + 1, 1) : 1;
     const offset = TRICK_SLOT_OFFSETS[position];
 
@@ -85,13 +94,31 @@ export function TrickCenter({
         ]}>
         {card ? (
           isPending ? (
-            <TravelCard
-              originOffset={
-                pendingPlay?.originOffset ?? revealOriginOffset(resolveRevealOrigin(playerId!, humanPlayerId, seats))
-              }
-              resetKey={card.id}>
-              <PlayingCard card={card} size="small" />
-            </TravelCard>
+            isHumanPending ? (
+              // The human's own played card: travels at its real in-hand size, easing its actual
+              // fan-rotation angle and selected-lift scale down to flat/resting instead of
+              // snapping to a fresh, flat, differently-sized card the instant it starts moving.
+              <TravelCard
+                originOffset={pendingPlay?.originOffset ?? revealOriginOffset('bottom')}
+                originRotateDeg={pendingPlay?.originRotateDeg ?? 0}
+                originScale={SELECTED_SCALE}
+                restScale={NORMAL_TO_SMALL_SCALE}
+                resetKey={card.id}>
+                <PlayingCard card={card} size="normal" />
+              </TravelCard>
+            ) : (
+              // An AI's played card: no rendered per-card hand visual exists to depart from (see
+              // the 2026-07-18 turn-indicator-simplification pass), so this stays translate-only,
+              // unchanged from before.
+              <TravelCard
+                originOffset={
+                  pendingPlay?.originOffset ??
+                  revealOriginOffset(resolveRevealOrigin(playerId!, humanPlayerId, seats))
+                }
+                resetKey={card.id}>
+                <PlayingCard card={card} size="small" />
+              </TravelCard>
+            )
           ) : (
             <PlayingCard card={card} size="small" />
           )
