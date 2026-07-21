@@ -67,6 +67,12 @@ export interface HandSlot {
   row: 'top' | 'bottom';
   indexInRow: number;
   rowCount: number;
+  // Non-null only for a card returning to the hand from a Batak gömmeli bury slot — makes its
+  // very first render (in this component instance's lifetime — it was unmounted while placed in
+  // a slot, so this genuinely is a fresh mount) animate in from this offset using the exact same
+  // reposition timing/easing every other hand reflow already uses, instead of the initial-deal
+  // behavior of snapping straight to its slot with no animation.
+  enterFromOffset?: { x: number; y: number } | null;
 }
 
 function slotStep(row: 'top' | 'bottom'): number {
@@ -120,9 +126,29 @@ function AnimatedFanCard({
 
   useEffect(() => {
     if (!mounted.current) {
-      // First render for this card (the initial deal): jump straight to its slot — nothing to
-      // reflow from, and EntranceCard supplies the deal's own fade/scale/rise flourish.
       mounted.current = true;
+      if (slot.enterFromOffset && !reducedMotion) {
+        // A card returning from a bury slot: start offset from its true target and animate in,
+        // reusing the exact same reposition timing/easing as an ordinary reflow.
+        x.setValue(targetX + slot.enterFromOffset.x);
+        y.setValue(targetY + slot.enterFromOffset.y);
+        Animated.parallel([
+          Animated.timing(x, {
+            toValue: targetX,
+            duration: HAND_CARD_REPOSITION_DURATION_MS,
+            easing: HAND_CARD_REPOSITION_EASING,
+            useNativeDriver: true,
+          }),
+          Animated.timing(y, {
+            toValue: targetY,
+            duration: HAND_CARD_REPOSITION_DURATION_MS,
+            easing: HAND_CARD_REPOSITION_EASING,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+      // Plain first render for a genuinely new card (the initial deal, or reducedMotion): jump
+      // straight to its slot — EntranceCard supplies the deal's own fade/scale/rise flourish.
       return;
     }
     if (reducedMotion) {
@@ -144,6 +170,7 @@ function AnimatedFanCard({
         useNativeDriver: true,
       }),
     ]).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetX, targetY, reducedMotion, x, y]);
 
   const interactive = isHumanInteractive && legalCardIds.has(card.id);

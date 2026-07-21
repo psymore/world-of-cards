@@ -20,6 +20,8 @@ import { HumanHandFan, HAND_ROW_OVERLAP_PX, sortHandForDisplay } from './table/H
 import type { HandSlot } from './table/HumanHandFan';
 import type { PendingBatakPlay, GatheringTrick } from './table/types';
 import { KittyPile, kittyPileCards } from './table/KittyPile';
+import { useBurySlots } from './table/useBurySlots';
+import { KittyExchangeCenter } from './table/KittyExchangeCenter';
 
 // Re-exported so existing call sites (BatakScreen.tsx) can keep importing these from
 // './BatakTable' unchanged — the actual definitions live in ./table/types now, shared with
@@ -70,6 +72,10 @@ export interface BatakTableProps {
   // origin) — called only for the human's own card plays, with a measured travel-origin offset
   // when available.
   onPlayCard: (cardId: string, originOffset?: { x: number; y: number }) => void;
+  // Human's confirmed 4-card bury during 'kitty-exchange' — separate from onMove for the same
+  // reason onPlayCard is: BatakScreen stages this into a multi-step animation before it actually
+  // reaches performMove, exactly like onPlayCard's trick-completion staging.
+  onBury: (cardIds: [string, string, string, string]) => void;
   pendingPlay?: PendingBatakPlay | null;
   gatheringTrick?: GatheringTrick | null;
   dealPhase: BatakDealPhase;
@@ -119,6 +125,7 @@ export function BatakTable({
   legalMoves,
   onMove,
   onPlayCard,
+  onBury,
   pendingPlay,
   gatheringTrick,
   dealPhase,
@@ -151,10 +158,42 @@ export function BatakTable({
     if (!isHumanInteractive) clearSelection();
   }, [isHumanInteractive, clearSelection]);
 
+  const isHumanBidderInKittyExchange = state.phase === 'kitty-exchange' && state.bidWinner === humanPlayerId;
+  const burySlots = useBurySlots(4, (cardIds) => onBury(cardIds as [string, string, string, string]));
+  useEffect(() => {
+    if (!isHumanBidderInKittyExchange) burySlots.clear();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHumanBidderInKittyExchange]);
+
+  // Cards currently animating back into the hand after being tapped out of a bury slot — read
+  // once by HandSlot.enterFromOffset (Step 1) and left in place afterward (harmless: once a
+  // card's own AnimatedFanCard instance has mounted, its `mounted` ref guards against ever
+  // reading this again for that same mount).
+  const RETURN_TO_HAND_OFFSET = { x: 0, y: -140 };
+  const [returningCardIds, setReturningCardIds] = useState<Set<string>>(new Set());
+
+  // During kitty-exchange, a single tap places/returns a card in a bury slot instead of the
+  // normal tap-to-select-then-tap-to-play flow — every remaining hand card is individually legal
+  // to bury (there's no per-card legality the way there is for 'play'), so legalCardIds is
+  // overridden to "everything currently in hand" for this phase specifically (computed below,
+  // once humanHand is available).
+  function handleBurySlotTap(cardId: string) {
+    const wasPlaced = burySlots.isPlaced(cardId);
+    burySlots.toggleCard(cardId);
+    if (wasPlaced) {
+      setReturningCardIds((prev) => new Set(prev).add(cardId));
+    }
+  }
+  const activeSelectedCardId = isHumanBidderInKittyExchange ? null : selectedCardId;
+  const activeSelectCard = isHumanBidderInKittyExchange ? handleBurySlotTap : selectCard;
+
   const isPendingHuman = pendingPlay != null && pendingPlay.playerId === humanPlayerId;
   const humanGatheringCardId = gatheringTrick?.entries.find((entry) => entry.playerId === humanPlayerId)?.card.id;
   const humanHand = state.table.zones[`hand-${humanPlayerId}`].cards.filter(
-    (card) => !(isPendingHuman && card.id === pendingPlay!.card.id) && card.id !== humanGatheringCardId,
+    (card) =>
+      !(isPendingHuman && card.id === pendingPlay!.card.id) &&
+      card.id !== humanGatheringCardId &&
+      !burySlots.isPlaced(card.id),
   );
   const sortedHand = sortHandForDisplay(humanHand);
   // Each card is assigned to a fixed top/bottom layer once — the first time this component sees
@@ -174,12 +213,28 @@ export function BatakTable({
   const topRow = sortedHand.filter((card) => handLayerRef.current.get(card.id) === 'top');
   const bottomRow = sortedHand.filter((card) => handLayerRef.current.get(card.id) === 'bottom');
   const handSlots: HandSlot[] = [
-    ...topRow.map((card, i): HandSlot => ({ card, row: 'top', indexInRow: i, rowCount: topRow.length })),
-    ...bottomRow.map((card, i): HandSlot => ({ card, row: 'bottom', indexInRow: i, rowCount: bottomRow.length })),
+    ...topRow.map((card, i): HandSlot => ({
+      card,
+      row: 'top',
+      indexInRow: i,
+      rowCount: topRow.length,
+      enterFromOffset: returningCardIds.has(card.id) ? RETURN_TO_HAND_OFFSET : null,
+    })),
+    ...bottomRow.map((card, i): HandSlot => ({
+      card,
+      row: 'bottom',
+      indexInRow: i,
+      rowCount: bottomRow.length,
+      enterFromOffset: returningCardIds.has(card.id) ? RETURN_TO_HAND_OFFSET : null,
+    })),
   ];
-  const legalCardIds = new Set(
-    legalMoves.filter((m): m is Extract<BatakMove, { type: 'play' }> => m.type === 'play').map((m) => m.cardId),
-  );
+  useEffect(() => {
+    if (returningCardIds.size > 0) setReturningCardIds(new Set());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handSlots.map((s) => s.card.id).join(',')]);
+  const legalCardIds = isHumanBidderInKittyExchange
+    ? new Set(humanHand.map((c) => c.id))
+    : new Set(legalMoves.filter((m): m is Extract<BatakMove, { type: 'play' }> => m.type === 'play').map((m) => m.cardId));
 
   // Destination for the human's play-travel origin delta: the 'bottom' trick slot's on-screen
   // center, measured live and re-measured on every layout pass. See
@@ -253,6 +308,18 @@ export function BatakTable({
         {state.phase === 'trump-selection' && state.bidWinner !== humanPlayerId && (
           <TrumpWaitingCenter state={state} playerNames={playerNames} />
         )}
+        {state.phase === 'kitty-exchange' && (
+          <KittyExchangeCenter
+            state={state}
+            playerNames={playerNames}
+            humanPlayerId={humanPlayerId}
+            slotCardIds={burySlots.slotCardIds}
+            cardsById={new Map(state.table.zones[`hand-${humanPlayerId}`].cards.map((c) => [c.id, c]))}
+            onTapSlotCard={handleBurySlotTap}
+            canConfirm={burySlots.canConfirm}
+            onConfirm={burySlots.confirm}
+          />
+        )}
         {state.phase === 'playing' && (
           <TrickCenter
             state={state}
@@ -287,8 +354,8 @@ export function BatakTable({
           slots={handSlots}
           legalCardIds={legalCardIds}
           isHumanInteractive={isHumanInteractive}
-          selectedCardId={selectedCardId}
-          selectCard={selectCard}
+          selectedCardId={activeSelectedCardId}
+          selectCard={activeSelectCard}
           playEntrance={dealPhase === 'revealing'}
           registerCardRef={registerHandCardRef}
         />
