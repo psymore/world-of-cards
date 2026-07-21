@@ -13,13 +13,23 @@ export interface Seat {
 // 1 opponent sits across the table (top); 3 sit left/top/right around the human, who is
 // always at the bottom. Turn order (state.players, human first) proceeds counter-clockwise —
 // bottom → right → top → left → bottom — so the first opponent in turn order sits on the
-// right, not the left. Any other count falls back to seating everyone across the top.
+// right, not the left. 2 opponents (Batak gömmeli) drop the top seat entirely and sit
+// left/right, matching a real 3-handed table where every seat can see every other — same
+// counter-clockwise turn order with 'top' simply removed from the sequence: bottom → right →
+// left → bottom. Any other count falls back to seating everyone across the top.
 export function assignSeats(opponentPlayerIds: string[]): Seat[] {
   if (opponentPlayerIds.length === 3) {
     const [right, top, left] = opponentPlayerIds;
     return [
       { position: "left", playerId: left },
       { position: "top", playerId: top },
+      { position: "right", playerId: right },
+    ];
+  }
+  if (opponentPlayerIds.length === 2) {
+    const [right, left] = opponentPlayerIds;
+    return [
+      { position: "left", playerId: left },
       { position: "right", playerId: right },
     ];
   }
