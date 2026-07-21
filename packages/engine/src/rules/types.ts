@@ -16,8 +16,8 @@ export interface ScoreBoard {
   [playerId: string]: number;
 }
 
-export interface RuleEngine<TState extends GameState, TMove> {
-  setup(options: unknown, rng: import('../core/rng').RNG): TState;
+export interface RuleEngine<TState extends GameState, TMove, TOptions = unknown> {
+  setup(options: TOptions, rng: import('../core/rng').RNG): TState;
   validateMove(state: TState, move: TMove, playerId: PlayerId): boolean;
   performMove(state: TState, move: TMove): TState;
   getLegalMoves(state: TState, playerId: PlayerId): TMove[];

@@ -3,12 +3,12 @@ import { AIStrategy, Difficulty } from '../ai/types';
 
 export type GameCategory = 'trick-taking' | 'patience' | 'betting' | 'draw-and-discard' | 'fishing' | 'other';
 
-export interface GameDescriptor<TState extends GameState = GameState, TMove = unknown> {
+export interface GameDescriptor<TState extends GameState = GameState, TMove = unknown, TOptions = unknown> {
   id: string;
   displayName: string;
   category: GameCategory;
   minPlayers: number;
   maxPlayers: number;
-  ruleEngine: RuleEngine<TState, TMove>;
+  ruleEngine: RuleEngine<TState, TMove, TOptions>;
   aiStrategies: Record<Difficulty, AIStrategy<TState, TMove>>;
 }
