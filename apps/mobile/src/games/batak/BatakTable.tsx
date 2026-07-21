@@ -278,10 +278,24 @@ export function BatakTable({
   // 7 bottom.
   const handLayerRef = useRef<Map<string, 'top' | 'bottom'>>(new Map());
   if (handLayerRef.current.size === 0 && sortedHand.length > 0) {
+    // Initial deal: split the whole starting hand by splitTwoRows, as before.
     const [largerLayerCount] = splitTwoRows(sortedHand.length);
     const initialTopCount = sortedHand.length - largerLayerCount;
     sortedHand.forEach((card, i) => {
       handLayerRef.current.set(card.id, i < initialTopCount ? 'top' : 'bottom');
+    });
+  } else {
+    // A card can join the hand after the initial deal too — Batak gömmeli's kitty pickup merges 4
+    // cards into the bidder's hand mid-hand (selectTrump). Without this branch those cards would
+    // have no handLayerRef entry and would match neither topRow's nor bottomRow's filter below —
+    // i.e. render in neither row, invisible. Assign each newly-seen card to whichever row
+    // currently holds fewer cards, keeping the two rows roughly balanced.
+    sortedHand.forEach((card) => {
+      if (handLayerRef.current.has(card.id)) return;
+      const layers = [...handLayerRef.current.values()];
+      const topCount = layers.filter((l) => l === 'top').length;
+      const bottomCount = layers.length - topCount;
+      handLayerRef.current.set(card.id, topCount <= bottomCount ? 'top' : 'bottom');
     });
   }
   const topRow = sortedHand.filter((card) => handLayerRef.current.get(card.id) === 'top');
@@ -440,6 +454,7 @@ export function BatakTable({
           selectCard={activeSelectCard}
           playEntrance={dealPhase === 'revealing'}
           registerCardRef={registerHandCardRef}
+          compact={opponentPlayerIds.length === 2}
         />
       </View>
       {dealPhase !== 'revealing' && <DealFlightOverlay seats={dealSeats} />}
