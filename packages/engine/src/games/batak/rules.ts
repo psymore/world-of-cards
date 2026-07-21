@@ -169,10 +169,9 @@ export function trickWinnerIndex(trick: Card[], trumpSuit: Suit): number {
   return trick.indexOf(winningCard);
 }
 
-export const batakGame: RuleEngine<BatakState, BatakMove> = {
-  setup(options: unknown, rng: RNG): BatakState {
-    const opts = options as BatakSetupOptions;
-    const { players, guaranteeStrongHand } = opts;
+export const batakGame: RuleEngine<BatakState, BatakMove, BatakSetupOptions> = {
+  setup(options: BatakSetupOptions, rng: RNG): BatakState {
+    const { players, guaranteeStrongHand } = options;
     const { handSize, kittySize } = ruleConstants(players.length);
 
     let deck = shuffle(createDeck({ deckCount: 1, includeJokers: false }), rng);
