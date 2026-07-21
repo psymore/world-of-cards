@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { BatakState, BatakMove } from '@world-cards/engine/games/batak';
 import { ruleConstants } from '@world-cards/engine/games/batak';
@@ -98,29 +98,29 @@ function statusTextFor(state: BatakState, playerId: string): string {
 }
 
 interface OpponentSeatProps {
-  seat: Seat;
-  state: BatakState;
-  playerNames: Record<string, string>;
-  pendingPlay?: PendingBatakPlay | null;
+  position: Seat['position'];
+  name: string;
+  statusText: string;
+  active: boolean;
 }
 
-function OpponentSeat({ seat, state, playerNames, pendingPlay }: OpponentSeatProps) {
-  const { position, playerId } = seat;
+function OpponentSeatComponent({ position, name, statusText, active }: OpponentSeatProps) {
   const isSide = position !== 'top';
-  const isCurrentTurn = state.players[state.currentPlayerIndex] === playerId && pendingPlay == null;
 
   return (
     <View style={[styles.opponentArea, isSide && seatLayoutStyles.opponentAreaSide]}>
-      <PlayerBadge
-        name={playerNames[playerId] ?? playerId}
-        statusText={statusTextFor(state, playerId)}
-        active={isCurrentTurn}
-        isHuman={false}
-        compact={isSide}
-      />
+      <PlayerBadge name={name} statusText={statusText} active={active} isHuman={false} compact={isSide} />
     </View>
   );
 }
+
+// Every prop here is a plain primitive derived by the caller (BatakTable), so this memoizes with
+// React's default shallow comparison — no custom comparator needed. None of these props are ever
+// affected by the human's own hand-selection state, so an opponent seat correctly skips
+// re-rendering whenever an unrelated part of the table changes (the human playing their own
+// card, a different seat's turn) — see
+// docs/superpowers/specs/2026-07-21-batak-card-play-animation-smoothness-design.md.
+const OpponentSeat = memo(OpponentSeatComponent);
 
 // Renders the vacant top slot across the kitty-exchange sequence (see
 // docs/superpowers/specs/2026-07-21-batak-gomeli-ui-design.md Section 4): the untouched
@@ -186,7 +186,7 @@ export function BatakTable({
   pendingBury,
   dealPhase,
 }: BatakTableProps) {
-  const seats = assignSeats(opponentPlayerIds);
+  const seats = useMemo(() => assignSeats(opponentPlayerIds), [opponentPlayerIds]);
   // Deal order: human first, then opponents in existing turn order (right, top, left for the
   // fixed 4-player table) — see docs/superpowers/specs/2026-07-17-batak-deal-selection-and-
   // trick-motion-polish-design.md section D2. Card counts come from the real dealt hand size,
@@ -412,7 +412,12 @@ export function BatakTable({
         position="top"
         seats={seats}
         renderSeat={(seat) => (
-          <OpponentSeat seat={seat} state={state} playerNames={playerNames} pendingPlay={pendingPlay} />
+          <OpponentSeat
+            position={seat.position}
+            name={playerNames[seat.playerId] ?? seat.playerId}
+            statusText={statusTextFor(state, seat.playerId)}
+            active={state.players[state.currentPlayerIndex] === seat.playerId && pendingPlay == null}
+          />
         )}
       />
       {opponentPlayerIds.length === 2 && (
@@ -429,7 +434,12 @@ export function BatakTable({
           position="left"
           seats={seats}
           renderSeat={(seat) => (
-            <OpponentSeat seat={seat} state={state} playerNames={playerNames} pendingPlay={pendingPlay} />
+            <OpponentSeat
+              position={seat.position}
+              name={playerNames[seat.playerId] ?? seat.playerId}
+              statusText={statusTextFor(state, seat.playerId)}
+              active={state.players[state.currentPlayerIndex] === seat.playerId && pendingPlay == null}
+            />
           )}
         />
 
@@ -467,7 +477,12 @@ export function BatakTable({
           position="right"
           seats={seats}
           renderSeat={(seat) => (
-            <OpponentSeat seat={seat} state={state} playerNames={playerNames} pendingPlay={pendingPlay} />
+            <OpponentSeat
+              position={seat.position}
+              name={playerNames[seat.playerId] ?? seat.playerId}
+              statusText={statusTextFor(state, seat.playerId)}
+              active={state.players[state.currentPlayerIndex] === seat.playerId && pendingPlay == null}
+            />
           )}
         />
       </View>
