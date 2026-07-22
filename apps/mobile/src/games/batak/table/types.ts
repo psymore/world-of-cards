@@ -10,6 +10,11 @@ export interface PendingBatakPlay {
   // flat instead of snapping to 0deg the instant it starts moving. See
   // docs/superpowers/specs/2026-07-21-batak-card-play-animation-smoothness-design.md.
   originRotateDeg?: number;
+  // Shorter-than-default flight duration for the human's own play, once a local-departure leg
+  // (BatakScreen.tsx) has already covered part of the travel before this staged play even starts
+  // — keeps the total hand-to-trick-center travel time on schedule instead of adding on top of it.
+  // Undefined for every other case (AI plays), which falls back to TravelCard's own default.
+  travelDurationMs?: number;
 }
 
 // All 4 plays of a just-completed trick, captured before performMove commits (which resolves

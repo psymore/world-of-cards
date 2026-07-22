@@ -50,11 +50,34 @@ const GOMELI_HAND_TOP_ROW_STEP = Math.round(HUMAN_CARD_WIDTH * (1 - GOMELI_HAND_
 const HAND_CARD_REPOSITION_DURATION_MS = 220;
 const HAND_CARD_REPOSITION_EASING = Easing.inOut(Easing.ease);
 
+// The played card's brief "lift-off" leg before it hands off to the elevated trick-center travel
+// animation (BatakScreen.tsx/TrickCenter.tsx) — see
+// docs/superpowers/specs/2026-07-22-batak-play-travel-local-departure-design.md. Moving up by a
+// full card height guarantees it fully clears the row's own vertical band (same-row neighbors
+// paint over it purely by later render-order, regardless of vertical position), so by the time
+// TrickCenter's globally-elevated TravelCard takes over, there's no longer any hand content left
+// to visually "pop" in front of. Purely local and vertical — rotation/curve are untouched, so the
+// card's angle at handoff still matches what TravelCard's own originRotateDeg expects.
+export const LOCAL_DEPARTURE_DISTANCE = HUMAN_CARD_HEIGHT;
+export const LOCAL_DEPARTURE_DURATION_MS = 150;
+// Easing.in, not Easing.out: this leg hands off directly into TrickCenter's own TravelCard flight,
+// which uses CARD_TRAVEL_EASING (Easing.out(cubic) — fast start, decelerating to a stop by
+// design). An ease-out *local* leg would also decelerate to a dead stop right at that handoff,
+// then TravelCard would immediately burst back up to full speed — a visible "stops, then lurches
+// forward again" hitch. Easing.in ends this leg at max velocity instead, matching TravelCard's own
+// max-velocity start, so the two legs read as one continuous accelerate-then-decelerate motion
+// rather than two animations bolted together. Also fixes a smaller issue for free: the previous
+// ease-out start snapped to full speed the instant of the tap; ease-in lifts off gently instead.
+const LOCAL_DEPARTURE_EASING = Easing.in(Easing.cubic);
+
 // 2.5x SelectableCard's own default (16px) lift — Batak-only override, see
 // docs/superpowers/specs/2026-07-17-batak-deal-selection-and-trick-motion-polish-design.md
 // section C. Selection no longer forces the card to the front via zIndex; this larger lift is
 // what makes a selected card read as prominent instead.
-const SELECTED_LIFT_DISTANCE = 40;
+// Exported: BatakTable's playWithMeasuredOrigin needs this exact value to compensate a measured
+// card position for its selection lift — see SelectableCard's DEFAULT_LIFT_DISTANCE doc comment
+// for why the lift can't just be measured off the transformed node directly.
+export const SELECTED_LIFT_DISTANCE = 40;
 // Shrinks only the currently-selected card's touchable width — see SelectableCard's hitSlop doc
 // comment. Deliberately conservative (not the full ~25px rotation-widened estimate) so the
 // selected card stays comfortably tappable for the second tap that plays it.
@@ -125,6 +148,10 @@ interface AnimatedFanCardProps {
   playEntrance: boolean;
   registerCardRef: (cardId: string, node: View | null) => void;
   compact: boolean;
+  // True only for the card the human just confirmed playing, for its brief local-departure leg
+  // (see LOCAL_DEPARTURE_DISTANCE above) — every other card's slot/reposition behavior is
+  // unaffected.
+  isDeparting: boolean;
 }
 
 function AnimatedFanCardComponent({
@@ -135,6 +162,7 @@ function AnimatedFanCardComponent({
   playEntrance,
   registerCardRef,
   compact,
+  isDeparting,
 }: AnimatedFanCardProps) {
   const { card } = slot;
   const targetX = slotTargetX(slot, compact);
@@ -143,6 +171,24 @@ function AnimatedFanCardComponent({
   const y = useRef(new Animated.Value(targetY)).current;
   const mounted = useRef(false);
   const reducedMotion = useReducedMotion();
+  const departed = useRef(false);
+
+  // Fires once, the instant this specific card starts its local-departure leg — layers an
+  // additional upward move on top of whatever slot position `y` already holds (its own reposition
+  // effect below is untouched and never fires again for this card, since it's about to unmount).
+  // Skipped under reduced motion: BatakScreen's own reducedMotion check already skips the whole
+  // local-departure pre-stage in that case, so isDeparting never becomes true here, but the guard
+  // is kept for defense in depth (matches every other animation in this file).
+  useEffect(() => {
+    if (!isDeparting || departed.current || reducedMotion) return;
+    departed.current = true;
+    Animated.timing(y, {
+      toValue: targetY - LOCAL_DEPARTURE_DISTANCE,
+      duration: LOCAL_DEPARTURE_DURATION_MS,
+      easing: LOCAL_DEPARTURE_EASING,
+      useNativeDriver: true,
+    }).start();
+  }, [isDeparting, reducedMotion, targetY, y]);
 
   useEffect(() => {
     if (!mounted.current) {
@@ -240,7 +286,8 @@ function areFanCardPropsEqual(prev: AnimatedFanCardProps, next: AnimatedFanCardP
     prev.interactive === next.interactive &&
     prev.selected === next.selected &&
     prev.compact === next.compact &&
-    prev.playEntrance === next.playEntrance
+    prev.playEntrance === next.playEntrance &&
+    prev.isDeparting === next.isDeparting
   );
 }
 
@@ -305,6 +352,7 @@ export function HumanHandFan({
   playEntrance,
   registerCardRef,
   compact = false,
+  departingCardId = null,
 }: {
   slots: HandSlot[];
   legalCardIds: Set<string>;
@@ -317,6 +365,9 @@ export function HumanHandFan({
   // GOMELI_HAND_*_OVERLAP_FRACTION constants above. Defaults to false (Standard Batak's and
   // Pişti's existing spacing, byte-identical to before this prop existed).
   compact?: boolean;
+  // The card id currently running its local-departure leg (BatakScreen.tsx), or null the rest of
+  // the time — see LOCAL_DEPARTURE_DISTANCE above.
+  departingCardId?: string | null;
 }) {
   return (
     <View style={styles.handFan} testID="human-hand">
@@ -330,6 +381,7 @@ export function HumanHandFan({
           playEntrance={playEntrance}
           registerCardRef={registerCardRef}
           compact={compact}
+          isDeparting={departingCardId === slot.card.id}
         />
       ))}
     </View>

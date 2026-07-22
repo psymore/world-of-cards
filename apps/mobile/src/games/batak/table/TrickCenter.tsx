@@ -40,6 +40,7 @@ export function TrickCenter({
   playerNames,
   pendingPlay,
   gatheringTrick,
+  restingRotations,
   destRef,
   onDestLayout,
 }: {
@@ -49,6 +50,10 @@ export function TrickCenter({
   playerNames: Record<string, string>;
   pendingPlay?: PendingBatakPlay | null;
   gatheringTrick?: GatheringTrick | null;
+  // The angle each currently-in-trick card keeps once it lands — see BatakScreen's doc comment on
+  // this state. Applied to both the resting-card render below and GatherCard's sweep-away flight,
+  // so a card never snaps back to flat once TravelCard's frozen rotation hands off to either.
+  restingRotations?: Record<string, number>;
   destRef: React.RefObject<View | null>;
   onDestLayout: () => void;
 }) {
@@ -95,14 +100,17 @@ export function TrickCenter({
         {card ? (
           isPending ? (
             isHumanPending ? (
-              // The human's own played card: travels at its real in-hand size, easing its actual
-              // fan-rotation angle and selected-lift scale down to flat/resting instead of
-              // snapping to a fresh, flat, differently-sized card the instant it starts moving.
+              // The human's own played card: travels at its real in-hand size and its real
+              // fan-rotation angle held fixed for the whole flight (not straightened out along
+              // the way — see TravelCard's originRotateDeg doc comment), easing only its
+              // selected-lift scale down to the resting trick-card size, instead of snapping to a
+              // fresh, flat, differently-sized card the instant it starts moving.
               <TravelCard
                 originOffset={pendingPlay?.originOffset ?? revealOriginOffset('bottom')}
                 originRotateDeg={pendingPlay?.originRotateDeg ?? 0}
                 originScale={SELECTED_SCALE}
                 restScale={NORMAL_TO_SMALL_SCALE}
+                durationMs={pendingPlay?.travelDurationMs}
                 resetKey={card.id}>
                 <PlayingCard card={card} size="normal" />
               </TravelCard>
@@ -120,7 +128,14 @@ export function TrickCenter({
               </TravelCard>
             )
           ) : (
-            <PlayingCard card={card} size="small" />
+            // Resting (already landed, trick not yet gathered): keeps the exact angle it arrived
+            // at — see restingRotations' doc comment above — rather than snapping flat/parallel
+            // to the table edges the instant TravelCard hands off.
+            <PlayingCard
+              card={card}
+              size="small"
+              style={{ transform: [{ rotate: `${restingRotations?.[playerId!] ?? 0}deg` }] }}
+            />
           )
         ) : null}
       </View>
@@ -152,7 +167,11 @@ export function TrickCenter({
                     styles.trickSlot,
                     { transform: [{ translateX: offset.x }, { translateY: offset.y }] },
                   ]}>
-                  <GatherCard card={card} destinationOffset={gatherDestinationOffset!} />
+                  <GatherCard
+                    card={card}
+                    destinationOffset={gatherDestinationOffset!}
+                    restRotateDeg={restingRotations?.[playerId] ?? 0}
+                  />
                 </View>
               );
             })

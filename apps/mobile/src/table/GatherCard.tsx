@@ -14,6 +14,13 @@ export interface GatherCardProps {
   // prop — TravelCard's contract ("the caller controls the destination by where it renders this
   // component") doesn't hold once the destination itself needs to animate away from that spot.
   destinationOffset: { x: number; y: number };
+  // The angle this card was resting at just before the trick swept (see BatakScreen's
+  // restingRotations doc comment) — held fixed for the whole sweep, same principle as
+  // TravelCard's originRotateDeg: a card that landed at a natural hand-fan angle shouldn't snap
+  // flat right as it starts flying away. A plain static value (not animated), composed alongside
+  // the flip's own rotateX/rotateY on a different axis (rotateZ), so it doesn't interfere with the
+  // flip geometry at all. Defaults to 0 (no-op), matching every consumer before this prop existed.
+  restRotateDeg?: number;
 }
 
 const GATHER_CARD_WIDTH = CARD_DIMS.small.width;
@@ -66,7 +73,7 @@ function rotationTransform(
 // set). One instance per gathered card; each runs once on mount and is unmounted along with its
 // parent once BatakScreen's gather timer commits the move, so there's no reset/retrigger case to
 // handle (unlike TravelCard, which is reused for multiple plays over one mounted lifetime).
-export function GatherCard({ card, destinationOffset }: GatherCardProps) {
+export function GatherCard({ card, destinationOffset, restRotateDeg = 0 }: GatherCardProps) {
   const progress = useRef(new Animated.Value(0)).current;
   const reducedMotion = useReducedMotion();
 
@@ -135,7 +142,9 @@ export function GatherCard({ card, destinationOffset }: GatherCardProps) {
       style={{
         width: GATHER_CARD_WIDTH,
         height: GATHER_CARD_HEIGHT,
-        transform: [{ translateX }, { translateY }],
+        // restRotateDeg is a rotateZ (in-plane tilt); the flip below rotates the inner front/back
+        // layers around X or Y instead, so the two never conflict.
+        transform: [{ translateX }, { translateY }, { rotate: `${restRotateDeg}deg` }],
         opacity: groupOpacity,
       }}>
       <Animated.View

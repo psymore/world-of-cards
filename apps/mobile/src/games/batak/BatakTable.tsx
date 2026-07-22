@@ -26,7 +26,13 @@ import { BiddingCenter, TrumpWaitingCenter, TrumpSuitPicker } from './table/Phas
 import { TrickCenter } from './table/TrickCenter';
 import { BidControls } from './table/BidControls';
 import { PLATFORM_RAISE_BY } from './table/DecisionPanel';
-import { HumanHandFan, HAND_ROW_OVERLAP_PX, sortHandForDisplay, handCardRotationDeg } from './table/HumanHandFan';
+import {
+  HumanHandFan,
+  HAND_ROW_OVERLAP_PX,
+  sortHandForDisplay,
+  handCardRotationDeg,
+  SELECTED_LIFT_DISTANCE,
+} from './table/HumanHandFan';
 import type { HandSlot } from './table/HumanHandFan';
 import type { PendingBatakPlay, GatheringTrick } from './table/types';
 import { KittyPile, kittyPileCards } from './table/KittyPile';
@@ -82,6 +88,13 @@ export interface BatakTableProps {
   pendingPlay?: PendingBatakPlay | null;
   gatheringTrick?: GatheringTrick | null;
   pendingBury?: PendingBury | null;
+  // The human's own played card during its brief local-departure leg, before pendingPlay takes
+  // over — see HumanHandFan's LOCAL_DEPARTURE_DISTANCE doc comment. Null the rest of the time.
+  localDeparture?: { cardId: string } | null;
+  // The angle each currently-in-trick card is resting/gathering at, keyed by playerId — see
+  // BatakScreen's own doc comment on this state for why it exists (preserving hand rotation
+  // instead of snapping cards flat once they land).
+  restingRotations?: Record<string, number>;
   dealPhase: BatakDealPhase;
 }
 
@@ -183,6 +196,8 @@ export function BatakTable({
   pendingPlay,
   gatheringTrick,
   pendingBury,
+  localDeparture,
+  restingRotations,
   dealPhase,
 }: BatakTableProps) {
   const seats = useMemo(() => assignSeats(opponentPlayerIds), [opponentPlayerIds]);
@@ -208,6 +223,13 @@ export function BatakTable({
   // human specifically" — is both correct and simpler than tracking whose reveal it is.
   const isHumanInteractive =
     isHumanTurn && pendingPlay == null && gatheringTrick == null && pendingBury == null;
+  // Separate from isHumanInteractive on purpose: that value also drives the clearSelection effect
+  // below, and clearing selection while the played card is still mid local-departure (still
+  // mounted in the fan, mid-animation) would trigger SelectableCard's animated "drop back to
+  // rest" — the exact shake useCardSelection's own doc comment already warns about. Blocking new
+  // taps during this brief window doesn't need selection to actually clear, so it gets its own,
+  // narrower gate instead of widening isHumanInteractive itself.
+  const canInteractWithHand = isHumanInteractive && localDeparture == null;
 
   const isHumanBidderInKittyExchange = state.phase === 'kitty-exchange' && state.bidWinner === humanPlayerId;
   const burySlots = useBurySlots(
@@ -375,7 +397,14 @@ export function BatakTable({
       node.measureInWindow((x, y, width, height) => {
         onPlayCard(
           cardId,
-          { x: x + width / 2 - dest.x, y: y + height / 2 - dest.y },
+          {
+            x: x + width / 2 - dest.x,
+            // This card is necessarily selected (playWithMeasuredOrigin only ever fires as the
+            // confirming second tap on an already-selected card), so it's currently lifted by
+            // exactly SELECTED_LIFT_DISTANCE — see DEFAULT_LIFT_DISTANCE's doc comment in
+            // SelectableCard.tsx for why this can't just be measured off the transformed node.
+            y: y + height / 2 - SELECTED_LIFT_DISTANCE - dest.y,
+          },
           originRotateDeg
         );
       });
@@ -467,6 +496,7 @@ export function BatakTable({
             playerNames={playerNames}
             pendingPlay={pendingPlay}
             gatheringTrick={gatheringTrick}
+            restingRotations={restingRotations}
             destRef={destRef}
             onDestLayout={handleDestLayout}
           />
@@ -497,12 +527,13 @@ export function BatakTable({
         <HumanHandFan
           slots={handSlots}
           legalCardIds={legalCardIds}
-          isHumanInteractive={isHumanInteractive}
+          isHumanInteractive={canInteractWithHand}
           selectedCardId={activeSelectedCardId}
           selectCard={activeSelectCard}
           playEntrance={dealPhase === 'revealing'}
           registerCardRef={registerHandCardRef}
           compact={opponentPlayerIds.length === 2}
+          departingCardId={localDeparture?.cardId ?? null}
         />
       </View>
       {dealPhase !== 'revealing' && <DealFlightOverlay seats={dealSeats} />}

@@ -26,7 +26,15 @@ export interface SelectableCardProps extends PlayingCardProps {
   hitSlop?: SelectableCardHitSlop;
 }
 
-const DEFAULT_LIFT_DISTANCE = 16;
+// Exported: callers that measure a selected card's on-screen position for a travel-animation
+// origin (PistiTable/BatakTable's playWithMeasuredOrigin) need this exact value. Selection lifts
+// the card via a transform on an inner Animated.View, which a measureInWindow ref placed outside
+// that transform never sees (a child's transform doesn't move its parent's own layout box, and
+// Android's location APIs ignore transforms even on the transformed node itself) — since
+// selecting snaps the lift instantly rather than animating it, the offset at the moment of the
+// confirming second tap is always exactly this constant, so callers subtract it from the measured
+// (untransformed) position instead of trying to measure the transformed one.
+export const DEFAULT_LIFT_DISTANCE = 16;
 const LIFT_ANIM_DURATION_MS = 150;
 // Matches PlayingCard's default CARD_RADIUS, used when the caller doesn't override cardRadius.
 const DEFAULT_CARD_RADIUS = 6;

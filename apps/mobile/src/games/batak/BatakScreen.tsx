@@ -12,6 +12,7 @@ import { useDealSequence } from '../../hooks/useDealSequence';
 import { CARD_TRAVEL_DURATION_MS } from '../../table/travelAnimation';
 import { BatakSetupView } from './BatakSetupView';
 import { BatakTable, PendingBatakPlay, GatheringTrick } from './BatakTable';
+import { LOCAL_DEPARTURE_DISTANCE, LOCAL_DEPARTURE_DURATION_MS } from './table/HumanHandFan';
 import { BatakSettingsModal } from './BatakSettingsModal';
 import type { BatakVariant } from './batakVariant';
 
@@ -125,10 +126,20 @@ function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, on
   const state = useSessionStore((s) => s.state);
   const performMove = useSessionStore((s) => s.performMove);
   const [pendingPlay, setPendingPlay] = useState<PendingBatakPlay | null>(null);
+  const [localDeparture, setLocalDeparture] = useState<{ cardId: string } | null>(null);
+  // The angle each currently-in-trick card keeps once it lands — captured from the exact
+  // originRotateDeg its TravelCard was frozen at (see
+  // docs/superpowers/specs/2026-07-22-batak-travel-preserve-hand-rotation-design.md), so the
+  // resting trick display (and the gather-sweep that follows it) never un-rotates a card back to
+  // flat. Keyed by playerId, since each player plays at most once per trick; cleared once the
+  // trick actually sweeps, since a stale entry would otherwise sit unread until that player's next
+  // play overwrites it anyway — cleared just to avoid accumulating dead data across a full hand.
+  const [restingRotations, setRestingRotations] = useState<Record<PlayerId, number>>({});
   const [gatheringTrick, setGatheringTrick] = useState<GatheringTrick | null>(null);
   const [pendingBury, setPendingBury] = useState<PendingBury | null>(null);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const pendingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const localDepartureTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gatherTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const buryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dealPhase = useDealSequence();
@@ -139,6 +150,7 @@ function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, on
   useEffect(() => {
     return () => {
       if (pendingTimeoutRef.current) clearTimeout(pendingTimeoutRef.current);
+      if (localDepartureTimeoutRef.current) clearTimeout(localDepartureTimeoutRef.current);
       if (gatherTimeoutRef.current) clearTimeout(gatherTimeoutRef.current);
       if (buryTimeoutRef.current) clearTimeout(buryTimeoutRef.current);
     };
@@ -178,50 +190,100 @@ function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, on
       // game): a trick completes once every player but the current one has already played.
       const isTrickCompleting = state.currentTrick.length === state.players.length - 1;
       const delay = isTrickCompleting ? TRICK_COMPLETION_PAUSE_MS : PLAY_TRAVEL_DELAY_MS;
-      // The human hand's own reflow (remaining cards sliding/rising into their new slots) is now
-      // animated internally by BatakTable's AnimatedFanCard, driven directly off the shrinking
-      // hand array — no LayoutAnimation trigger needed here anymore.
-      setPendingPlay({ playerId, card, originOffset, originRotateDeg });
-      pendingTimeoutRef.current = setTimeout(() => {
-        setPendingPlay(null);
-        if (!isTrickCompleting) {
-          performMove(move);
-          return;
-        }
-        // The trick just completed: snapshot all 4 plays + the winner (computed with the exact same
-        // pure function the engine itself uses internally) before committing, so GatherCard has a
-        // stable 4-card view to animate away from while engine state is still mid-trick —
-        // performMove resolves a completed trick atomically and would otherwise leave nothing to
-        // animate.
-        //
-        // The non-null assertions below are safe specifically because `state` here is the
-        // pre-4th-play snapshot (captured when this commitMove call started, before performMove
-        // has run): the trick zone is guaranteed to already hold the 3 prior cards, and trumpSuit
-        // is always set once the game has reached the playing phase.
-        const priorEntries = state.currentTrick;
-        const priorCards = priorEntries.map(
-          (e) => state.table.zones['trick'].cards.find((c) => c.id === e.cardId)!,
-        );
-        const fullTrickCards = [...priorCards, card];
-        const fullTrickPlayerIds = [...priorEntries.map((e) => e.playerId), playerId];
-        const winnerPos = trickWinnerIndex(fullTrickCards, state.trumpSuit!);
-        const winnerId = fullTrickPlayerIds[winnerPos];
-        const entries = fullTrickPlayerIds.map((pid, i) => ({ playerId: pid, card: fullTrickCards[i] }));
-        setGatheringTrick({ entries, winnerId });
-        if (reducedMotion) {
-          // GatherCard jumps straight to its faded-out end state under reduced motion (see
-          // GatherCard.tsx), so there's nothing left to wait for — arming the full-duration timer
-          // here would just leave an empty trick center for CARD_TRAVEL_DURATION_MS before the
-          // score updates, with no animation happening to justify the wait.
-          performMove(move);
-          setGatheringTrick(null);
-        } else {
-          gatherTimeoutRef.current = setTimeout(() => {
+
+      // Stages the actual pendingPlay (removes the card from the hand fan, hands it to
+      // TrickCenter's globally-elevated TravelCard) — factored out so the human's own play can
+      // optionally run the local-departure leg below first, without duplicating the trick-
+      // completion logic that follows the delay.
+      function armPendingPlay(
+        resolvedOriginOffset: { x: number; y: number } | undefined,
+        travelDurationMs: number | undefined,
+        remainingDelay: number
+      ) {
+        // The human hand's own reflow (remaining cards sliding/rising into their new slots) is
+        // now animated internally by BatakTable's AnimatedFanCard, driven directly off the
+        // shrinking hand array — no LayoutAnimation trigger needed here anymore.
+        setPendingPlay({ playerId, card: card!, originOffset: resolvedOriginOffset, originRotateDeg, travelDurationMs });
+        pendingTimeoutRef.current = setTimeout(() => {
+          setPendingPlay(null);
+          // Captured here, at the exact moment the card stops being a TravelCard, so the resting
+          // render (or the gather-sweep, if this was the trick-completing 4th play) picks up
+          // seamlessly at the identical angle instead of snapping to flat.
+          setRestingRotations((prev) => ({ ...prev, [playerId]: originRotateDeg ?? 0 }));
+          if (!isTrickCompleting) {
+            performMove(move);
+            return;
+          }
+          // The trick just completed: snapshot all 4 plays + the winner (computed with the exact
+          // same pure function the engine itself uses internally) before committing, so
+          // GatherCard has a stable 4-card view to animate away from while engine state is still
+          // mid-trick — performMove resolves a completed trick atomically and would otherwise
+          // leave nothing to animate.
+          //
+          // The non-null assertions below are safe specifically because `state` here is the
+          // pre-4th-play snapshot (captured when this commitMove call started, before performMove
+          // has run): the trick zone is guaranteed to already hold the 3 prior cards, and
+          // trumpSuit is always set once the game has reached the playing phase.
+          const priorEntries = state.currentTrick;
+          const priorCards = priorEntries.map(
+            (e) => state.table.zones['trick'].cards.find((c) => c.id === e.cardId)!,
+          );
+          const fullTrickCards = [...priorCards, card!];
+          const fullTrickPlayerIds = [...priorEntries.map((e) => e.playerId), playerId];
+          const winnerPos = trickWinnerIndex(fullTrickCards, state.trumpSuit!);
+          const winnerId = fullTrickPlayerIds[winnerPos];
+          const entries = fullTrickPlayerIds.map((pid, i) => ({ playerId: pid, card: fullTrickCards[i] }));
+          setGatheringTrick({ entries, winnerId });
+          if (reducedMotion) {
+            // GatherCard jumps straight to its faded-out end state under reduced motion (see
+            // GatherCard.tsx), so there's nothing left to wait for — arming the full-duration
+            // timer here would just leave an empty trick center for CARD_TRAVEL_DURATION_MS
+            // before the score updates, with no animation happening to justify the wait.
             performMove(move);
             setGatheringTrick(null);
-          }, CARD_TRAVEL_DURATION_MS);
-        }
-      }, delay);
+            setRestingRotations({});
+          } else {
+            gatherTimeoutRef.current = setTimeout(() => {
+              performMove(move);
+              setGatheringTrick(null);
+              setRestingRotations({});
+            }, CARD_TRAVEL_DURATION_MS);
+          }
+        }, remainingDelay);
+      }
+
+      // The human's own play gets a brief local-departure leg first: the card keeps animating
+      // inside HumanHandFan's own hand-fan stacking (still potentially "behind" a same-row
+      // neighbor, exactly as it was while merely selected) for LOCAL_DEPARTURE_DURATION_MS, and
+      // only afterward hands off to TrickCenter's globally-elevated TravelCard — by which point
+      // it's moved a full card-height clear of the row, so there's nothing left for it to visibly
+      // "pop" in front of. See docs/superpowers/specs/2026-07-22-batak-play-travel-local-
+      // departure-design.md. Skipped (falls straight through to the original single-stage
+      // behavior) whenever there's no measured origin to depart from (AI plays never supply one —
+      // they have no per-card hand visual to begin with), under reduced motion, or when the
+      // measured origin is already closer than the local-departure distance itself (a fixed local
+      // leg would overshoot past the destination).
+      const measuredOrigin = originOffset;
+      const canLocalDepart =
+        playerId === HUMAN_ID &&
+        measuredOrigin != null &&
+        !reducedMotion &&
+        measuredOrigin.y > LOCAL_DEPARTURE_DISTANCE * 1.5;
+
+      if (canLocalDepart) {
+        setLocalDeparture({ cardId: move.cardId });
+        localDepartureTimeoutRef.current = setTimeout(() => {
+          setLocalDeparture(null);
+          armPendingPlay(
+            { x: measuredOrigin.x, y: measuredOrigin.y - LOCAL_DEPARTURE_DISTANCE },
+            CARD_TRAVEL_DURATION_MS - LOCAL_DEPARTURE_DURATION_MS,
+            delay - LOCAL_DEPARTURE_DURATION_MS
+          );
+        }, LOCAL_DEPARTURE_DURATION_MS);
+        return;
+      }
+
+      armPendingPlay(originOffset, undefined, delay);
       return;
     }
     performMove(move);
@@ -251,6 +313,7 @@ function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, on
   const legalMoves =
     state.players[state.currentPlayerIndex] === HUMAN_ID &&
     pendingPlay == null &&
+    localDeparture == null &&
     gatheringTrick == null &&
     pendingBury == null
       ? batakDescriptor.ruleEngine.getLegalMoves(state, HUMAN_ID)
@@ -277,6 +340,8 @@ function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, on
         pendingPlay={pendingPlay}
         gatheringTrick={gatheringTrick}
         pendingBury={pendingBury}
+        localDeparture={localDeparture}
+        restingRotations={restingRotations}
         dealPhase={dealPhase}
       />
       {gameOver && (
