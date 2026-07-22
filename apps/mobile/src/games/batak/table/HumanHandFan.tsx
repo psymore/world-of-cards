@@ -1,11 +1,11 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
-import type { Card, Suit } from '@world-cards/engine';
-import { compareRanks } from '@world-cards/engine/games/batak';
-import { CARD_DIMS } from '@world-cards/ui';
-import { SelectableCard } from '../../../components/SelectableCard';
-import { useReducedMotion } from '../../../components/useReducedMotion';
-import { fanCurveY, fanRotationDeg } from '../../../table/seating';
+import React, { useEffect, useRef } from "react";
+import { Animated, Easing, StyleSheet, View } from "react-native";
+import type { Card, Suit } from "@world-cards/engine";
+import { compareRanks } from "@world-cards/engine/games/batak";
+import { CARD_DIMS } from "@world-cards/ui";
+import { SelectableCard } from "../../../components/SelectableCard";
+import { useReducedMotion } from "../../../components/useReducedMotion";
+import { fanCurveY, fanRotationDeg } from "../../../table/seating";
 
 const HUMAN_CARD_WIDTH = CARD_DIMS.normal.width;
 const HUMAN_CARD_HEIGHT = CARD_DIMS.normal.height;
@@ -18,12 +18,15 @@ const HUMAN_HAND_CURVE_MULTIPLIER = 1.5;
 const HAND_ROW_OVERLAP_FRACTION = 0.25;
 // Exported: BatakTable's own HandFrame-positioning math needs to know how far the two rows
 // overlap to compute where the fan's top-row peak sits.
-export const HAND_ROW_OVERLAP_PX = Math.round(HUMAN_CARD_HEIGHT * HAND_ROW_OVERLAP_FRACTION);
+export const HAND_ROW_OVERLAP_PX = Math.round(
+  HUMAN_CARD_HEIGHT * HAND_ROW_OVERLAP_FRACTION,
+);
 // Total footprint of the two-row fan (top row's full height, plus the bottom row's additional
 // visible height once the overlap above is applied) — given explicitly to styles.handFan since
 // its children are now absolutely positioned (see AnimatedFanCard) and can no longer contribute
 // to an auto-computed parent height the way normal-flow children would.
-const HAND_FAN_HEIGHT = HUMAN_CARD_HEIGHT + (HUMAN_CARD_HEIGHT - HAND_ROW_OVERLAP_PX);
+const HAND_FAN_HEIGHT =
+  HUMAN_CARD_HEIGHT + (HUMAN_CARD_HEIGHT - HAND_ROW_OVERLAP_PX);
 
 // Fixed per-card horizontal spacing (step between adjacent card slots) in the human's own hand —
 // deliberately NOT recomputed from the current row length (that previously made the fan spread
@@ -32,8 +35,12 @@ const HAND_FAN_HEIGHT = HUMAN_CARD_HEIGHT + (HUMAN_CARD_HEIGHT - HAND_ROW_OVERLA
 // for visual balance, mirroring HAND_ROW_OVERLAP_FRACTION's own intent for the vertical axis.
 const HUMAN_HAND_BOTTOM_ROW_OVERLAP_FRACTION = 0.5;
 const HUMAN_HAND_TOP_ROW_OVERLAP_FRACTION = 0.4;
-const HUMAN_HAND_BOTTOM_ROW_STEP = Math.round(HUMAN_CARD_WIDTH * (1 - HUMAN_HAND_BOTTOM_ROW_OVERLAP_FRACTION));
-const HUMAN_HAND_TOP_ROW_STEP = Math.round(HUMAN_CARD_WIDTH * (1 - HUMAN_HAND_TOP_ROW_OVERLAP_FRACTION));
+const HUMAN_HAND_BOTTOM_ROW_STEP = Math.round(
+  HUMAN_CARD_WIDTH * (1 - HUMAN_HAND_BOTTOM_ROW_OVERLAP_FRACTION),
+);
+const HUMAN_HAND_TOP_ROW_STEP = Math.round(
+  HUMAN_CARD_WIDTH * (1 - HUMAN_HAND_TOP_ROW_OVERLAP_FRACTION),
+);
 // Batak gömmeli's hand runs materially larger than Standard Batak's fixed 13-card hand (16 cards
 // steady-state, up to 20 mid-kitty-exchange while choosing what to bury) — the two fractions
 // above were tuned for Standard's max row of 7 and visibly overflow gömmeli's max row of 10.
@@ -42,8 +49,12 @@ const HUMAN_HAND_TOP_ROW_STEP = Math.round(HUMAN_CARD_WIDTH * (1 - HUMAN_HAND_TO
 // completely untouched. First-pass values — tune further once checked live.
 const GOMELI_HAND_BOTTOM_ROW_OVERLAP_FRACTION = 0.75;
 const GOMELI_HAND_TOP_ROW_OVERLAP_FRACTION = 0.68;
-const GOMELI_HAND_BOTTOM_ROW_STEP = Math.round(HUMAN_CARD_WIDTH * (1 - GOMELI_HAND_BOTTOM_ROW_OVERLAP_FRACTION));
-const GOMELI_HAND_TOP_ROW_STEP = Math.round(HUMAN_CARD_WIDTH * (1 - GOMELI_HAND_TOP_ROW_OVERLAP_FRACTION));
+const GOMELI_HAND_BOTTOM_ROW_STEP = Math.round(
+  HUMAN_CARD_WIDTH * (1 - GOMELI_HAND_BOTTOM_ROW_OVERLAP_FRACTION),
+);
+const GOMELI_HAND_TOP_ROW_STEP = Math.round(
+  HUMAN_CARD_WIDTH * (1 - GOMELI_HAND_TOP_ROW_OVERLAP_FRACTION),
+);
 // Shared timing for every hand-card reposition (a card played, remaining cards sliding/rising to
 // close the gap) — see AnimatedFanCard. An ease-in-ease-out curve reads as a natural reflow
 // rather than either a sudden snap (no easing) or a bouncy entrance (an "out" curve alone).
@@ -59,7 +70,7 @@ const HAND_CARD_REPOSITION_EASING = Easing.inOut(Easing.ease);
 // to visually "pop" in front of. Purely local and vertical — rotation/curve are untouched, so the
 // card's angle at handoff still matches what TravelCard's own originRotateDeg expects.
 export const LOCAL_DEPARTURE_DISTANCE = HUMAN_CARD_HEIGHT;
-export const LOCAL_DEPARTURE_DURATION_MS = 150;
+export const LOCAL_DEPARTURE_DURATION_MS = 50;
 // Easing.in, not Easing.out: this leg hands off directly into TrickCenter's own TravelCard flight,
 // which uses CARD_TRAVEL_EASING (Easing.out(cubic) — fast start, decelerating to a stop by
 // design). An ease-out *local* leg would also decelerate to a dead stop right at that handoff,
@@ -82,18 +93,23 @@ export const SELECTED_LIFT_DISTANCE = 40;
 // comment. Deliberately conservative (not the full ~25px rotation-widened estimate) so the
 // selected card stays comfortably tappable for the second tap that plays it.
 const SELECTED_CARD_HIT_SLOP = { left: -20, right: -20 };
-const HAND_SUIT_ORDER = ['hearts', 'spades', 'diamonds', 'clubs'] as const;
+const HAND_SUIT_ORDER = ["hearts", "spades", "diamonds", "clubs"] as const;
 
 // Exported so BatakTable can compute a card's real fan angle at the moment it's tapped (for the
 // played-card travel animation's origin rotation) without duplicating
 // HUMAN_HAND_DEGREES_PER_STEP or reimplementing the fan formula.
-export function handCardRotationDeg(indexInRow: number, rowCount: number): number {
+export function handCardRotationDeg(
+  indexInRow: number,
+  rowCount: number,
+): number {
   return fanRotationDeg(indexInRow, rowCount, HUMAN_HAND_DEGREES_PER_STEP);
 }
 
 export function sortHandForDisplay(cards: Card[]): Card[] {
   return [...cards].sort((a, b) => {
-    const suitDiff = HAND_SUIT_ORDER.indexOf(a.suit as Suit) - HAND_SUIT_ORDER.indexOf(b.suit as Suit);
+    const suitDiff =
+      HAND_SUIT_ORDER.indexOf(a.suit as Suit) -
+      HAND_SUIT_ORDER.indexOf(b.suit as Suit);
     if (suitDiff !== 0) return suitDiff;
     return compareRanks(b.rank, a.rank); // descending within suit: A high ... 2 low
   });
@@ -104,7 +120,7 @@ export function sortHandForDisplay(cards: Card[]): Card[] {
 // shrinks, matching the pre-existing recentering behavior, just now animated instead of snapped).
 export interface HandSlot {
   card: Card;
-  row: 'top' | 'bottom';
+  row: "top" | "bottom";
   indexInRow: number;
   rowCount: number;
   // Non-null only for a card returning to the hand from a Batak gömmeli bury slot — makes its
@@ -115,14 +131,20 @@ export interface HandSlot {
   enterFromOffset?: { x: number; y: number } | null;
 }
 
-function slotStep(row: 'top' | 'bottom', compact: boolean): number {
-  if (compact) return row === 'top' ? GOMELI_HAND_TOP_ROW_STEP : GOMELI_HAND_BOTTOM_ROW_STEP;
-  return row === 'top' ? HUMAN_HAND_TOP_ROW_STEP : HUMAN_HAND_BOTTOM_ROW_STEP;
+function slotStep(row: "top" | "bottom", compact: boolean): number {
+  if (compact)
+    return row === "top"
+      ? GOMELI_HAND_TOP_ROW_STEP
+      : GOMELI_HAND_BOTTOM_ROW_STEP;
+  return row === "top" ? HUMAN_HAND_TOP_ROW_STEP : HUMAN_HAND_BOTTOM_ROW_STEP;
 }
 
 // Horizontal offset from the row's own center — negative/positive symmetric around 0, so the row
-// stays centered under styles.fanCardSlot's left:'50%' anchor regardless of rowCount.
-function slotTargetX(slot: HandSlot, compact: boolean): number {
+// stays centered under styles.fanCardSlot's left:'50%' anchor regardless of rowCount. Exported:
+// BatakTable's playWithMeasuredOrigin computes a played card's travel-origin X analytically from
+// this instead of measuring the card's own (transform-nested) node — see its call site's doc
+// comment for why.
+export function slotTargetX(slot: HandSlot, compact: boolean): number {
   const mid = (slot.rowCount - 1) / 2;
   return (slot.indexInRow - mid) * slotStep(slot.row, compact);
 }
@@ -130,7 +152,7 @@ function slotTargetX(slot: HandSlot, compact: boolean): number {
 // Vertical offset from the fan's own top edge — the bottom row overlaps up into the top row by
 // HAND_ROW_OVERLAP_PX, matching the pre-existing two-row imbrication.
 function slotTargetY(slot: HandSlot): number {
-  return slot.row === 'top' ? 0 : HUMAN_CARD_HEIGHT - HAND_ROW_OVERLAP_PX;
+  return slot.row === "top" ? 0 : HUMAN_CARD_HEIGHT - HAND_ROW_OVERLAP_PX;
 }
 
 // A single human-hand card, absolutely positioned within the shared fan container and animated
@@ -240,8 +262,12 @@ function AnimatedFanCardComponent({
   }, [targetX, targetY, reducedMotion, x, y]);
 
   return (
-    <Animated.View style={[styles.fanCardSlot, { transform: [{ translateX: x }, { translateY: y }] }]}>
-      <View ref={(node) => registerCardRef(card.id, node)}>
+    <Animated.View
+      style={[
+        styles.fanCardSlot,
+        { transform: [{ translateX: x }, { translateY: y }] },
+      ]}>
+      <View ref={node => registerCardRef(card.id, node)}>
         <EntranceCard index={slot.indexInRow} playEntrance={playEntrance}>
           <SelectableCard
             card={card}
@@ -249,8 +275,17 @@ function AnimatedFanCardComponent({
             selected={selected}
             disabled={!interactive}
             onPress={() => selectCard(card.id)}
-            rotateDeg={fanRotationDeg(slot.indexInRow, slot.rowCount, HUMAN_HAND_DEGREES_PER_STEP)}
-            curveOffsetY={fanCurveY(slot.indexInRow, slot.rowCount, 1, HUMAN_HAND_CURVE_MULTIPLIER)}
+            rotateDeg={fanRotationDeg(
+              slot.indexInRow,
+              slot.rowCount,
+              HUMAN_HAND_DEGREES_PER_STEP,
+            )}
+            curveOffsetY={fanCurveY(
+              slot.indexInRow,
+              slot.rowCount,
+              1,
+              HUMAN_HAND_CURVE_MULTIPLIER,
+            )}
             liftDistance={SELECTED_LIFT_DISTANCE}
             // Kept even without front-stacking zIndex: it independently shrinks the selected
             // card's own touch bounds, which is what actually prevents a stray tap from landing
@@ -275,7 +310,10 @@ function AnimatedFanCardComponent({
 // on nearly every re-render, including the "an AI played elsewhere and nothing about this card
 // changed" case this exists to fix — see
 // docs/superpowers/specs/2026-07-21-batak-card-play-animation-smoothness-design.md.
-function areFanCardPropsEqual(prev: AnimatedFanCardProps, next: AnimatedFanCardProps): boolean {
+function areFanCardPropsEqual(
+  prev: AnimatedFanCardProps,
+  next: AnimatedFanCardProps,
+): boolean {
   return (
     prev.slot.card.id === next.slot.card.id &&
     prev.slot.row === next.slot.row &&
@@ -291,7 +329,10 @@ function areFanCardPropsEqual(prev: AnimatedFanCardProps, next: AnimatedFanCardP
   );
 }
 
-const AnimatedFanCard = React.memo(AnimatedFanCardComponent, areFanCardPropsEqual);
+const AnimatedFanCard = React.memo(
+  AnimatedFanCardComponent,
+  areFanCardPropsEqual,
+);
 
 // Plays a one-shot fade+scale+rise entrance the first time `playEntrance` becomes true (the
 // moment the deal sequence reaches 'revealing'), then stays static — re-renders after that
@@ -330,8 +371,18 @@ function EntranceCard({
       style={{
         opacity: progress,
         transform: [
-          { scale: progress.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) },
-          { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [-40, 0] }) },
+          {
+            scale: progress.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.4, 1],
+            }),
+          },
+          {
+            translateY: progress.interpolate({
+              inputRange: [0, 1],
+              outputRange: [-40, 0],
+            }),
+          },
         ],
       }}>
       {children}
@@ -371,7 +422,7 @@ export function HumanHandFan({
 }) {
   return (
     <View style={styles.handFan} testID="human-hand">
-      {slots.map((slot) => (
+      {slots.map(slot => (
         <AnimatedFanCard
           key={slot.card.id}
           slot={slot}
@@ -399,8 +450,8 @@ const styles = StyleSheet.create({
   // slots before the bottom row's) already makes a lifted bottom-row card paint over the top row
   // on its own, with no per-card override needed.
   fanCardSlot: {
-    position: 'absolute',
-    left: '50%',
+    position: "absolute",
+    left: "50%",
     top: 0,
     marginLeft: -HUMAN_CARD_WIDTH / 2,
   },

@@ -31,6 +31,7 @@ import {
   HAND_ROW_OVERLAP_PX,
   sortHandForDisplay,
   handCardRotationDeg,
+  slotTargetX,
   SELECTED_LIFT_DISTANCE,
 } from './table/HumanHandFan';
 import type { HandSlot } from './table/HumanHandFan';
@@ -359,7 +360,9 @@ export function BatakTable({
     });
   }
 
-  // One ref per currently-rendered human hand card, keyed by card id.
+  // One ref per currently-rendered human hand card, keyed by card id — still used for the Y
+  // measurement below (see playWithMeasuredOrigin's own doc comment for why X no longer reads
+  // this).
   const handCardRefs = useRef(new Map<string, View>()).current;
   const registerHandCardRef = useCallback((cardId: string, node: View | null) => {
     if (node) {
@@ -369,36 +372,65 @@ export function BatakTable({
     }
   }, [handCardRefs]);
 
-  // Mirrors handSlots/destCenter into refs, read only inside playWithMeasuredOrigin (an event
-  // handler, never during render) — lets that callback stay referentially stable (see its own
-  // useCallback below) without ever reading stale data, using the same "keep a ref in sync during
-  // render" pattern this file already uses for handLayerRef above.
+  // The hand fan's own horizontal center, measured once (re-measured on layout, same as
+  // destCenter) off handArea — a plain, never-transformed wrapper `View` — rather than off any
+  // individual card. See playWithMeasuredOrigin's doc comment for why.
+  const handAreaRef = useRef<View>(null);
+  const [handAreaCenterX, setHandAreaCenterX] = useState<number | null>(null);
+  function handleHandAreaLayout() {
+    handAreaRef.current?.measureInWindow((x, _y, width) => {
+      setHandAreaCenterX(x + width / 2);
+    });
+  }
+  const compact = opponentPlayerIds.length === 2;
+
+  // Mirrors handSlots/destCenter/handAreaCenterX into refs, read only inside
+  // playWithMeasuredOrigin (an event handler, never during render) — lets that callback stay
+  // referentially stable (see its own useCallback below) without ever reading stale data, using
+  // the same "keep a ref in sync during render" pattern this file already uses for handLayerRef
+  // above.
   const handSlotsRef = useRef(handSlots);
   handSlotsRef.current = handSlots;
   const destCenterRef = useRef(destCenter);
   destCenterRef.current = destCenter;
+  const handAreaCenterXRef = useRef(handAreaCenterX);
+  handAreaCenterXRef.current = handAreaCenterX;
 
-  // Replaces a direct onPlayCard(cardId) call: measures the tapped card's real on-screen
-  // position relative to the trick slot's, so the travel animation starts from where the card
-  // actually was, and computes the card's real fan-rotation angle from its current hand slot so
-  // the travel animation can ease from that angle down to flat instead of snapping to 0deg. Falls
-  // back to a plain onPlayCard(cardId) call (no origin — TravelCard then uses the fixed 'bottom'
-  // offset, same as today) whenever either measurement isn't ready.
+  // Replaces a direct onPlayCard(cardId) call: computes the tapped card's real travel-origin
+  // offset relative to the trick slot's measured center, and the card's real fan-rotation angle,
+  // so the travel animation starts from where the card actually was instead of snapping to a
+  // fixed per-seat offset. Falls back to a plain onPlayCard(cardId) call (no origin — TravelCard
+  // then uses the fixed 'bottom' offset, same as today) whenever a needed measurement isn't ready.
+  //
+  // X is computed analytically (handAreaCenterX + slotTargetX), not measured off the tapped
+  // card's own node: that node sits inside AnimatedFanCard's own translateX-driven wrapper, and
+  // measureInWindow on a transform-affected node is a documented source of stale/incorrect
+  // results (native transform commits are async relative to the JS-side measureInWindow call) —
+  // this was traced as the likely cause of an occasional small horizontal drift at the start of a
+  // played card's flight. slotTargetX is the exact pure function AnimatedFanCard itself uses to
+  // compute that same transform, so this reads the authoritative value directly instead of trying
+  // to measure its rendered effect.
+  //
+  // Y keeps the existing per-card measureInWindow + SELECTED_LIFT_DISTANCE-compensation approach
+  // (see DEFAULT_LIFT_DISTANCE's doc comment in SelectableCard.tsx): the vertical case has no
+  // equivalent complaint, and re-deriving it analytically would also need to account for
+  // SelectableCard's own curveOffsetY, not just AnimatedFanCard's row placement.
   const playWithMeasuredOrigin = useCallback(
     (cardId: string) => {
       const slot = handSlotsRef.current.find((s) => s.card.id === cardId);
       const originRotateDeg = slot ? handCardRotationDeg(slot.indexInRow, slot.rowCount) : undefined;
       const node = handCardRefs.get(cardId);
       const dest = destCenterRef.current;
-      if (!node || !dest) {
+      const handCenterX = handAreaCenterXRef.current;
+      if (!node || !dest || !slot || handCenterX == null) {
         onPlayCard(cardId, undefined, originRotateDeg);
         return;
       }
-      node.measureInWindow((x, y, width, height) => {
+      node.measureInWindow((_x, y, _width, height) => {
         onPlayCard(
           cardId,
           {
-            x: x + width / 2 - dest.x,
+            x: handCenterX + slotTargetX(slot, compact) - dest.x,
             // This card is necessarily selected (playWithMeasuredOrigin only ever fires as the
             // confirming second tap on an already-selected card), so it's currently lifted by
             // exactly SELECTED_LIFT_DISTANCE — see DEFAULT_LIFT_DISTANCE's doc comment in
@@ -409,7 +441,7 @@ export function BatakTable({
         );
       });
     },
-    [handCardRefs, onPlayCard]
+    [handCardRefs, onPlayCard, compact]
   );
 
   // Relocated here (from immediately after isHumanInteractive) because playWithMeasuredOrigin is
@@ -517,7 +549,7 @@ export function BatakTable({
       </View>
 
       <HandFrame bottomOffset={handFrameBottomOffset} height={handFrameHeight} />
-      <View style={styles.handArea}>
+      <View ref={handAreaRef} onLayout={handleHandAreaLayout} style={styles.handArea}>
         <PlayerBadge
           name={playerNames[humanPlayerId] ?? 'You'}
           statusText={statusTextFor(state, humanPlayerId)}
@@ -532,18 +564,20 @@ export function BatakTable({
           selectCard={activeSelectCard}
           playEntrance={dealPhase === 'revealing'}
           registerCardRef={registerHandCardRef}
-          compact={opponentPlayerIds.length === 2}
+          compact={compact}
           departingCardId={localDeparture?.cardId ?? null}
         />
       </View>
       {dealPhase !== 'revealing' && <DealFlightOverlay seats={dealSeats} />}
       <CenteredDecisionModal
         raiseBy={PLATFORM_RAISE_BY}
+        avoidBottomHeight={HAND_AREA_HEIGHT}
         visible={state.phase === 'bidding' && isHumanInteractive && dealPhase === 'revealing'}>
         <BidControls legalMoves={legalMoves} onMove={onMove} />
       </CenteredDecisionModal>
       <CenteredDecisionModal
         raiseBy={PLATFORM_RAISE_BY}
+        avoidBottomHeight={HAND_AREA_HEIGHT}
         visible={state.phase === 'trump-selection' && state.bidWinner === humanPlayerId && dealPhase === 'revealing'}>
         <TrumpSuitPicker state={state} onMove={onMove} />
       </CenteredDecisionModal>

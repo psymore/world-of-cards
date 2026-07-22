@@ -1,39 +1,50 @@
-import React, { useEffect, useRef, useState } from 'react';
-import type { Difficulty, PlayerId, RNG } from '@world-cards/engine';
-import { createRng } from '@world-cards/engine';
-import { batakDescriptor, BatakState, BatakMove, trickWinnerIndex } from '@world-cards/engine/games/batak';
-import { createGameSessionStore } from '../../state/createGameSessionStore';
-import { useSettingsStore } from '../../state/settingsStore';
-import { GameScreenLayout } from '../../components/GameScreenLayout';
-import { GameResultModal } from '../../components/GameResultModal';
-import { useReducedMotion } from '../../components/useReducedMotion';
-import { useAITurn } from '../../hooks/useAITurn';
-import { useDealSequence } from '../../hooks/useDealSequence';
-import { CARD_TRAVEL_DURATION_MS } from '../../table/travelAnimation';
-import { BatakSetupView } from './BatakSetupView';
-import { BatakTable, PendingBatakPlay, GatheringTrick } from './BatakTable';
-import { LOCAL_DEPARTURE_DISTANCE, LOCAL_DEPARTURE_DURATION_MS } from './table/HumanHandFan';
-import { BatakSettingsModal } from './BatakSettingsModal';
-import type { BatakVariant } from './batakVariant';
+import React, { useEffect, useRef, useState } from "react";
+import type { Difficulty, PlayerId, RNG } from "@world-cards/engine";
+import { createRng } from "@world-cards/engine";
+import {
+  batakDescriptor,
+  BatakState,
+  BatakMove,
+  trickWinnerIndex,
+} from "@world-cards/engine/games/batak";
+import { createGameSessionStore } from "../../state/createGameSessionStore";
+import { useSettingsStore } from "../../state/settingsStore";
+import { GameScreenLayout } from "../../components/GameScreenLayout";
+import { GameResultModal } from "../../components/GameResultModal";
+import { useReducedMotion } from "../../components/useReducedMotion";
+import { useAITurn } from "../../hooks/useAITurn";
+import { useDealSequence } from "../../hooks/useDealSequence";
+import { CARD_TRAVEL_DURATION_MS } from "../../table/travelAnimation";
+import { BatakSetupView } from "./BatakSetupView";
+import { BatakTable, PendingBatakPlay, GatheringTrick } from "./BatakTable";
+import {
+  LOCAL_DEPARTURE_DISTANCE,
+  LOCAL_DEPARTURE_DURATION_MS,
+} from "./table/HumanHandFan";
+import { BatakSettingsModal } from "./BatakSettingsModal";
+import type { BatakVariant } from "./batakVariant";
 
-const HUMAN_ID: PlayerId = 'human';
+const HUMAN_ID: PlayerId = "human";
 
 const AI_IDS_BY_VARIANT: Record<BatakVariant, PlayerId[]> = {
-  standard: ['ai-1', 'ai-2', 'ai-3'],
-  gomeli: ['ai-1', 'ai-2'],
+  standard: ["ai-1", "ai-2", "ai-3"],
+  gomeli: ["ai-1", "ai-2"],
 };
 
-const PLAYER_NAMES_BY_VARIANT: Record<BatakVariant, Record<PlayerId, string>> = {
+const PLAYER_NAMES_BY_VARIANT: Record<
+  BatakVariant,
+  Record<PlayerId, string>
+> = {
   standard: {
-    [HUMAN_ID]: 'You',
-    'ai-1': 'AI 1',
-    'ai-2': 'AI 2',
-    'ai-3': 'AI 3',
+    [HUMAN_ID]: "You",
+    "ai-1": "AI 1",
+    "ai-2": "AI 2",
+    "ai-3": "AI 3",
   },
   gomeli: {
-    [HUMAN_ID]: 'You',
-    'ai-1': 'AI 1',
-    'ai-2': 'AI 2',
+    [HUMAN_ID]: "You",
+    "ai-1": "AI 1",
+    "ai-2": "AI 2",
   },
 };
 
@@ -54,7 +65,7 @@ const PLAY_TRAVEL_DELAY_MS = CARD_TRAVEL_DURATION_MS + 40;
 export interface PendingBury {
   playerId: PlayerId;
   cardIds: [string, string, string, string];
-  stage: 'burying' | 'revealing' | 'collecting';
+  stage: "burying" | "revealing" | "collecting";
 }
 
 // The 3 legs of the staged bury-then-reveal sequence (see
@@ -74,28 +85,42 @@ interface BatakSession {
   difficulty: Difficulty;
   variant: BatakVariant;
   rng: RNG;
-  useSessionStore: ReturnType<typeof createGameSessionStore<BatakState, BatakMove>>;
+  useSessionStore: ReturnType<
+    typeof createGameSessionStore<BatakState, BatakMove>
+  >;
 }
 
 export function BatakScreen({ onExitToHome }: BatakScreenProps) {
   const [session, setSession] = useState<BatakSession | null>(null);
   const [sessionKey, setSessionKey] = useState(0);
-  const defaultDifficulty = useSettingsStore((s) => s.defaultDifficulty);
+  const defaultDifficulty = useSettingsStore(s => s.defaultDifficulty);
 
   function startGame(difficulty: Difficulty, variant: BatakVariant) {
     const rng = createRng(Date.now());
     const aiIds = AI_IDS_BY_VARIANT[variant];
     const initialState = batakDescriptor.ruleEngine.setup(
-      { players: [HUMAN_ID, ...aiIds], guaranteeStrongHand: difficulty === 'easy' },
-      rng
+      {
+        players: [HUMAN_ID, ...aiIds],
+        guaranteeStrongHand: difficulty === "easy",
+      },
+      rng,
     );
-    const useSessionStore = createGameSessionStore(batakDescriptor.ruleEngine, initialState);
+    const useSessionStore = createGameSessionStore(
+      batakDescriptor.ruleEngine,
+      initialState,
+    );
     setSession({ difficulty, variant, rng, useSessionStore });
-    setSessionKey((k) => k + 1);
+    setSessionKey(k => k + 1);
   }
 
   if (!session) {
-    return <BatakSetupView defaultDifficulty={defaultDifficulty} onStart={startGame} onBack={onExitToHome} />;
+    return (
+      <BatakSetupView
+        defaultDifficulty={defaultDifficulty}
+        onStart={startGame}
+        onBack={onExitToHome}
+      />
+    );
   }
 
   return (
@@ -115,18 +140,29 @@ interface ActiveGameProps {
   difficulty: Difficulty;
   variant: BatakVariant;
   rng: RNG;
-  useSessionStore: ReturnType<typeof createGameSessionStore<BatakState, BatakMove>>;
+  useSessionStore: ReturnType<
+    typeof createGameSessionStore<BatakState, BatakMove>
+  >;
   onPlayAgain: () => void;
   onBackHome: () => void;
 }
 
-function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, onBackHome }: ActiveGameProps) {
+function ActiveGame({
+  difficulty,
+  variant,
+  rng,
+  useSessionStore,
+  onPlayAgain,
+  onBackHome,
+}: ActiveGameProps) {
   const aiIds = AI_IDS_BY_VARIANT[variant];
   const playerNames = PLAYER_NAMES_BY_VARIANT[variant];
-  const state = useSessionStore((s) => s.state);
-  const performMove = useSessionStore((s) => s.performMove);
+  const state = useSessionStore(s => s.state);
+  const performMove = useSessionStore(s => s.performMove);
   const [pendingPlay, setPendingPlay] = useState<PendingBatakPlay | null>(null);
-  const [localDeparture, setLocalDeparture] = useState<{ cardId: string } | null>(null);
+  const [localDeparture, setLocalDeparture] = useState<{
+    cardId: string;
+  } | null>(null);
   // The angle each currently-in-trick card keeps once it lands — captured from the exact
   // originRotateDeg its TravelCard was frozen at (see
   // docs/superpowers/specs/2026-07-22-batak-travel-preserve-hand-rotation-design.md), so the
@@ -134,12 +170,18 @@ function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, on
   // flat. Keyed by playerId, since each player plays at most once per trick; cleared once the
   // trick actually sweeps, since a stale entry would otherwise sit unread until that player's next
   // play overwrites it anyway — cleared just to avoid accumulating dead data across a full hand.
-  const [restingRotations, setRestingRotations] = useState<Record<PlayerId, number>>({});
-  const [gatheringTrick, setGatheringTrick] = useState<GatheringTrick | null>(null);
+  const [restingRotations, setRestingRotations] = useState<
+    Record<PlayerId, number>
+  >({});
+  const [gatheringTrick, setGatheringTrick] = useState<GatheringTrick | null>(
+    null,
+  );
   const [pendingBury, setPendingBury] = useState<PendingBury | null>(null);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const pendingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const localDepartureTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const localDepartureTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const gatherTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const buryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dealPhase = useDealSequence();
@@ -150,7 +192,8 @@ function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, on
   useEffect(() => {
     return () => {
       if (pendingTimeoutRef.current) clearTimeout(pendingTimeoutRef.current);
-      if (localDepartureTimeoutRef.current) clearTimeout(localDepartureTimeoutRef.current);
+      if (localDepartureTimeoutRef.current)
+        clearTimeout(localDepartureTimeoutRef.current);
       if (gatherTimeoutRef.current) clearTimeout(gatherTimeoutRef.current);
       if (buryTimeoutRef.current) clearTimeout(buryTimeoutRef.current);
     };
@@ -160,14 +203,16 @@ function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, on
     move: BatakMove,
     playerId: PlayerId,
     originOffset?: { x: number; y: number },
-    originRotateDeg?: number
+    originRotateDeg?: number,
   ) {
-    if (move.type === 'bury') {
-      setPendingBury({ playerId, cardIds: move.cardIds, stage: 'burying' });
+    if (move.type === "bury") {
+      setPendingBury({ playerId, cardIds: move.cardIds, stage: "burying" });
       buryTimeoutRef.current = setTimeout(() => {
-        setPendingBury((prev) => (prev ? { ...prev, stage: 'revealing' } : prev));
+        setPendingBury(prev => (prev ? { ...prev, stage: "revealing" } : prev));
         buryTimeoutRef.current = setTimeout(() => {
-          setPendingBury((prev) => (prev ? { ...prev, stage: 'collecting' } : prev));
+          setPendingBury(prev =>
+            prev ? { ...prev, stage: "collecting" } : prev,
+          );
           buryTimeoutRef.current = setTimeout(() => {
             performMove(move);
             setPendingBury(null);
@@ -179,17 +224,20 @@ function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, on
     // Every card play now gets staged (not just the trick-completing 4th) so the new play-travel
     // animation has something to animate from for every play; bid/pass/selectTrump still commit
     // instantly since engine state already reflects them visibly with nothing to bridge.
-    if (move.type === 'play') {
+    if (move.type === "play") {
       const hand = state.table.zones[`hand-${playerId}`].cards;
-      const card = hand.find((c) => c.id === move.cardId);
+      const card = hand.find(c => c.id === move.cardId);
       if (!card) {
         performMove(move);
         return;
       }
       // Generalized from the old hardcoded `=== 3` (which only worked for the fixed 4-player
       // game): a trick completes once every player but the current one has already played.
-      const isTrickCompleting = state.currentTrick.length === state.players.length - 1;
-      const delay = isTrickCompleting ? TRICK_COMPLETION_PAUSE_MS : PLAY_TRAVEL_DELAY_MS;
+      const isTrickCompleting =
+        state.currentTrick.length === state.players.length - 1;
+      const delay = isTrickCompleting
+        ? TRICK_COMPLETION_PAUSE_MS
+        : PLAY_TRAVEL_DELAY_MS;
 
       // Stages the actual pendingPlay (removes the card from the hand fan, hands it to
       // TrickCenter's globally-elevated TravelCard) — factored out so the human's own play can
@@ -198,18 +246,27 @@ function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, on
       function armPendingPlay(
         resolvedOriginOffset: { x: number; y: number } | undefined,
         travelDurationMs: number | undefined,
-        remainingDelay: number
+        remainingDelay: number,
       ) {
         // The human hand's own reflow (remaining cards sliding/rising into their new slots) is
         // now animated internally by BatakTable's AnimatedFanCard, driven directly off the
         // shrinking hand array — no LayoutAnimation trigger needed here anymore.
-        setPendingPlay({ playerId, card: card!, originOffset: resolvedOriginOffset, originRotateDeg, travelDurationMs });
+        setPendingPlay({
+          playerId,
+          card: card!,
+          originOffset: resolvedOriginOffset,
+          originRotateDeg,
+          travelDurationMs,
+        });
         pendingTimeoutRef.current = setTimeout(() => {
           setPendingPlay(null);
           // Captured here, at the exact moment the card stops being a TravelCard, so the resting
           // render (or the gather-sweep, if this was the trick-completing 4th play) picks up
           // seamlessly at the identical angle instead of snapping to flat.
-          setRestingRotations((prev) => ({ ...prev, [playerId]: originRotateDeg ?? 0 }));
+          setRestingRotations(prev => ({
+            ...prev,
+            [playerId]: originRotateDeg ?? 0,
+          }));
           if (!isTrickCompleting) {
             performMove(move);
             return;
@@ -226,13 +283,19 @@ function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, on
           // trumpSuit is always set once the game has reached the playing phase.
           const priorEntries = state.currentTrick;
           const priorCards = priorEntries.map(
-            (e) => state.table.zones['trick'].cards.find((c) => c.id === e.cardId)!,
+            e => state.table.zones["trick"].cards.find(c => c.id === e.cardId)!,
           );
           const fullTrickCards = [...priorCards, card!];
-          const fullTrickPlayerIds = [...priorEntries.map((e) => e.playerId), playerId];
+          const fullTrickPlayerIds = [
+            ...priorEntries.map(e => e.playerId),
+            playerId,
+          ];
           const winnerPos = trickWinnerIndex(fullTrickCards, state.trumpSuit!);
           const winnerId = fullTrickPlayerIds[winnerPos];
-          const entries = fullTrickPlayerIds.map((pid, i) => ({ playerId: pid, card: fullTrickCards[i] }));
+          const entries = fullTrickPlayerIds.map((pid, i) => ({
+            playerId: pid,
+            card: fullTrickCards[i],
+          }));
           setGatheringTrick({ entries, winnerId });
           if (reducedMotion) {
             // GatherCard jumps straight to its faded-out end state under reduced motion (see
@@ -275,9 +338,12 @@ function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, on
         localDepartureTimeoutRef.current = setTimeout(() => {
           setLocalDeparture(null);
           armPendingPlay(
-            { x: measuredOrigin.x, y: measuredOrigin.y - LOCAL_DEPARTURE_DISTANCE },
+            {
+              x: measuredOrigin.x,
+              y: measuredOrigin.y - LOCAL_DEPARTURE_DISTANCE,
+            },
             CARD_TRAVEL_DURATION_MS - LOCAL_DEPARTURE_DURATION_MS,
-            delay - LOCAL_DEPARTURE_DURATION_MS
+            delay - LOCAL_DEPARTURE_DURATION_MS,
           );
         }, LOCAL_DEPARTURE_DURATION_MS);
         return;
@@ -302,12 +368,21 @@ function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, on
     commitMove(move, HUMAN_ID);
   }
 
-  function handleHumanPlayCard(cardId: string, originOffset?: { x: number; y: number }, originRotateDeg?: number) {
-    commitMove({ type: 'play', cardId }, HUMAN_ID, originOffset, originRotateDeg);
+  function handleHumanPlayCard(
+    cardId: string,
+    originOffset?: { x: number; y: number },
+    originRotateDeg?: number,
+  ) {
+    commitMove(
+      { type: "play", cardId },
+      HUMAN_ID,
+      originOffset,
+      originRotateDeg,
+    );
   }
 
   function handleHumanBury(cardIds: [string, string, string, string]) {
-    commitMove({ type: 'bury', cardIds }, HUMAN_ID);
+    commitMove({ type: "bury", cardIds }, HUMAN_ID);
   }
 
   const legalMoves =
@@ -354,7 +429,10 @@ function ActiveGame({ difficulty, variant, rng, useSessionStore, onPlayAgain, on
           onBackHome={onBackHome}
         />
       )}
-      <BatakSettingsModal visible={settingsVisible} onClose={() => setSettingsVisible(false)} />
+      <BatakSettingsModal
+        visible={settingsVisible}
+        onClose={() => setSettingsVisible(false)}
+      />
     </GameScreenLayout>
   );
 }

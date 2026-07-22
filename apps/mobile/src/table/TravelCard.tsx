@@ -1,13 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, EasingFunction } from 'react-native';
 import { useReducedMotion } from '../components/useReducedMotion';
-import {
-  CARD_TRAVEL_DURATION_MS,
-  CARD_TRAVEL_EASING,
-  CARD_SCALE_EASING,
-  CARD_SCALE_HOLD_FRACTION,
-  CARD_SCALE_SHRINK_EASING,
-} from './travelAnimation';
+import { CARD_TRAVEL_DURATION_MS, CARD_TRAVEL_EASING } from './travelAnimation';
 
 export interface TravelCardProps {
   // Where the card visually travels from, relative to its own rest position (0, 0) — e.g.
@@ -29,9 +23,10 @@ export interface TravelCardProps {
   // 0deg (no-op) so every pre-existing consumer (AI plays never supply a nonzero angle — see
   // TrickCenter.tsx) is byte-identical to before this prop existed.
   originRotateDeg?: number;
-  // Size the card travels at (originScale) vs. lands at (restScale) — see the scale interpolation
-  // below: held at originScale for most of the flight, shrinking to restScale only over the final
-  // stretch (CARD_SCALE_HOLD_FRACTION), not a continuous resize across the whole travel.
+  // Size the card travels at (originScale) vs. lands at (restScale) — interpolated continuously
+  // across the whole flight, off the same `progress` value driving translateX/Y (see below), not
+  // held at originScale and shrunk only near the end — a hold-then-shrink read as an abrupt pop
+  // right before landing.
   originScale?: number;
   restScale?: number;
   // Overrides CARD_TRAVEL_DURATION_MS for just this flight — used by Batak's human-play local-
@@ -43,18 +38,11 @@ export interface TravelCardProps {
 }
 
 // Not exported: the reset/timing lifecycle (create the progress value, reset+animate on
-// resetKey/reducedMotion/easing change) factored out so promoting it to a standalone hook later
-// (if a future caller needs the raw progress value to layer its own extra interpolation on top)
-// is a one-line change instead of a refactor. See
-// docs/superpowers/specs/2026-07-18-shared-card-travel-animation-design.md. Parametrized on
-// `easing` (rather than hardcoding CARD_TRAVEL_EASING) so translate/rotate and scale can each run
-// their own independently-eased Animated.Value in parallel — see CARD_SCALE_EASING's doc comment
-// for why sharing one curve between a position change and a size change looks wrong.
-function useAnimatedProgress(
-  resetKey: string | number,
-  durationMs: number,
-  easing: EasingFunction
-): Animated.Value {
+// resetKey/durationMs/reducedMotion change) factored out so promoting it to a standalone hook
+// later (if a future caller needs the raw progress value to layer its own extra interpolation on
+// top) is a one-line change instead of a refactor. See
+// docs/superpowers/specs/2026-07-18-shared-card-travel-animation-design.md.
+function useAnimatedProgress(resetKey: string | number, durationMs: number, easing: EasingFunction): Animated.Value {
   const progress = useRef(new Animated.Value(0)).current;
   const reducedMotion = useReducedMotion();
 
@@ -92,12 +80,6 @@ export function TravelCard({
   durationMs = CARD_TRAVEL_DURATION_MS,
 }: TravelCardProps) {
   const progress = useAnimatedProgress(resetKey, durationMs, CARD_TRAVEL_EASING);
-  // Separate Animated.Value from `progress`, driven honestly linear-in-time (see
-  // CARD_SCALE_EASING's doc comment): `progress` is nonlinear in time (CARD_TRAVEL_EASING is
-  // heavily front-loaded), so gating "when the shrink starts" off of it would make the shrink
-  // start much earlier in real time than CARD_SCALE_HOLD_FRACTION implies. Both start/reset
-  // together (same resetKey/durationMs), just via separate Animated.timing calls.
-  const scaleProgress = useAnimatedProgress(resetKey, durationMs, CARD_SCALE_EASING);
 
   return (
     <Animated.View
@@ -106,11 +88,9 @@ export function TravelCard({
         // traveling along the path, not materializing at the end of it — see
         // docs/superpowers/specs/2026-07-18-card-travel-full-visibility-design.md.
         //
-        // translateX/translateY/rotate all share the one `progress` value, so they're guaranteed
-        // frame-perfect in sync on the native thread — rotate interpolating even a few frames out
-        // of step with translate would itself read as a wobble during flight. scale intentionally
-        // runs off its own, linearly-timed `scaleProgress` value instead (see its declaration
-        // above) so its 3-point inputRange below means what it says in real time.
+        // translateX/translateY/rotate/scale all share the one `progress` value, so they're
+        // guaranteed frame-perfect in sync on the native thread — any of them interpolating even a
+        // few frames out of step with another would itself read as a wobble/pop during flight.
         transform: [
           {
             translateX: progress.interpolate({
@@ -129,18 +109,13 @@ export function TravelCard({
           // comment above. A plain static value, not an interpolation.
           { rotate: `${originRotateDeg}deg` },
           {
-            // Held at originScale for CARD_SCALE_HOLD_FRACTION of the flight — no gradual resize
-            // "on the way" — then shrinks to restScale over just the final stretch, right before
-            // landing. Not a continuously-changing size across the whole travel. `easing` here
-            // only affects the shrink segment (RN's interpolate applies it to the local fraction
-            // *within* whichever segment is active — the flat hold segment is a no-op regardless,
-            // since its output doesn't change) — without it, the shrink itself was a constant-rate
-            // linear resize, which measured live as a fast mechanical "pop" rather than settling
-            // smoothly into its final size.
-            scale: scaleProgress.interpolate({
-              inputRange: [0, CARD_SCALE_HOLD_FRACTION, 1],
-              outputRange: [originScale, originScale, restScale],
-              easing: CARD_SCALE_SHRINK_EASING,
+            // Continuous shrink across the whole flight (not held at originScale and shrunk only
+            // near the end, which read as a mechanical "pop" right before landing) — the same
+            // CARD_TRAVEL_EASING curve driving translateX/Y also decelerates the shrink into its
+            // final size.
+            scale: progress.interpolate({
+              inputRange: [0, 1],
+              outputRange: [originScale, restScale],
             }),
           },
         ],

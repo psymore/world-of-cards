@@ -131,7 +131,12 @@ function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgai
   const performMove = useSessionStore((s) => s.performMove);
   const [bannerText, setBannerText] = useState<string | null>(null);
   const [revealedMove, setRevealedMove] = useState<RevealedMove | null>(null);
-  const dealPhase = useDealSequence();
+  // Bumped whenever a stock redeal is detected (see applyMove below) to replay the same
+  // fly-out-from-center deal flourish the initial deal gets, instead of the new hands just
+  // silently appearing — Pişti-specific (Batak has no mid-hand redeal), so useDealSequence's
+  // resetKey param defaults to a stable value everywhere else.
+  const [dealResetKey, setDealResetKey] = useState(0);
+  const dealPhase = useDealSequence(dealResetKey);
 
   const aiStrategy = pistiDescriptor.aiStrategies[difficulty];
   // aiIds/teams are fixed for the lifetime of a session (a new session gets a new `key`, see
@@ -148,6 +153,10 @@ function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgai
   function applyMove(move: PistiMove, playerId: PlayerId) {
     const bonusBefore = state.pistiBonusPoints[playerId];
     const capturedBefore = state.table.zones[`captured-${playerId}`].cards.length;
+    // Stock only ever shrinks during a redeal (rules.ts deals handDealTargets(players) cards from
+    // it once every hand has emptied) — never during an ordinary play — so a decrease here is an
+    // unambiguous "a redeal just happened this move" signal, read after performMove commits it.
+    const stockBefore = state.table.zones['stock'].cards.length;
 
     performMove(move);
 
@@ -155,6 +164,10 @@ function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgai
     const capturedAfter = nextState.table.zones[`captured-${playerId}`].cards.length;
     const bonusAfter = nextState.pistiBonusPoints[playerId];
     const who = playerId === HUMAN_ID ? 'You' : playerNames[playerId];
+
+    if (nextState.table.zones['stock'].cards.length < stockBefore) {
+      setDealResetKey((k) => k + 1);
+    }
 
     if (capturedAfter > capturedBefore) {
       const bonusGained = bonusAfter - bonusBefore;
