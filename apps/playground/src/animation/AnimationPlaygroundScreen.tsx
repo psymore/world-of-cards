@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { DemoId } from './types';
 import { DEMO_LABELS, DEMO_ORDER } from './types';
+import { Demo01FanLayout } from './demos/Demo01FanLayout';
 
 // Each placeholder below is replaced by its real demo component in a later task
 // (Demo 1 in Task 3, Demo 2 in Task 4, ... Demo 6 in Task 8) — see
@@ -15,7 +16,12 @@ function PlaceholderDemo({ label }: { label: string }) {
 }
 
 function renderDemo(demo: DemoId): React.ReactElement {
-  return <PlaceholderDemo label={DEMO_LABELS[demo]} />;
+  switch (demo) {
+    case 'fan-layout':
+      return <Demo01FanLayout />;
+    default:
+      return <PlaceholderDemo label={DEMO_LABELS[demo]} />;
+  }
 }
 
 export function AnimationPlaygroundScreen() {
