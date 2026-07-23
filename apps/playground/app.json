@@ -12,9 +12,15 @@
       "package": "com.worldcards.playground"
     },
     "web": {},
+    "owner": "ragedapes-team",
     "plugins": [
       "expo-font",
       "expo-splash-screen"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a8e43d3b-b15d-4cec-b96a-55c8327e1b36"
+      }
+    }
   }
 }
