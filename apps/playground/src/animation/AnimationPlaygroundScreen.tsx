@@ -7,17 +7,7 @@ import { Demo02Selection } from './demos/Demo02Selection';
 import { Demo03PlayTravel } from './demos/Demo03PlayTravel';
 import { Demo04Landing } from './demos/Demo04Landing';
 import { Demo05Transform } from './demos/Demo05Transform';
-
-// Each placeholder below is replaced by its real demo component in a later task
-// (Demo 1 in Task 3, Demo 2 in Task 4, ... Demo 6 in Task 8) — see
-// docs/superpowers/plans/2026-07-23-animation-playground.md.
-function PlaceholderDemo({ label }: { label: string }) {
-  return (
-    <View style={styles.placeholder}>
-      <Text style={styles.placeholderText}>{label} — not implemented yet</Text>
-    </View>
-  );
-}
+import { Demo06CompleteSequence } from './demos/Demo06CompleteSequence';
 
 function renderDemo(demo: DemoId): React.ReactElement {
   switch (demo) {
@@ -31,8 +21,8 @@ function renderDemo(demo: DemoId): React.ReactElement {
       return <Demo04Landing />;
     case 'transform':
       return <Demo05Transform />;
-    default:
-      return <PlaceholderDemo label={DEMO_LABELS[demo]} />;
+    case 'complete-sequence':
+      return <Demo06CompleteSequence />;
   }
 }
 
@@ -72,6 +62,4 @@ const styles = StyleSheet.create({
   tabText: { color: '#fff', fontSize: 13, fontWeight: '600' },
   tabTextActive: { color: '#1c2451' },
   demoArea: { flex: 1 },
-  placeholder: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  placeholderText: { color: '#fff', fontSize: 16 },
 });
