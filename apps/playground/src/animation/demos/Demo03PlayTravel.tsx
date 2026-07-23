@@ -30,6 +30,7 @@ function PlayableDemoCard({ card, slot }: { card: Card; slot: FanSlot }) {
   });
 
   function handlePress() {
+    if (stage === 'traveling' || stage === 'holding') return;
     if (resetTimer.current) {
       clearTimeout(resetTimer.current);
       resetTimer.current = null;
