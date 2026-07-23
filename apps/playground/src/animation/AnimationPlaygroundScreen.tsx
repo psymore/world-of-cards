@@ -4,6 +4,7 @@ import type { DemoId } from './types';
 import { DEMO_LABELS, DEMO_ORDER } from './types';
 import { Demo01FanLayout } from './demos/Demo01FanLayout';
 import { Demo02Selection } from './demos/Demo02Selection';
+import { Demo03PlayTravel } from './demos/Demo03PlayTravel';
 
 // Each placeholder below is replaced by its real demo component in a later task
 // (Demo 1 in Task 3, Demo 2 in Task 4, ... Demo 6 in Task 8) — see
@@ -22,6 +23,8 @@ function renderDemo(demo: DemoId): React.ReactElement {
       return <Demo01FanLayout />;
     case 'selection':
       return <Demo02Selection />;
+    case 'play-travel':
+      return <Demo03PlayTravel />;
     default:
       return <PlaceholderDemo label={DEMO_LABELS[demo]} />;
   }
