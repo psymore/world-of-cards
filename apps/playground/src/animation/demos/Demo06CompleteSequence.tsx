@@ -109,10 +109,12 @@ function HumanHandCard({
       return;
     }
     // Captures this card's exact current lifted position as the trick card's origin
-    // offset (converging horizontally to the hand's own left edge, same convention
-    // as Demo 03) — the human's own play uses its real position, not a generic
-    // per-seat constant, unlike the other 3 seats (see SEAT_ORIGIN_OFFSET above).
-    onPlay({ x: -slot.x, y: -(SELECT_LIFT_PX + TRAVEL_DISTANCE) });
+    // offset (converging horizontally to the hand's own left edge) — the human's own
+    // play uses its real position, not a generic per-seat constant, unlike the other
+    // 3 seats (see SEAT_ORIGIN_OFFSET above). Y is positive: the hand sits below the
+    // trick area, so the card should rise up from a larger Y toward 0 at rest,
+    // matching TrickCard's origin-offset convention (see SEAT_ORIGIN_OFFSET's comment).
+    onPlay({ x: -slot.x, y: SELECT_LIFT_PX + TRAVEL_DISTANCE });
   }
 
   return (
