@@ -893,6 +893,12 @@ function PlayableDemoCard({ card, slot }: { card: Card; slot: FanSlot }) {
   });
 
   function handlePress() {
+    // Ignore taps while mid-flight or holding — without this guard, a tap landing
+    // during 'traveling'/'holding' cancels the pending reset timer with nothing to
+    // reschedule it (neither branch below matches those two stages), permanently
+    // freezing the card. Found by task review; only 'idle'/'selected' should ever
+    // respond to a tap.
+    if (stage === 'traveling' || stage === 'holding') return;
     if (resetTimer.current) {
       clearTimeout(resetTimer.current);
       resetTimer.current = null;
@@ -1048,6 +1054,9 @@ function LandingDemoCard({
   });
 
   function handlePress() {
+    // See Demo03PlayTravel.tsx's identical guard — without this, a tap during
+    // 'traveling'/'holding' permanently freezes the card (found by task review).
+    if (stage === 'traveling' || stage === 'holding') return;
     if (resetTimer.current) {
       clearTimeout(resetTimer.current);
       resetTimer.current = null;
@@ -1200,6 +1209,9 @@ function TransformDemoCard({ card, slot }: { card: Card; slot: FanSlot }) {
   });
 
   function handlePress() {
+    // See Demo03PlayTravel.tsx's identical guard — without this, a tap during
+    // 'traveling'/'holding' permanently freezes the card (found by task review).
+    if (stage === 'traveling' || stage === 'holding') return;
     if (resetTimer.current) {
       clearTimeout(resetTimer.current);
       resetTimer.current = null;
