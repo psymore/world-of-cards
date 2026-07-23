@@ -1511,11 +1511,15 @@ function HumanHandCard({
       motion.retarget(idleKeyframe({ rotateDeg: slot.rotateDeg, y: -SELECT_LIFT_PX }));
       return;
     }
-    // Captures this card's exact current lifted position as the trick card's origin
-    // offset (converging horizontally to the hand's own left edge, same convention
-    // as Demo 03) — the human's own play uses its real position, not a generic
-    // per-seat constant, unlike the other 3 seats (see SEAT_ORIGIN_OFFSET above).
-    onPlay({ x: -slot.x, y: -(SELECT_LIFT_PX + TRAVEL_DISTANCE) });
+    // originOffset is TrickCard's own start-relative-to-its-resting-slot vector, not
+    // a Demo03-style same-component destination — a different reference frame, found
+    // and fixed by task review. TrickCard animates FROM originOffset TO {x:0,y:0} at
+    // its own laid-out trick-slot position, so the Y term must be POSITIVE (the
+    // human's hand sits below the trick area — matching SEAT_ORIGIN_OFFSET[HUMAN_SEAT]
+    // above, which uses this same positive sign). x: -slot.x is just a per-card
+    // horizontal variation for visual character (no real cross-component measurement,
+    // same deliberate simplification as the 3 AI seats' fixed offsets).
+    onPlay({ x: -slot.x, y: SELECT_LIFT_PX + TRAVEL_DISTANCE });
   }
 
   return (
