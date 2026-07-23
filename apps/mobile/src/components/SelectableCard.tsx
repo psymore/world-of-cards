@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Easing, EasingFunction, Pressable, StyleSheet, View } from 'react-native';
 import { PlayingCard, PlayingCardProps } from '@world-cards/ui';
 import { useReducedMotion } from './useReducedMotion';
 import { useSettingsStore } from '../state/settingsStore';
@@ -16,6 +16,18 @@ export interface SelectableCardProps extends PlayingCardProps {
   disabled?: boolean;
   onPress?: () => void;
   rotateDeg?: number;
+  // Eases a change to rotateDeg over this many ms instead of snapping to it instantly. Needed by
+  // Batak's HumanHandFan: playing a card shrinks the row, which recomputes every remaining card's
+  // fan angle (rotateDeg depends on indexInRow/rowCount) — without this, that reflow's position
+  // change animates smoothly (the caller's own translateX/Y do) while the rotation snapped in a
+  // single frame, visibly desyncing the two. Defaults to 0 (snap), so every pre-existing caller
+  // that never varies rotateDeg for an already-mounted card (Pişti's flat hand, every opponent
+  // seat) is byte-identical to before this prop existed.
+  rotateAnimationDurationMs?: number;
+  // Easing for the transition above. Defaults to Animated.timing's own default (inOut ease) —
+  // pass the exact curve driving the caller's position reflow (e.g. HumanHandFan's
+  // HAND_CARD_REPOSITION_EASING) so rotation and position move in visual lockstep.
+  rotateEasing?: EasingFunction;
   marginLeft?: number;
   liftDistance?: number;
   curveOffsetY?: number;
@@ -48,6 +60,8 @@ export function SelectableCard({
   disabled,
   onPress,
   rotateDeg = 0,
+  rotateAnimationDurationMs = 0,
+  rotateEasing,
   marginLeft,
   liftDistance = DEFAULT_LIFT_DISTANCE,
   curveOffsetY = 0,
@@ -55,8 +69,26 @@ export function SelectableCard({
   ...cardProps
 }: SelectableCardProps) {
   const lift = useRef(new Animated.Value(selected ? -liftDistance : 0)).current;
+  const rotate = useRef(new Animated.Value(rotateDeg)).current;
   const reducedMotion = useReducedMotion();
   const dimUnplayableCards = useSettingsStore((s) => s.dimUnplayableCards);
+
+  // Snaps (rotateAnimationDurationMs === 0, the default, or reduced motion) or eases toward a
+  // changed rotateDeg — see its own doc comment. On first mount `rotate` is already initialized
+  // to rotateDeg via useRef above, so this effect's initial run is a harmless no-op (animating
+  // from the target value to itself).
+  useEffect(() => {
+    if (!rotateAnimationDurationMs || reducedMotion) {
+      rotate.setValue(rotateDeg);
+      return;
+    }
+    Animated.timing(rotate, {
+      toValue: rotateDeg,
+      duration: rotateAnimationDurationMs,
+      easing: rotateEasing ?? Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, [rotateDeg, rotateAnimationDurationMs, rotateEasing, reducedMotion, rotate]);
 
   useEffect(() => {
     // Selecting snaps instantly: a fast player taps once to select and immediately taps again to
@@ -83,18 +115,35 @@ export function SelectableCard({
     outputRange: [SELECTED_SCALE, 1],
   });
 
+  // The lift/rotate/scale transform above is purely visual: React Native's touch responder
+  // system hit-tests against the Pressable's untransformed layout box, not its transformed
+  // on-screen position (a native-driven `transform`, in particular, never participates in hit
+  // testing). Once selected, the card visually sits `liftDistance` px higher than that box —
+  // without compensation, the box (and therefore the only place a tap actually registers) stays
+  // behind at the pre-lift position, so a tap on the card's new, visible location falls through
+  // to whatever's behind it (in Batak, the table's own tap-to-deselect surface) instead of
+  // playing the card. Extending the box upward by liftDistance while selected covers the visible
+  // card again; the caller's own hitSlop (e.g. Batak's horizontal shrink, to keep a selected card
+  // from stealing a tap meant for an exposed neighbor) is preserved by spreading it last.
+  const effectiveHitSlop = selected ? { top: liftDistance, ...hitSlop } : hitSlop;
+
   return (
     <Animated.View
       style={{
         marginLeft,
         transform: [
-          { rotate: `${rotateDeg}deg` },
+          {
+            rotate: rotate.interpolate({
+              inputRange: [-180, 180],
+              outputRange: ['-180deg', '180deg'],
+            }),
+          },
           { translateY: Animated.add(lift, curveOffsetY) },
           { scale },
         ],
       }}
     >
-      <Pressable disabled={disabled} onPress={onPress} hitSlop={hitSlop}>
+      <Pressable disabled={disabled} onPress={onPress} hitSlop={effectiveHitSlop}>
         <PlayingCard {...cardProps} highlighted={selected} />
         {disabled && dimUnplayableCards && (
           // Dark scrim marking the card as "not currently tappable" while keeping its art fully

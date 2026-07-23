@@ -160,8 +160,12 @@ function ActiveGame({
   const state = useSessionStore(s => s.state);
   const performMove = useSessionStore(s => s.performMove);
   const [pendingPlay, setPendingPlay] = useState<PendingBatakPlay | null>(null);
+  // deltaX: the horizontal component of the local-departure leg's motion (see canLocalDepart
+  // below) — the leg moves the card along the real straight-line vector toward the trick center,
+  // not straight up, so HumanHandFan needs this to animate `x` in sync with `y`.
   const [localDeparture, setLocalDeparture] = useState<{
     cardId: string;
+    deltaX: number;
   } | null>(null);
   // The angle each currently-in-trick card keeps once it lands — captured from the exact
   // originRotateDeg its TravelCard was frozen at (see
@@ -326,6 +330,15 @@ function ActiveGame({
       // they have no per-card hand visual to begin with), under reduced motion, or when the
       // measured origin is already closer than the local-departure distance itself (a fixed local
       // leg would overshoot past the destination).
+      //
+      // This leg moves along the real straight-line vector toward the trick center (both x and y,
+      // proportioned so the y component covers exactly LOCAL_DEPARTURE_DISTANCE), not straight up —
+      // an earlier version moved only vertically, which produced a visible kink in the flight path
+      // (a purely-vertical hop, then a sharp turn onto the diagonal for the remaining distance).
+      // Moving along the same vector from the first frame reads as one continuous motion while
+      // preserving the original fix's invariant (the card is fully clear of the row's stacking band
+      // before the parent-swap to TravelCard happens, so there's still nothing to visibly pop in
+      // front of).
       const measuredOrigin = originOffset;
       const canLocalDepart =
         playerId === HUMAN_ID &&
@@ -334,12 +347,14 @@ function ActiveGame({
         measuredOrigin.y > LOCAL_DEPARTURE_DISTANCE * 1.5;
 
       if (canLocalDepart) {
-        setLocalDeparture({ cardId: move.cardId });
+        const departureFraction = LOCAL_DEPARTURE_DISTANCE / measuredOrigin.y;
+        const departureDeltaX = measuredOrigin.x * departureFraction;
+        setLocalDeparture({ cardId: move.cardId, deltaX: departureDeltaX });
         localDepartureTimeoutRef.current = setTimeout(() => {
           setLocalDeparture(null);
           armPendingPlay(
             {
-              x: measuredOrigin.x,
+              x: measuredOrigin.x - departureDeltaX,
               y: measuredOrigin.y - LOCAL_DEPARTURE_DISTANCE,
             },
             CARD_TRAVEL_DURATION_MS - LOCAL_DEPARTURE_DURATION_MS,

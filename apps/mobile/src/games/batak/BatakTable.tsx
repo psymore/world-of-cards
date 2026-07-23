@@ -90,8 +90,11 @@ export interface BatakTableProps {
   gatheringTrick?: GatheringTrick | null;
   pendingBury?: PendingBury | null;
   // The human's own played card during its brief local-departure leg, before pendingPlay takes
-  // over — see HumanHandFan's LOCAL_DEPARTURE_DISTANCE doc comment. Null the rest of the time.
-  localDeparture?: { cardId: string } | null;
+  // over — see HumanHandFan's LOCAL_DEPARTURE_DISTANCE doc comment. deltaX is the horizontal
+  // component of that leg's motion (see BatakScreen's canLocalDepart), so HumanHandFan can move
+  // the card diagonally in sync with its vertical departure instead of straight up. Null the rest
+  // of the time.
+  localDeparture?: { cardId: string; deltaX: number } | null;
   // The angle each currently-in-trick card is resting/gathering at, keyed by playerId — see
   // BatakScreen's own doc comment on this state for why it exists (preserving hand rotation
   // instead of snapping cards flat once they land).
@@ -565,7 +568,7 @@ export function BatakTable({
           playEntrance={dealPhase === 'revealing'}
           registerCardRef={registerHandCardRef}
           compact={compact}
-          departingCardId={localDeparture?.cardId ?? null}
+          departingCard={localDeparture ?? null}
         />
       </View>
       {dealPhase !== 'revealing' && <DealFlightOverlay seats={dealSeats} />}

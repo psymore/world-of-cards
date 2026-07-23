@@ -47,8 +47,8 @@ const HUMAN_HAND_TOP_ROW_STEP = Math.round(
 // Gömmeli-only overrides, applied via HumanHandFan's `compact` prop (set by BatakTable based on
 // opponentPlayerIds.length === 2); Standard Batak's own look, and Pişti's separate hand UI, are
 // completely untouched. First-pass values — tune further once checked live.
-const GOMELI_HAND_BOTTOM_ROW_OVERLAP_FRACTION = 0.75;
-const GOMELI_HAND_TOP_ROW_OVERLAP_FRACTION = 0.68;
+const GOMELI_HAND_BOTTOM_ROW_OVERLAP_FRACTION = 0.55;
+const GOMELI_HAND_TOP_ROW_OVERLAP_FRACTION = 0.58;
 const GOMELI_HAND_BOTTOM_ROW_STEP = Math.round(
   HUMAN_CARD_WIDTH * (1 - GOMELI_HAND_BOTTOM_ROW_OVERLAP_FRACTION),
 );
@@ -58,8 +58,8 @@ const GOMELI_HAND_TOP_ROW_STEP = Math.round(
 // Shared timing for every hand-card reposition (a card played, remaining cards sliding/rising to
 // close the gap) — see AnimatedFanCard. An ease-in-ease-out curve reads as a natural reflow
 // rather than either a sudden snap (no easing) or a bouncy entrance (an "out" curve alone).
-const HAND_CARD_REPOSITION_DURATION_MS = 220;
-const HAND_CARD_REPOSITION_EASING = Easing.inOut(Easing.ease);
+const HAND_CARD_REPOSITION_DURATION_MS = 320;
+const HAND_CARD_REPOSITION_EASING = Easing.inOut(Easing.cubic);
 
 // The played card's brief "lift-off" leg before it hands off to the elevated trick-center travel
 // animation (BatakScreen.tsx/TrickCenter.tsx) — see
@@ -70,7 +70,7 @@ const HAND_CARD_REPOSITION_EASING = Easing.inOut(Easing.ease);
 // to visually "pop" in front of. Purely local and vertical — rotation/curve are untouched, so the
 // card's angle at handoff still matches what TravelCard's own originRotateDeg expects.
 export const LOCAL_DEPARTURE_DISTANCE = HUMAN_CARD_HEIGHT;
-export const LOCAL_DEPARTURE_DURATION_MS = 50;
+export const LOCAL_DEPARTURE_DURATION_MS = 200;
 // Easing.in, not Easing.out: this leg hands off directly into TrickCenter's own TravelCard flight,
 // which uses CARD_TRAVEL_EASING (Easing.out(cubic) — fast start, decelerating to a stop by
 // design). An ease-out *local* leg would also decelerate to a dead stop right at that handoff,
@@ -79,7 +79,7 @@ export const LOCAL_DEPARTURE_DURATION_MS = 50;
 // max-velocity start, so the two legs read as one continuous accelerate-then-decelerate motion
 // rather than two animations bolted together. Also fixes a smaller issue for free: the previous
 // ease-out start snapped to full speed the instant of the tap; ease-in lifts off gently instead.
-const LOCAL_DEPARTURE_EASING = Easing.in(Easing.cubic);
+const LOCAL_DEPARTURE_EASING = Easing.in(Easing.linear);
 
 // 2.5x SelectableCard's own default (16px) lift — Batak-only override, see
 // docs/superpowers/specs/2026-07-17-batak-deal-selection-and-trick-motion-polish-design.md
@@ -174,6 +174,10 @@ interface AnimatedFanCardProps {
   // (see LOCAL_DEPARTURE_DISTANCE above) — every other card's slot/reposition behavior is
   // unaffected.
   isDeparting: boolean;
+  // The horizontal component of that same departure leg (see BatakScreen's canLocalDepart) — the
+  // leg moves along the real straight-line vector toward the trick center, not straight up, so
+  // this card's `x` animates in sync with its `y`. Only meaningful while isDeparting is true.
+  departureDeltaX: number;
 }
 
 function AnimatedFanCardComponent({
@@ -185,6 +189,7 @@ function AnimatedFanCardComponent({
   registerCardRef,
   compact,
   isDeparting,
+  departureDeltaX,
 }: AnimatedFanCardProps) {
   const { card } = slot;
   const targetX = slotTargetX(slot, compact);
@@ -196,21 +201,30 @@ function AnimatedFanCardComponent({
   const departed = useRef(false);
 
   // Fires once, the instant this specific card starts its local-departure leg — layers an
-  // additional upward move on top of whatever slot position `y` already holds (its own reposition
-  // effect below is untouched and never fires again for this card, since it's about to unmount).
-  // Skipped under reduced motion: BatakScreen's own reducedMotion check already skips the whole
-  // local-departure pre-stage in that case, so isDeparting never becomes true here, but the guard
-  // is kept for defense in depth (matches every other animation in this file).
+  // additional move (both axes, along the real vector toward the trick center — see
+  // departureDeltaX's doc comment) on top of whatever slot position x/y already hold (their own
+  // reposition effect below is untouched and never fires again for this card, since it's about to
+  // unmount). Skipped under reduced motion: BatakScreen's own reducedMotion check already skips
+  // the whole local-departure pre-stage in that case, so isDeparting never becomes true here, but
+  // the guard is kept for defense in depth (matches every other animation in this file).
   useEffect(() => {
     if (!isDeparting || departed.current || reducedMotion) return;
     departed.current = true;
-    Animated.timing(y, {
-      toValue: targetY - LOCAL_DEPARTURE_DISTANCE,
-      duration: LOCAL_DEPARTURE_DURATION_MS,
-      easing: LOCAL_DEPARTURE_EASING,
-      useNativeDriver: true,
-    }).start();
-  }, [isDeparting, reducedMotion, targetY, y]);
+    Animated.parallel([
+      Animated.timing(x, {
+        toValue: targetX - departureDeltaX,
+        duration: LOCAL_DEPARTURE_DURATION_MS,
+        easing: LOCAL_DEPARTURE_EASING,
+        useNativeDriver: true,
+      }),
+      Animated.timing(y, {
+        toValue: targetY - LOCAL_DEPARTURE_DISTANCE,
+        duration: LOCAL_DEPARTURE_DURATION_MS,
+        easing: LOCAL_DEPARTURE_EASING,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [isDeparting, reducedMotion, targetX, targetY, departureDeltaX, x, y]);
 
   useEffect(() => {
     if (!mounted.current) {
@@ -280,6 +294,11 @@ function AnimatedFanCardComponent({
               slot.rowCount,
               HUMAN_HAND_DEGREES_PER_STEP,
             )}
+            // A play shrinks the row, recomputing every remaining card's rotateDeg above (it
+            // depends on indexInRow/rowCount) — ease that change in step with this same card's
+            // x/y reflow (below) instead of snapping the angle in one frame while position glides.
+            rotateAnimationDurationMs={HAND_CARD_REPOSITION_DURATION_MS}
+            rotateEasing={HAND_CARD_REPOSITION_EASING}
             curveOffsetY={fanCurveY(
               slot.indexInRow,
               slot.rowCount,
@@ -325,7 +344,8 @@ function areFanCardPropsEqual(
     prev.selected === next.selected &&
     prev.compact === next.compact &&
     prev.playEntrance === next.playEntrance &&
-    prev.isDeparting === next.isDeparting
+    prev.isDeparting === next.isDeparting &&
+    prev.departureDeltaX === next.departureDeltaX
   );
 }
 
@@ -403,7 +423,7 @@ export function HumanHandFan({
   playEntrance,
   registerCardRef,
   compact = false,
-  departingCardId = null,
+  departingCard = null,
 }: {
   slots: HandSlot[];
   legalCardIds: Set<string>;
@@ -416,9 +436,10 @@ export function HumanHandFan({
   // GOMELI_HAND_*_OVERLAP_FRACTION constants above. Defaults to false (Standard Batak's and
   // Pişti's existing spacing, byte-identical to before this prop existed).
   compact?: boolean;
-  // The card id currently running its local-departure leg (BatakScreen.tsx), or null the rest of
-  // the time — see LOCAL_DEPARTURE_DISTANCE above.
-  departingCardId?: string | null;
+  // The card currently running its local-departure leg (BatakScreen.tsx) and the horizontal
+  // component of that leg's motion, or null the rest of the time — see LOCAL_DEPARTURE_DISTANCE
+  // above and departureDeltaX's own doc comment.
+  departingCard?: { cardId: string; deltaX: number } | null;
 }) {
   return (
     <View style={styles.handFan} testID="human-hand">
@@ -432,7 +453,10 @@ export function HumanHandFan({
           playEntrance={playEntrance}
           registerCardRef={registerCardRef}
           compact={compact}
-          isDeparting={departingCardId === slot.card.id}
+          isDeparting={departingCard?.cardId === slot.card.id}
+          departureDeltaX={
+            departingCard?.cardId === slot.card.id ? departingCard.deltaX : 0
+          }
         />
       ))}
     </View>

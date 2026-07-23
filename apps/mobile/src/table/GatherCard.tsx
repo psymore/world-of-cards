@@ -23,8 +23,10 @@ export interface GatherCardProps {
   restRotateDeg?: number;
 }
 
-const GATHER_CARD_WIDTH = CARD_DIMS.small.width;
-const GATHER_CARD_HEIGHT = CARD_DIMS.small.height;
+// Matches TrickCenter's trick cards, which render at size="normal" (not "small") — otherwise the
+// card would visibly shrink right at the moment a completed trick starts gathering.
+const GATHER_CARD_WIDTH = CARD_DIMS.normal.width;
+const GATHER_CARD_HEIGHT = CARD_DIMS.normal.height;
 
 type FlipAxis = 'X' | 'Y';
 
@@ -157,7 +159,7 @@ export function GatherCard({ card, destinationOffset, restRotateDeg = 0 }: Gathe
             transform: [{ perspective: 800 }, rotationTransform(axis, frontRotate)],
           },
         ]}>
-        <PlayingCard card={card} size="small" />
+        <PlayingCard card={card} size="normal" />
       </Animated.View>
       <Animated.View
         style={[
@@ -169,7 +171,7 @@ export function GatherCard({ card, destinationOffset, restRotateDeg = 0 }: Gathe
             transform: [{ perspective: 800 }, rotationTransform(axis, backRotate)],
           },
         ]}>
-        <PlayingCard card={card} faceDown size="small" />
+        <PlayingCard card={card} faceDown size="normal" />
       </Animated.View>
     </Animated.View>
   );

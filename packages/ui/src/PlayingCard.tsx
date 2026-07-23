@@ -65,8 +65,8 @@ export const CARD_DIMS = {
   small: { width: 70, height: 101 },
 };
 const DEFAULT_BORDERS: PlayingCardBorderSpec[] = [
-  { width: 1, color: "#fff" },
-  { width: 1, color: "#999" },
+  { width: 0.8, color: "#fff" },
+  { width: 0.8, color: "#c3c3c3" },
 ];
 
 const BACK_BORDERS: PlayingCardBorderSpec[] = [{ width: 1, color: "#024a64" }];
