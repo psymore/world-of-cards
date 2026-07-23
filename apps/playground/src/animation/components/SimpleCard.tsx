@@ -1,0 +1,60 @@
+import React from 'react';
+import { Animated, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import type { Card, Suit } from '@world-cards/engine';
+
+export const SIMPLE_CARD_WIDTH = 64;
+export const SIMPLE_CARD_HEIGHT = 92;
+
+const SUIT_GLYPHS: Record<Suit, string> = {
+  hearts: '♥',
+  diamonds: '♦',
+  clubs: '♣',
+  spades: '♠',
+};
+
+const SUIT_COLORS: Record<Suit, string> = {
+  hearts: '#c0392b',
+  diamonds: '#c0392b',
+  clubs: '#111111',
+  spades: '#111111',
+};
+
+export interface SimpleCardProps {
+  card: Card;
+  // Optional animated style applied to the rank/suit glyph content only, separate
+  // from whatever transform the caller applies to the outer card — see Demo 05
+  // (Task 7), which animates this toward a smaller resting size independently of
+  // the outer card's own scale.
+  glyphStyle?: StyleProp<ViewStyle>;
+}
+
+// Deliberately does not use @world-cards/ui's PlayingCard/SuitIcon — per
+// ANIMATION_ARCHITECTURE.md's "Playground Scope," this module renders cards as plain
+// text + Unicode suit glyphs at one fixed size, so animation work here is never
+// blocked on (or confused with) the real game's card art.
+export function SimpleCard({ card, glyphStyle }: SimpleCardProps) {
+  const suit = card.suit ?? 'spades';
+  return (
+    <View style={styles.card} testID={`simple-card-${card.id}`}>
+      <Animated.View style={glyphStyle}>
+        <Text style={[styles.rank, { color: SUIT_COLORS[suit] }]}>{card.rank}</Text>
+        <Text style={[styles.suit, { color: SUIT_COLORS[suit] }]}>{SUIT_GLYPHS[suit]}</Text>
+      </Animated.View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    width: SIMPLE_CARD_WIDTH,
+    height: SIMPLE_CARD_HEIGHT,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#999',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rank: { fontSize: 20, fontWeight: '700', textAlign: 'center' },
+  suit: { fontSize: 22, textAlign: 'center' },
+});
