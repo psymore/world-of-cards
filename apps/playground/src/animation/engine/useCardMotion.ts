@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import { Animated, EasingFunction } from 'react-native';
 import type { CardMotionKeyframe } from '../types';
 
@@ -16,18 +16,20 @@ export interface UseCardMotionOptions {
 export interface CardMotionResult {
   // Ready-to-spread transform array for an Animated.View's style.transform.
   transform: [
-    { translateX: Animated.AnimatedInterpolation<number> },
-    { translateY: Animated.AnimatedInterpolation<number> },
+    { translateX: Animated.Value },
+    { translateY: Animated.Value },
     { rotate: Animated.AnimatedInterpolation<string> },
-    { scale: Animated.AnimatedInterpolation<number> },
+    { scale: Animated.Value },
   ];
-  glyphScale: Animated.AnimatedInterpolation<number>;
+  glyphScale: Animated.Value;
   // Re-targets the animation toward `to`, starting from wherever the card visually
   // is right now (not the original `from`) — see ANIMATION_ARCHITECTURE.md's
   // "Preserve Spatial Continuity" rule. Safe to call while a previous retarget is
   // still animating.
   retarget: (to: CardMotionKeyframe, options?: RetargetOptions) => void;
-  // The card's current interpolated keyframe, read synchronously.
+  // The card's current interpolated keyframe, computed synchronously from elapsed
+  // time (see legStartTimeRef's comment) — not read off the Animated.Values
+  // themselves, which is what makes this safe to call with no native round-trip.
   getCurrentKeyframe: () => CardMotionKeyframe;
 }
 
@@ -35,87 +37,101 @@ function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
 
+function keyframeAt(from: CardMotionKeyframe, to: CardMotionKeyframe, t: number): CardMotionKeyframe {
+  return {
+    x: lerp(from.x, to.x, t),
+    y: lerp(from.y, to.y, t),
+    rotateDeg: lerp(from.rotateDeg, to.rotateDeg, t),
+    scale: lerp(from.scale, to.scale, t),
+    glyphScale: lerp(from.glyphScale, to.glyphScale, t),
+  };
+}
+
 // The single reusable motion primitive this whole sub-project exists to build.
-// Drives exactly one Animated.Value (0 -> 1) via Animated.timing; every visual
-// output below is an .interpolate() off that same value — see
-// ANIMATION_ARCHITECTURE.md's "One source of truth" rule. zIndex/shadow are
-// deliberately NOT produced here — see the design spec's documented exception;
-// callers that need them derive discrete step changes from getCurrentKeyframe()
-// themselves.
+// Every visual output is driven by its own persistent Animated.Value, animated
+// directly with Animated.timing — see ANIMATION_ARCHITECTURE.md's "One source of
+// truth" rule (each property IS its own source of truth here; there's no separate
+// normalized progress value in between). zIndex/shadow are deliberately NOT
+// produced here — see the design spec's documented exception; callers that need
+// them derive discrete step changes from getCurrentKeyframe() themselves.
+//
+// This mirrors apps/mobile/src/components/SelectableCard.tsx's proven pattern
+// (Batak/Pişti's own shipped card-lift animation) rather than an earlier design of
+// this file that normalized every leg onto one shared 0->1 "progress" value and
+// swapped .interpolate() mappings via a re-render on every retarget. That swap
+// wasn't atomic with the progress.setValue(0) reset it depended on: native applies
+// the reset immediately, but the new interpolation mapping only takes effect once
+// React's re-render actually commits, a moment later. In between, the view could
+// render one real frame through the OLD mapping at input 0 — pointing at the
+// PREVIOUS leg's start position, not the new one — a visible jump on every single
+// select/deselect and travel/hold/reset transition. Animated.timing(value,
+// {toValue}) has no equivalent gap: it always continues from a value's actual
+// current state, whatever that is, with no reset/swap step to be non-atomic.
 export function useCardMotion({
   initial,
   defaultDurationMs,
   defaultEasing,
 }: UseCardMotionOptions): CardMotionResult {
-  const progress = useRef(new Animated.Value(0)).current;
-  const progressValueRef = useRef(0);
+  const xRef = useRef(new Animated.Value(initial.x)).current;
+  const yRef = useRef(new Animated.Value(initial.y)).current;
+  const rotateRef = useRef(new Animated.Value(initial.rotateDeg)).current;
+  const scaleRef = useRef(new Animated.Value(initial.scale)).current;
+  const glyphScaleRef = useRef(new Animated.Value(initial.glyphScale)).current;
+
+  // Tracked purely so getCurrentKeyframe() can answer synchronously with no native
+  // round-trip — NOT used to drive the animation itself; each Animated.Value above
+  // already knows its own current position natively, which is what retarget()
+  // below actually relies on. Animated.timing is deterministic (progress is always
+  // exactly easing(elapsed / duration)), so this reproduces the same curve in JS
+  // rather than asking native for it.
   const fromRef = useRef<CardMotionKeyframe>(initial);
   const toRef = useRef<CardMotionKeyframe>(initial);
+  const legStartTimeRef = useRef(Date.now());
   const durationRef = useRef(defaultDurationMs);
   const easingRef = useRef(defaultEasing);
-  const [generation, setGeneration] = useState(0);
-
-  useEffect(() => {
-    const id = progress.addListener(({ value }) => {
-      progressValueRef.current = value;
-    });
-    return () => progress.removeListener(id);
-  }, [progress]);
 
   function getCurrentKeyframe(): CardMotionKeyframe {
-    const t = progressValueRef.current;
-    const from = fromRef.current;
-    const to = toRef.current;
-    return {
-      x: lerp(from.x, to.x, t),
-      y: lerp(from.y, to.y, t),
-      rotateDeg: lerp(from.rotateDeg, to.rotateDeg, t),
-      scale: lerp(from.scale, to.scale, t),
-      glyphScale: lerp(from.glyphScale, to.glyphScale, t),
-    };
+    const duration = durationRef.current;
+    const rawT = duration <= 0 ? 1 : Math.min(1, Math.max(0, (Date.now() - legStartTimeRef.current) / duration));
+    return keyframeAt(fromRef.current, toRef.current, easingRef.current(rawT));
   }
 
   function retarget(to: CardMotionKeyframe, options?: RetargetOptions) {
-    const current = getCurrentKeyframe();
-    progress.stopAnimation();
-    fromRef.current = current;
+    fromRef.current = getCurrentKeyframe();
     toRef.current = to;
-    progress.setValue(0);
-    progressValueRef.current = 0;
-    durationRef.current = options?.durationMs ?? defaultDurationMs;
-    easingRef.current = options?.easing ?? defaultEasing;
-    // Bumps so the useMemo below rebuilds its .interpolate() calls around the new
-    // from/to refs — the single underlying `progress` Value keeps flowing on the
-    // native thread across this re-render, it isn't restarted.
-    setGeneration(g => g + 1);
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: durationRef.current,
-      easing: easingRef.current,
-      useNativeDriver: true,
-    }).start();
+    const duration = options?.durationMs ?? defaultDurationMs;
+    const easing = options?.easing ?? defaultEasing;
+    durationRef.current = duration;
+    easingRef.current = easing;
+    legStartTimeRef.current = Date.now();
+
+    const config = { duration, easing, useNativeDriver: true };
+    Animated.timing(xRef, { toValue: to.x, ...config }).start();
+    Animated.timing(yRef, { toValue: to.y, ...config }).start();
+    Animated.timing(rotateRef, { toValue: to.rotateDeg, ...config }).start();
+    Animated.timing(scaleRef, { toValue: to.scale, ...config }).start();
+    Animated.timing(glyphScaleRef, { toValue: to.glyphScale, ...config }).start();
   }
 
-  const { transform, glyphScale } = useMemo(() => {
-    const from = fromRef.current;
-    const to = toRef.current;
-    const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [from.x, to.x] });
-    const translateY = progress.interpolate({ inputRange: [0, 1], outputRange: [from.y, to.y] });
-    const rotate = progress.interpolate({
-      inputRange: [0, 1],
-      outputRange: [`${from.rotateDeg}deg`, `${to.rotateDeg}deg`],
-    });
-    const scale = progress.interpolate({ inputRange: [0, 1], outputRange: [from.scale, to.scale] });
-    const glyphScaleInterp = progress.interpolate({
-      inputRange: [0, 1],
-      outputRange: [from.glyphScale, to.glyphScale],
-    });
-    return {
-      transform: [{ translateX }, { translateY }, { rotate }, { scale }] as CardMotionResult['transform'],
-      glyphScale: glyphScaleInterp,
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [generation]);
+  // Built once per Animated.Value identity (i.e. once ever, since xRef/yRef/etc.
+  // are stable refs) — unlike the old design, there's no from/to baked into these,
+  // so there's never a reason to rebuild them on retarget.
+  const transform = useMemo(
+    () =>
+      [
+        { translateX: xRef },
+        { translateY: yRef },
+        {
+          // Fixed, never-changing mapping — safe regardless of what rotateDeg
+          // values any given leg actually uses, and exactly why rotate needs no
+          // rebuilding on retarget the way the old design's from/to-dependent
+          // interpolation did.
+          rotate: rotateRef.interpolate({ inputRange: [-360, 360], outputRange: ['-360deg', '360deg'] }),
+        },
+        { scale: scaleRef },
+      ] as CardMotionResult['transform'],
+    [xRef, yRef, rotateRef, scaleRef],
+  );
 
-  return { transform, glyphScale, retarget, getCurrentKeyframe };
+  return { transform, glyphScale: glyphScaleRef, retarget, getCurrentKeyframe };
 }

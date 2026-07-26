@@ -55,12 +55,18 @@ type PlayMode = "oneTap" | "twoTap";
 // (see startTravel), so the two never need to be true at once.
 type PlayStage = "atRest" | "traveling" | "holding";
 
-function PlayableDemoCard({
+// React.memo'd (see PlayableDemoCard below the implementation) — every prop here is
+// already stable across parent re-renders once the parent memoizes its `slots`
+// array (card/onSelect/registerPress already were: `cards` is a stable useMemo
+// array, onSelect is a setState function — always stable — and registerPress is
+// its own useCallback with no deps). Without that, a parent re-render (e.g. one
+// card's onSelect(card.id) call) would otherwise re-render all 6 cards, not just
+// the one whose props actually changed.
+function PlayableDemoCardComponent({
   card,
   slot,
   selected,
   playMode,
-  rapidPlay,
   onSelect,
   registerPress,
 }: {
@@ -68,12 +74,6 @@ function PlayableDemoCard({
   slot: FanSlot;
   selected: boolean;
   playMode: PlayMode;
-  // When on, tapping a card that's already traveling/holding interrupts it and
-  // immediately plays it again, instead of being ignored until its full
-  // travel+hold+reset cycle (~1.15s) finishes on its own — see handlePress. This is
-  // what actually gated real hand-tapped speed: the stress test never hit this,
-  // since it only ever taps each of the 6 distinct cards once.
-  rapidPlay: boolean;
   onSelect: (cardId: string | null) => void;
   // Lets the stress test (Demo03PlayTravel below) simulate a real tap on this
   // specific card — registered once via a stable wrapper so the parent always
@@ -139,21 +139,11 @@ function PlayableDemoCard({
   }
 
   function handlePress() {
-    if (playStage !== "atRest") {
-      if (!rapidPlay) return;
-      // Interrupt whatever this card is currently doing (traveling toward the
-      // table, or holding there) and play it again right away — re-selecting
-      // first wouldn't make sense for a card that's already mid-play, so this
-      // skips straight to startTravel regardless of playMode. Safe to retarget
-      // mid-flight: motion.retarget always starts from wherever the card's
-      // Animated.Value actually is right now, per useCardMotion's own design.
-      if (resetTimer.current) {
-        clearTimeout(resetTimer.current);
-        resetTimer.current = null;
-      }
-      startTravel();
-      return;
-    }
+    // A tap during 'traveling'/'holding' is ignored outright — see
+    // Demo03PlayTravel.tsx's pointerEvents fix below anyway, which already removes
+    // this card's touch target for the whole non-atRest window, so this guard is
+    // mostly a safety net (e.g. for the Stress Test's programmatic press() calls).
+    if (playStage !== "atRest") return;
     if (resetTimer.current) {
       clearTimeout(resetTimer.current);
       resetTimer.current = null;
@@ -184,6 +174,14 @@ function PlayableDemoCard({
     <Pressable
       testID={`demo03-card-${card.id}`}
       onPress={handlePress}
+      // Same fix as apps/mobile/src/components/SelectableCard.tsx's own documented
+      // hitSlop workaround: the lift transform below is purely visual — RN hit-tests
+      // against the Pressable's untransformed layout box, which stays put — so once
+      // selected, the card sits SELECT_LIFT_PX px higher than the only place a tap
+      // actually registers. Without this, tapping the card's real, visible (lifted)
+      // position does nothing; only the empty space it lifted away from still "hits."
+      // Extending the box upward by the same distance covers the visible card again.
+      hitSlop={selected ? { top: SELECT_LIFT_PX } : undefined}
       style={[
         styles.cardSlot,
         { left: slot.x, top: HAND_TOP_OFFSET + slot.y },
@@ -204,6 +202,8 @@ function PlayableDemoCard({
   );
 }
 
+const PlayableDemoCard = React.memo(PlayableDemoCardComponent);
+
 // Demo 03: play a card either in two taps (select/lift, then a second tap travels
 // it — Demo 02's motion, reused here) or one tap (travels immediately from rest),
 // toggled live via the mode control below; default is two-tap, matching the
@@ -220,19 +220,21 @@ function PlayableDemoCard({
 // visually collide, but that made a flying card unnaturally pop in front of its
 // still-seated neighbors mid-flight, which reads worse than the rare
 // simultaneous-travel overlap it was solving for.
-//
-// Rapid Play (off by default): lets a real tap interrupt a card that's still
-// traveling/holding and play it again immediately, rather than waiting out its
-// ~1.15s cycle — see PlayableDemoCard's rapidPlay prop. This, not anything about
-// tap timing itself, is what actually limited how fast a HAND could play cards:
-// the Stress Test button never hit it, since it only ever taps each of the 6
-// distinct cards once each.
 export function Demo03PlayTravel() {
   const cards = useMemo(() => FULL_DECK.slice(0, HAND_SIZE), []);
   const totalWidth = computeFanWidth(cards.length, FAN_CONFIG);
+  // Memoized so each card's `slot` prop keeps the same object reference across
+  // parent re-renders — computeFanSlot(...) called inline in JSX would otherwise
+  // return a fresh object every render (same values, new reference), which would
+  // silently defeat PlayableDemoCard's React.memo below for every single card on
+  // every single render, regardless of whether that card's own props actually
+  // changed. Same fix pattern as Pişti's PILE_CARD_OFFSETS/SIDE_CARD_STYLES.
+  const slots = useMemo(
+    () => cards.map((_, i) => computeFanSlot(i, cards.length, FAN_CONFIG)),
+    [cards],
+  );
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [playMode, setPlayMode] = useState<PlayMode>("twoTap");
-  const [rapidPlay, setRapidPlay] = useState(false);
   const pressFns = useRef<Map<string, () => void>>(new Map());
   const registerPress = useCallback((cardId: string, press: () => void) => {
     pressFns.current.set(cardId, press);
@@ -287,22 +289,6 @@ export function Demo03PlayTravel() {
           </Pressable>
         ))}
         <Pressable
-          testID="demo03-rapid-play"
-          onPress={() => setRapidPlay(v => !v)}
-          style={[
-            styles.modeButton,
-            styles.rapidButton,
-            rapidPlay && styles.rapidButtonActive,
-          ]}>
-          <Text
-            style={[
-              styles.rapidButtonText,
-              rapidPlay && styles.rapidButtonTextActive,
-            ]}>
-            🔁 Rapid play: {rapidPlay ? "on" : "off"}
-          </Text>
-        </Pressable>
-        <Pressable
           testID="demo03-stress-test"
           onPress={runStressTest}
           style={[styles.modeButton, styles.stressButton]}>
@@ -322,10 +308,9 @@ export function Demo03PlayTravel() {
           <PlayableDemoCard
             key={card.id}
             card={card}
-            slot={computeFanSlot(i, cards.length, FAN_CONFIG)}
+            slot={slots[i]}
             selected={selectedCardId === card.id}
             playMode={playMode}
-            rapidPlay={rapidPlay}
             onSelect={setSelectedCardId}
             registerPress={registerPress}
           />
@@ -354,10 +339,6 @@ const styles = StyleSheet.create({
   modeButtonActive: { backgroundColor: "#ffffff22", borderColor: "#fff" },
   modeButtonText: { color: "#ffffff99", fontSize: 13 },
   modeButtonTextActive: { color: "#fff", fontWeight: "700" },
-  rapidButton: { borderColor: "#ffffff55" },
-  rapidButtonActive: { backgroundColor: "#22cc8833", borderColor: "#22cc88" },
-  rapidButtonText: { color: "#ffffff99", fontSize: 13 },
-  rapidButtonTextActive: { color: "#7dffcb", fontWeight: "700" },
   stressButton: { backgroundColor: "#ff8c0033", borderColor: "#ff8c00" },
   stressButtonText: { color: "#ffb366", fontSize: 13, fontWeight: "700" },
   hand: { position: "relative" },
