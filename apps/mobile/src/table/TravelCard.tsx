@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, EasingFunction } from 'react-native';
-import { useReducedMotion } from '../components/useReducedMotion';
-import { CARD_TRAVEL_DURATION_MS, CARD_TRAVEL_EASING } from './travelAnimation';
+import React, { useEffect, useRef } from "react";
+import { Animated, EasingFunction } from "react-native";
+import { useReducedMotion } from "../components/useReducedMotion";
+import { CARD_TRAVEL_DURATION_MS, CARD_TRAVEL_EASING } from "./travelAnimation";
 
 export interface TravelCardProps {
   // Where the card visually travels from, relative to its own rest position (0, 0) — e.g.
@@ -42,7 +42,11 @@ export interface TravelCardProps {
 // later (if a future caller needs the raw progress value to layer its own extra interpolation on
 // top) is a one-line change instead of a refactor. See
 // docs/superpowers/specs/2026-07-18-shared-card-travel-animation-design.md.
-function useAnimatedProgress(resetKey: string | number, durationMs: number, easing: EasingFunction): Animated.Value {
+function useAnimatedProgress(
+  resetKey: string | number,
+  durationMs: number,
+  easing: EasingFunction,
+): Animated.Value {
   const progress = useRef(new Animated.Value(0)).current;
   const reducedMotion = useReducedMotion();
 
@@ -79,7 +83,11 @@ export function TravelCard({
   restScale = 1,
   durationMs = CARD_TRAVEL_DURATION_MS,
 }: TravelCardProps) {
-  const progress = useAnimatedProgress(resetKey, durationMs, CARD_TRAVEL_EASING);
+  const progress = useAnimatedProgress(
+    resetKey,
+    durationMs,
+    CARD_TRAVEL_EASING,
+  );
 
   return (
     <Animated.View

@@ -6,6 +6,7 @@ export type DemoId =
   | 'play-travel'
   | 'landing'
   | 'transform'
+  | 'hand-reposition'
   | 'complete-sequence';
 
 export const DEMO_ORDER: DemoId[] = [
@@ -14,6 +15,7 @@ export const DEMO_ORDER: DemoId[] = [
   'play-travel',
   'landing',
   'transform',
+  'hand-reposition',
   'complete-sequence',
 ];
 
@@ -23,7 +25,8 @@ export const DEMO_LABELS: Record<DemoId, string> = {
   'play-travel': 'Demo 3: Play Card',
   landing: 'Demo 4: Landing',
   transform: 'Demo 5: Transform',
-  'complete-sequence': 'Demo 6: Complete Sequence',
+  'hand-reposition': 'Demo 6: Hand Reposition',
+  'complete-sequence': 'Demo 7: Complete Sequence',
 };
 
 // A single point in a card's animated life: position/rotation/scale, plus the

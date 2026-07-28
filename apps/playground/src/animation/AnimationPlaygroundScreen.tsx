@@ -7,7 +7,9 @@ import { Demo02Selection } from './demos/Demo02Selection';
 import { Demo03PlayTravel } from './demos/Demo03PlayTravel';
 import { Demo04Landing } from './demos/Demo04Landing';
 import { Demo05Transform } from './demos/Demo05Transform';
-import { Demo06CompleteSequence } from './demos/Demo06CompleteSequence';
+import { Demo06HandReposition } from './demos/Demo06HandReposition';
+import { Demo07CompleteSequence } from './demos/Demo07CompleteSequence';
+import { FeltBackground } from './components/FeltBackground';
 
 function renderDemo(demo: DemoId): React.ReactElement {
   switch (demo) {
@@ -21,8 +23,10 @@ function renderDemo(demo: DemoId): React.ReactElement {
       return <Demo04Landing />;
     case 'transform':
       return <Demo05Transform />;
+    case 'hand-reposition':
+      return <Demo06HandReposition />;
     case 'complete-sequence':
-      return <Demo06CompleteSequence />;
+      return <Demo07CompleteSequence />;
   }
 }
 
@@ -48,13 +52,16 @@ export function AnimationPlaygroundScreen() {
           </Pressable>
         ))}
       </ScrollView>
-      <View style={styles.demoArea}>{renderDemo(activeDemo)}</View>
+      <View style={styles.demoArea}>
+        <FeltBackground />
+        {renderDemo(activeDemo)}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0b6623' },
+  container: { flex: 1, backgroundColor: '#0b1d15' },
   tabBar: { flexGrow: 0, backgroundColor: '#1c2451' },
   tabBarContent: { paddingHorizontal: 8, paddingVertical: 6 },
   tab: { paddingHorizontal: 12, paddingVertical: 8, marginHorizontal: 4, borderRadius: 6 },

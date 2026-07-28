@@ -3,6 +3,7 @@ import {
   Animated,
   Easing,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -17,11 +18,12 @@ import {
   FanSlot,
 } from "../components/fanLayout";
 import { useCardMotion } from "../engine/useCardMotion";
+import { FanConfigControls } from "../components/FanConfigControls";
 import { idleKeyframe } from "../types";
 
 const FULL_DECK = createDeck({ deckCount: 1, includeJokers: false });
-const HAND_SIZE = 6;
-const FAN_CONFIG: FanLayoutConfig = {
+const DEFAULT_HAND_SIZE = 6;
+const DEFAULT_FAN_CONFIG: FanLayoutConfig = {
   overlap: 0.6,
   arcDegrees: 40,
   maxRotationDeg: 20,
@@ -221,8 +223,18 @@ const PlayableDemoCard = React.memo(PlayableDemoCardComponent);
 // still-seated neighbors mid-flight, which reads worse than the rare
 // simultaneous-travel overlap it was solving for.
 export function Demo03PlayTravel() {
-  const cards = useMemo(() => FULL_DECK.slice(0, HAND_SIZE), []);
-  const totalWidth = computeFanWidth(cards.length, FAN_CONFIG);
+  const [handSize, setHandSize] = useState(DEFAULT_HAND_SIZE);
+  const [overlap, setOverlap] = useState(DEFAULT_FAN_CONFIG.overlap);
+  const [arcDegrees, setArcDegrees] = useState(DEFAULT_FAN_CONFIG.arcDegrees);
+  const [maxRotationDeg, setMaxRotationDeg] = useState(DEFAULT_FAN_CONFIG.maxRotationDeg);
+  const [spacingPx, setSpacingPx] = useState(DEFAULT_FAN_CONFIG.spacingPx);
+  const fanConfig: FanLayoutConfig = useMemo(
+    () => ({ overlap, arcDegrees, maxRotationDeg, spacingPx }),
+    [overlap, arcDegrees, maxRotationDeg, spacingPx],
+  );
+
+  const cards = useMemo(() => FULL_DECK.slice(0, handSize), [handSize]);
+  const totalWidth = computeFanWidth(cards.length, fanConfig);
   // Memoized so each card's `slot` prop keeps the same object reference across
   // parent re-renders — computeFanSlot(...) called inline in JSX would otherwise
   // return a fresh object every render (same values, new reference), which would
@@ -230,8 +242,8 @@ export function Demo03PlayTravel() {
   // every single render, regardless of whether that card's own props actually
   // changed. Same fix pattern as Pişti's PILE_CARD_OFFSETS/SIDE_CARD_STYLES.
   const slots = useMemo(
-    () => cards.map((_, i) => computeFanSlot(i, cards.length, FAN_CONFIG)),
-    [cards],
+    () => cards.map((_, i) => computeFanSlot(i, cards.length, fanConfig)),
+    [cards, fanConfig],
   );
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [playMode, setPlayMode] = useState<PlayMode>("twoTap");
@@ -263,65 +275,83 @@ export function Demo03PlayTravel() {
   }
 
   return (
-    // Mirrors apps/mobile/src/components/DeselectableSurface.tsx (see
-    // Demo02Selection.tsx) — the whole screen is the deselect surface, same as
-    // Demo 02's own container Pressable, not just the area around the hand.
-    // Nested Pressables (the cards, the mode buttons below) claim their own taps
-    // first via RN's normal touch-responder negotiation either way.
-    <Pressable style={styles.container} onPress={() => setSelectedCardId(null)}>
-      <View style={styles.modeRow}>
-        {(["twoTap", "oneTap"] as const).map(mode => (
-          <Pressable
-            key={mode}
-            testID={`demo03-mode-${mode}`}
-            onPress={() => setPlayMode(mode)}
-            style={[
-              styles.modeButton,
-              playMode === mode && styles.modeButtonActive,
-            ]}>
-            <Text
+    // Wrapped in a ScrollView — see Demo02Selection.tsx's identical wrapper for why:
+    // this hand area alone reserves TRAVEL_DISTANCE's worth of extra height for the
+    // fly-up animation, so hand + controls together can easily exceed the screen.
+    <ScrollView contentContainerStyle={styles.scrollContent}>
+      {/* Mirrors apps/mobile/src/components/DeselectableSurface.tsx (see
+          Demo02Selection.tsx) — the whole screen is the deselect surface, same as
+          Demo 02's own container Pressable, not just the area around the hand.
+          Nested Pressables (the cards, the mode buttons below) claim their own taps
+          first via RN's normal touch-responder negotiation either way. */}
+      <Pressable style={styles.container} onPress={() => setSelectedCardId(null)}>
+        <View style={styles.modeRow}>
+          {(["twoTap", "oneTap"] as const).map(mode => (
+            <Pressable
+              key={mode}
+              testID={`demo03-mode-${mode}`}
+              onPress={() => setPlayMode(mode)}
               style={[
-                styles.modeButtonText,
-                playMode === mode && styles.modeButtonTextActive,
+                styles.modeButton,
+                playMode === mode && styles.modeButtonActive,
               ]}>
-              {mode === "twoTap" ? "Two-tap play" : "One-tap play"}
-            </Text>
+              <Text
+                style={[
+                  styles.modeButtonText,
+                  playMode === mode && styles.modeButtonTextActive,
+                ]}>
+                {mode === "twoTap" ? "Two-tap play" : "One-tap play"}
+              </Text>
+            </Pressable>
+          ))}
+          <Pressable
+            testID="demo03-stress-test"
+            onPress={runStressTest}
+            style={[styles.modeButton, styles.stressButton]}>
+            <Text style={styles.stressButtonText}>⚡ Stress test: play all</Text>
           </Pressable>
-        ))}
-        <Pressable
-          testID="demo03-stress-test"
-          onPress={runStressTest}
-          style={[styles.modeButton, styles.stressButton]}>
-          <Text style={styles.stressButtonText}>⚡ Stress test: play all</Text>
-        </Pressable>
-      </View>
-      <View
-        style={[
-          styles.hand,
-          {
-            width: totalWidth,
-            height:
-              SIMPLE_CARD_HEIGHT + HAND_TOP_OFFSET + TRAVEL_DISTANCE + 60,
-          },
-        ]}>
-        {cards.map((card, i) => (
-          <PlayableDemoCard
-            key={card.id}
-            card={card}
-            slot={slots[i]}
-            selected={selectedCardId === card.id}
-            playMode={playMode}
-            onSelect={setSelectedCardId}
-            registerPress={registerPress}
-          />
-        ))}
-      </View>
-    </Pressable>
+        </View>
+        <View
+          style={[
+            styles.hand,
+            {
+              width: totalWidth,
+              height:
+                SIMPLE_CARD_HEIGHT + HAND_TOP_OFFSET + TRAVEL_DISTANCE + 60,
+            },
+          ]}>
+          {cards.map((card, i) => (
+            <PlayableDemoCard
+              key={card.id}
+              card={card}
+              slot={slots[i]}
+              selected={selectedCardId === card.id}
+              playMode={playMode}
+              onSelect={setSelectedCardId}
+              registerPress={registerPress}
+            />
+          ))}
+        </View>
+        <FanConfigControls
+          handSize={handSize}
+          onHandSizeChange={setHandSize}
+          overlap={overlap}
+          onOverlapChange={setOverlap}
+          arcDegrees={arcDegrees}
+          onArcDegreesChange={setArcDegrees}
+          maxRotationDeg={maxRotationDeg}
+          onMaxRotationDegChange={setMaxRotationDeg}
+          spacingPx={spacingPx}
+          onSpacingPxChange={setSpacingPx}
+        />
+      </Pressable>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: "center", justifyContent: "flex-end" },
+  scrollContent: { flexGrow: 1 },
+  container: { flexGrow: 1, alignItems: "center" },
   modeRow: {
     flexDirection: "row",
     flexWrap: "wrap",

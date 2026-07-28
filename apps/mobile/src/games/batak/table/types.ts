@@ -1,4 +1,4 @@
-import type { Card } from '@world-cards/engine';
+import type { Card } from "@world-cards/engine";
 
 export interface PendingBatakPlay {
   playerId: string;

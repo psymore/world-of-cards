@@ -10,6 +10,7 @@ import {
   Easing,
   EasingFunction,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -27,10 +28,11 @@ import {
   FanSlot,
 } from "../components/fanLayout";
 import { useCardMotion } from "../engine/useCardMotion";
+import { FanConfigControls } from "../components/FanConfigControls";
 import { idleKeyframe } from "../types";
 import { SEAT_COUNT, useDealLoop } from "../state/useDealLoop";
 
-const FAN_CONFIG: FanLayoutConfig = {
+const DEFAULT_FAN_CONFIG: FanLayoutConfig = {
   overlap: 0.6,
   arcDegrees: 40,
   maxRotationDeg: 20,
@@ -233,14 +235,14 @@ function TrickCardComponent({
 }
 
 // React.memo'd — card/seat/originOffset are all referentially stable across parent
-// re-renders for the lifetime of a given trick-card entry (see Demo06CompleteSequence
+// re-renders for the lifetime of a given trick-card entry (see Demo07CompleteSequence
 // below: currentTrick's array is rebuilt on each play, but existing elements are
 // carried over unchanged via spread, not recreated).
 const TrickCard = React.memo(TrickCardComponent);
 
 // React.memo'd — see Demo03PlayTravel.tsx's PlayableDemoCard for the full rationale;
 // identical reasoning applies here now that `slot` is memoized and `onPlay`/`onSelect`
-// are stable references (see Demo06CompleteSequence below).
+// are stable references (see Demo07CompleteSequence below).
 function HumanHandCardComponent({
   card,
   slot,
@@ -265,7 +267,7 @@ function HumanHandCardComponent({
   // null` legal-moves gate.
   onDepartureStart: (cardId: string | null) => void;
   // Returns the trick area's real, measured window position (see
-  // Demo06CompleteSequence's measureTrickDestination) — null until the first layout
+  // Demo07CompleteSequence's measureTrickDestination) — null until the first layout
   // pass has fired.
   getTrickDestination: () => { x: number; y: number } | null;
 }) {
@@ -331,7 +333,7 @@ function HumanHandCardComponent({
   // the trick area's own real position (cached once via onLayout in the parent) —
   // rather than Demo03/04/05's within-one-container math, which doesn't apply here
   // since the played card hands off to a separate TrickCard mounted in a different
-  // container (see Demo06CompleteSequence's own doc comment on this difference from
+  // container (see Demo07CompleteSequence's own doc comment on this difference from
   // Demo 05). Falls back to the old fixed-formula approximation if either
   // measurement isn't available yet (e.g. the very first frame, before either
   // view's onLayout/measureInWindow has resolved) — no local-departure leg in that
@@ -422,7 +424,7 @@ function HumanHandCardComponent({
   return (
     <Pressable
       ref={pressableRef}
-      testID={`demo06-human-card-${card.id}`}
+      testID={`demo07-human-card-${card.id}`}
       onPress={handlePress}
       // Same fix as Demo03PlayTravel.tsx / apps/mobile/src/components/SelectableCard.tsx's
       // own documented hitSlop workaround: the lift transform below is purely visual —
@@ -444,7 +446,7 @@ function HumanHandCardComponent({
 
 const HumanHandCard = React.memo(HumanHandCardComponent);
 
-// Demo 06: everything from Demos 01-05 combined, driven by useDealLoop's continuous
+// Demo 07: everything from Demos 01-05 combined, driven by useDealLoop's continuous
 // 4-seat turn cycle. Only the human seat (0) is tap-interactive; seats 1-3 auto-play
 // their first card after a short delay once it's their turn. Shares Demo03/04/05's
 // mechanics for the human hand specifically: one/two-tap play mode, a single shared
@@ -471,11 +473,22 @@ const HumanHandCard = React.memo(HumanHandCardComponent);
 // the trick center by one card-height — by the time TrickCard takes over, the card
 // has already visually cleared the row, so there's nothing left for the stacking
 // jump to visibly clip in front of.
-export function Demo06CompleteSequence() {
+export function Demo07CompleteSequence() {
   const { seats, turnSeat, currentTrick, playCard, clearTrick } = useDealLoop();
   const humanOriginsRef = useRef<Map<string, HumanPlayOrigin>>(new Map());
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [playMode, setPlayMode] = useState<PlayMode>("twoTap");
+  // No Hand size slider here — the human hand's size is driven by useDealLoop's
+  // shared 4-seat, 52-card deal, not a free variable like every other demo's static
+  // hand — see FanConfigControls' own comment on the handSize prop being optional.
+  const [overlap, setOverlap] = useState(DEFAULT_FAN_CONFIG.overlap);
+  const [arcDegrees, setArcDegrees] = useState(DEFAULT_FAN_CONFIG.arcDegrees);
+  const [maxRotationDeg, setMaxRotationDeg] = useState(DEFAULT_FAN_CONFIG.maxRotationDeg);
+  const [spacingPx, setSpacingPx] = useState(DEFAULT_FAN_CONFIG.spacingPx);
+  const fanConfig: FanLayoutConfig = useMemo(
+    () => ({ overlap, arcDegrees, maxRotationDeg, spacingPx }),
+    [overlap, arcDegrees, maxRotationDeg, spacingPx],
+  );
   // The human card currently running its local-departure leg (HumanHandCardComponent's
   // `play()`), or null the rest of the time — freezes every hand card's interactivity
   // for that brief window (folded into isHumanTurn below), matching Batak's own
@@ -539,16 +552,17 @@ export function Demo06CompleteSequence() {
   }, [currentTrick, clearTrick]);
 
   const humanHand = seats[HUMAN_SEAT];
-  const totalWidth = computeFanWidth(humanHand.length, FAN_CONFIG);
+  const totalWidth = computeFanWidth(humanHand.length, fanConfig);
   // Memoized so each card's `slot` prop keeps a stable reference across re-renders
   // (this demo re-renders often, e.g. every AI auto-play timer) — see
   // Demo03PlayTravel.tsx's identical `slots` memo for why this matters for
   // HumanHandCard's React.memo above. Recomputed whenever humanHand itself changes
-  // (a play or a reshuffle), which is exactly when positions actually need to shift.
+  // (a play or a reshuffle) or fanConfig changes (a slider drag), which is exactly
+  // when positions actually need to shift.
   const slots = useMemo(
     () =>
-      humanHand.map((_, i) => computeFanSlot(i, humanHand.length, FAN_CONFIG)),
-    [humanHand],
+      humanHand.map((_, i) => computeFanSlot(i, humanHand.length, fanConfig)),
+    [humanHand, fanConfig],
   );
   // turnSeat advances immediately on each play, so after the 4th (last) card of a
   // trick lands, turnSeat has already wrapped back around to HUMAN_SEAT even though
@@ -563,97 +577,111 @@ export function Demo06CompleteSequence() {
     departingCardId == null;
 
   return (
-    // Same DeselectableSurface-style wrapper as Demo02Selection.tsx/Demo03PlayTravel.tsx.
-    <Pressable style={styles.container} onPress={() => setSelectedCardId(null)}>
-      <View style={styles.modeRow}>
-        {(["twoTap", "oneTap"] as const).map(mode => (
-          <Pressable
-            key={mode}
-            testID={`demo06-mode-${mode}`}
-            onPress={() => setPlayMode(mode)}
-            style={[
-              styles.modeButton,
-              playMode === mode && styles.modeButtonActive,
-            ]}>
-            <Text
+    // Wrapped in a ScrollView — see Demo02Selection.tsx's identical wrapper for why.
+    <ScrollView contentContainerStyle={styles.scrollContent}>
+      {/* Same DeselectableSurface-style wrapper as Demo02Selection.tsx/Demo03PlayTravel.tsx. */}
+      <Pressable style={styles.container} onPress={() => setSelectedCardId(null)}>
+        <View style={styles.modeRow}>
+          {(["twoTap", "oneTap"] as const).map(mode => (
+            <Pressable
+              key={mode}
+              testID={`demo07-mode-${mode}`}
+              onPress={() => setPlayMode(mode)}
               style={[
-                styles.modeButtonText,
-                playMode === mode && styles.modeButtonTextActive,
+                styles.modeButton,
+                playMode === mode && styles.modeButtonActive,
               ]}>
-              {mode === "twoTap" ? "Two-tap play" : "One-tap play"}
+              <Text
+                style={[
+                  styles.modeButtonText,
+                  playMode === mode && styles.modeButtonTextActive,
+                ]}>
+                {mode === "twoTap" ? "Two-tap play" : "One-tap play"}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        <View style={styles.opponentRow}>
+          {[2, 1, 3].map(seat => (
+            <Text key={seat} style={styles.opponentLabel}>
+              Seat {seat}: {seats[seat].length} cards{" "}
+              {turnSeat === seat ? "(thinking...)" : ""}
             </Text>
-          </Pressable>
-        ))}
-      </View>
-      <View style={styles.opponentRow}>
-        {[2, 1, 3].map(seat => (
-          <Text key={seat} style={styles.opponentLabel}>
-            Seat {seat}: {seats[seat].length} cards{" "}
-            {turnSeat === seat ? "(thinking...)" : ""}
-          </Text>
-        ))}
-      </View>
-      <View
-        ref={trickAreaRef}
-        onLayout={measureTrickDestination}
-        style={[
-          styles.trickArea,
-          { width: SIMPLE_CARD_WIDTH + 80, height: SIMPLE_CARD_HEIGHT + 80 },
-        ]}>
-        {currentTrick.map(({ seat, card }) => {
-          const humanOrigin =
-            seat === HUMAN_SEAT
-              ? humanOriginsRef.current.get(card.id)
-              : undefined;
-          return (
-            <TrickCard
+          ))}
+        </View>
+        <View
+          ref={trickAreaRef}
+          onLayout={measureTrickDestination}
+          style={[
+            styles.trickArea,
+            { width: SIMPLE_CARD_WIDTH + 80, height: SIMPLE_CARD_HEIGHT + 80 },
+          ]}>
+          {currentTrick.map(({ seat, card }) => {
+            const humanOrigin =
+              seat === HUMAN_SEAT
+                ? humanOriginsRef.current.get(card.id)
+                : undefined;
+            return (
+              <TrickCard
+                key={card.id}
+                card={card}
+                seat={seat}
+                originOffset={
+                  humanOrigin ??
+                  (seat === HUMAN_SEAT
+                    ? SEAT_ORIGIN_OFFSET[HUMAN_SEAT]
+                    : SEAT_ORIGIN_OFFSET[seat])
+                }
+                originRotateDeg={humanOrigin?.rotateDeg}
+                travelDurationMs={humanOrigin?.durationMs}
+                startScale={humanOrigin?.startScale}
+                startGlyphScale={humanOrigin?.startGlyphScale}
+                easing={humanOrigin?.easing}
+              />
+            );
+          })}
+        </View>
+        <View
+          style={[
+            styles.hand,
+            {
+              width: totalWidth,
+              height: SIMPLE_CARD_HEIGHT + HAND_TOP_OFFSET + 40,
+            },
+          ]}>
+          {humanHand.map((card, i) => (
+            <HumanHandCard
               key={card.id}
               card={card}
-              seat={seat}
-              originOffset={
-                humanOrigin ??
-                (seat === HUMAN_SEAT
-                  ? SEAT_ORIGIN_OFFSET[HUMAN_SEAT]
-                  : SEAT_ORIGIN_OFFSET[seat])
-              }
-              originRotateDeg={humanOrigin?.rotateDeg}
-              travelDurationMs={humanOrigin?.durationMs}
-              startScale={humanOrigin?.startScale}
-              startGlyphScale={humanOrigin?.startGlyphScale}
-              easing={humanOrigin?.easing}
+              slot={slots[i]}
+              isTurn={isHumanTurn}
+              selected={selectedCardId === card.id}
+              playMode={playMode}
+              onSelect={setSelectedCardId}
+              onPlay={handleHumanPlay}
+              onDepartureStart={setDepartingCardId}
+              getTrickDestination={getTrickDestination}
             />
-          );
-        })}
-      </View>
-      <View
-        style={[
-          styles.hand,
-          {
-            width: totalWidth,
-            height: SIMPLE_CARD_HEIGHT + HAND_TOP_OFFSET + 40,
-          },
-        ]}>
-        {humanHand.map((card, i) => (
-          <HumanHandCard
-            key={card.id}
-            card={card}
-            slot={slots[i]}
-            isTurn={isHumanTurn}
-            selected={selectedCardId === card.id}
-            playMode={playMode}
-            onSelect={setSelectedCardId}
-            onPlay={handleHumanPlay}
-            onDepartureStart={setDepartingCardId}
-            getTrickDestination={getTrickDestination}
-          />
-        ))}
-      </View>
-    </Pressable>
+          ))}
+        </View>
+        <FanConfigControls
+          overlap={overlap}
+          onOverlapChange={setOverlap}
+          arcDegrees={arcDegrees}
+          onArcDegreesChange={setArcDegrees}
+          maxRotationDeg={maxRotationDeg}
+          onMaxRotationDegChange={setMaxRotationDeg}
+          spacingPx={spacingPx}
+          onSpacingPxChange={setSpacingPx}
+        />
+      </Pressable>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "space-between", paddingVertical: 12 },
+  scrollContent: { flexGrow: 1 },
+  container: { flexGrow: 1, paddingVertical: 12 },
   modeRow: {
     flexDirection: "row",
     flexWrap: "wrap",

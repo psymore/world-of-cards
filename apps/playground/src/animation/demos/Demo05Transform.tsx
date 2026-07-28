@@ -3,6 +3,7 @@ import {
   Animated,
   Easing,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -17,12 +18,13 @@ import {
   FanSlot,
 } from "../components/fanLayout";
 import { useCardMotion } from "../engine/useCardMotion";
+import { FanConfigControls } from "../components/FanConfigControls";
 import { idleKeyframe } from "../types";
 import { TRAVEL_DISTANCE, TRAVEL_DURATION_MS } from "./Demo03PlayTravel";
 
 const FULL_DECK = createDeck({ deckCount: 1, includeJokers: false });
-const HAND_SIZE = 6;
-const FAN_CONFIG: FanLayoutConfig = {
+const DEFAULT_HAND_SIZE = 6;
+const DEFAULT_FAN_CONFIG: FanLayoutConfig = {
   overlap: 0.6,
   arcDegrees: 40,
   maxRotationDeg: 20,
@@ -40,7 +42,7 @@ const RESTING_SCALE = 0.7;
 const RESTING_GLYPH_SCALE = 0.75;
 // Same stress-test timing constants as Demo03PlayTravel.tsx — kept as local copies
 // rather than exported/shared, matching this sub-project's existing convention of
-// each demo file staying self-contained (see FAN_CONFIG/HAND_SIZE/etc. above, all
+// each demo file staying self-contained (see DEFAULT_FAN_CONFIG/DEFAULT_HAND_SIZE/etc. above, all
 // already duplicated rather than imported).
 const STRESS_TEST_CARD_STAGGER_MS = 150;
 const STRESS_TEST_DOUBLE_TAP_GAP_MS = 90;
@@ -185,14 +187,24 @@ const TransformDemoCard = React.memo(TransformDemoCardComponent);
 // — duplicated here rather than factored into a shared hook, matching this
 // sub-project's existing per-demo-file convention.
 export function Demo05Transform() {
-  const cards = useMemo(() => FULL_DECK.slice(0, HAND_SIZE), []);
-  const totalWidth = computeFanWidth(cards.length, FAN_CONFIG);
+  const [handSize, setHandSize] = useState(DEFAULT_HAND_SIZE);
+  const [overlap, setOverlap] = useState(DEFAULT_FAN_CONFIG.overlap);
+  const [arcDegrees, setArcDegrees] = useState(DEFAULT_FAN_CONFIG.arcDegrees);
+  const [maxRotationDeg, setMaxRotationDeg] = useState(DEFAULT_FAN_CONFIG.maxRotationDeg);
+  const [spacingPx, setSpacingPx] = useState(DEFAULT_FAN_CONFIG.spacingPx);
+  const fanConfig: FanLayoutConfig = useMemo(
+    () => ({ overlap, arcDegrees, maxRotationDeg, spacingPx }),
+    [overlap, arcDegrees, maxRotationDeg, spacingPx],
+  );
+
+  const cards = useMemo(() => FULL_DECK.slice(0, handSize), [handSize]);
+  const totalWidth = computeFanWidth(cards.length, fanConfig);
   // Memoized so each card's `slot` prop keeps a stable reference across re-renders
   // — see Demo03PlayTravel.tsx's identical `slots` memo for why this matters for
   // TransformDemoCard's React.memo above.
   const slots = useMemo(
-    () => cards.map((_, i) => computeFanSlot(i, cards.length, FAN_CONFIG)),
-    [cards],
+    () => cards.map((_, i) => computeFanSlot(i, cards.length, fanConfig)),
+    [cards, fanConfig],
   );
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [playMode, setPlayMode] = useState<PlayMode>("twoTap");
@@ -218,61 +230,77 @@ export function Demo05Transform() {
   }
 
   return (
-    // Same DeselectableSurface-style wrapper as Demo02Selection.tsx/Demo03PlayTravel.tsx.
-    <Pressable style={styles.container} onPress={() => setSelectedCardId(null)}>
-      <View style={styles.modeRow}>
-        {(["twoTap", "oneTap"] as const).map(mode => (
-          <Pressable
-            key={mode}
-            testID={`demo05-mode-${mode}`}
-            onPress={() => setPlayMode(mode)}
-            style={[
-              styles.modeButton,
-              playMode === mode && styles.modeButtonActive,
-            ]}>
-            <Text
+    // Wrapped in a ScrollView — see Demo02Selection.tsx's identical wrapper for why.
+    <ScrollView contentContainerStyle={styles.scrollContent}>
+      {/* Same DeselectableSurface-style wrapper as Demo02Selection.tsx/Demo03PlayTravel.tsx. */}
+      <Pressable style={styles.container} onPress={() => setSelectedCardId(null)}>
+        <View style={styles.modeRow}>
+          {(["twoTap", "oneTap"] as const).map(mode => (
+            <Pressable
+              key={mode}
+              testID={`demo05-mode-${mode}`}
+              onPress={() => setPlayMode(mode)}
               style={[
-                styles.modeButtonText,
-                playMode === mode && styles.modeButtonTextActive,
+                styles.modeButton,
+                playMode === mode && styles.modeButtonActive,
               ]}>
-              {mode === "twoTap" ? "Two-tap play" : "One-tap play"}
-            </Text>
+              <Text
+                style={[
+                  styles.modeButtonText,
+                  playMode === mode && styles.modeButtonTextActive,
+                ]}>
+                {mode === "twoTap" ? "Two-tap play" : "One-tap play"}
+              </Text>
+            </Pressable>
+          ))}
+          <Pressable
+            testID="demo05-stress-test"
+            onPress={runStressTest}
+            style={[styles.modeButton, styles.stressButton]}>
+            <Text style={styles.stressButtonText}>⚡ Stress test: play all</Text>
           </Pressable>
-        ))}
-        <Pressable
-          testID="demo05-stress-test"
-          onPress={runStressTest}
-          style={[styles.modeButton, styles.stressButton]}>
-          <Text style={styles.stressButtonText}>⚡ Stress test: play all</Text>
-        </Pressable>
-      </View>
-      <View
-        style={[
-          styles.hand,
-          {
-            width: totalWidth,
-            height:
-              SIMPLE_CARD_HEIGHT + HAND_TOP_OFFSET + TRAVEL_DISTANCE + 60,
-          },
-        ]}>
-        {cards.map((card, i) => (
-          <TransformDemoCard
-            key={card.id}
-            card={card}
-            slot={slots[i]}
-            selected={selectedCardId === card.id}
-            playMode={playMode}
-            onSelect={setSelectedCardId}
-            registerPress={registerPress}
-          />
-        ))}
-      </View>
-    </Pressable>
+        </View>
+        <View
+          style={[
+            styles.hand,
+            {
+              width: totalWidth,
+              height:
+                SIMPLE_CARD_HEIGHT + HAND_TOP_OFFSET + TRAVEL_DISTANCE + 60,
+            },
+          ]}>
+          {cards.map((card, i) => (
+            <TransformDemoCard
+              key={card.id}
+              card={card}
+              slot={slots[i]}
+              selected={selectedCardId === card.id}
+              playMode={playMode}
+              onSelect={setSelectedCardId}
+              registerPress={registerPress}
+            />
+          ))}
+        </View>
+        <FanConfigControls
+          handSize={handSize}
+          onHandSizeChange={setHandSize}
+          overlap={overlap}
+          onOverlapChange={setOverlap}
+          arcDegrees={arcDegrees}
+          onArcDegreesChange={setArcDegrees}
+          maxRotationDeg={maxRotationDeg}
+          onMaxRotationDegChange={setMaxRotationDeg}
+          spacingPx={spacingPx}
+          onSpacingPxChange={setSpacingPx}
+        />
+      </Pressable>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: "center", justifyContent: "flex-end" },
+  scrollContent: { flexGrow: 1 },
+  container: { flexGrow: 1, alignItems: "center" },
   modeRow: {
     flexDirection: "row",
     flexWrap: "wrap",

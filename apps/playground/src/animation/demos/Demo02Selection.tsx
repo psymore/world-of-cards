@@ -1,15 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { createDeck } from '@world-cards/engine';
 import type { Card } from '@world-cards/engine';
 import { SimpleCard, SIMPLE_CARD_HEIGHT } from '../components/SimpleCard';
 import { computeFanSlot, computeFanWidth, FanLayoutConfig, FanSlot } from '../components/fanLayout';
+import { FanConfigControls } from '../components/FanConfigControls';
 import { useCardMotion } from '../engine/useCardMotion';
 import { idleKeyframe } from '../types';
 
 const FULL_DECK = createDeck({ deckCount: 1, includeJokers: false });
-const HAND_SIZE = 8;
-const FAN_CONFIG: FanLayoutConfig = { overlap: 0.6, arcDegrees: 40, maxRotationDeg: 20, spacingPx: 40 };
+const DEFAULT_HAND_SIZE = 8;
+const DEFAULT_FAN_CONFIG: FanLayoutConfig = { overlap: 0.6, arcDegrees: 40, maxRotationDeg: 20, spacingPx: 40 };
 const SELECT_LIFT_PX = 28;
 // Mirrors apps/mobile/src/components/SelectableCard.tsx's own asymmetry: selecting
 // snaps instantly (a player tapping a different card right away shouldn't see a
@@ -71,37 +72,69 @@ function SelectableDemoCard({
 // lifted (never rejoining the fan) instead of dropping — this shared selectedCardId
 // is what makes exactly one card lifted at a time, always.
 export function Demo02Selection() {
-  const cards = useMemo(() => FULL_DECK.slice(0, HAND_SIZE), []);
-  const totalWidth = computeFanWidth(cards.length, FAN_CONFIG);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [handSize, setHandSize] = useState(DEFAULT_HAND_SIZE);
+  const [overlap, setOverlap] = useState(DEFAULT_FAN_CONFIG.overlap);
+  const [arcDegrees, setArcDegrees] = useState(DEFAULT_FAN_CONFIG.arcDegrees);
+  const [maxRotationDeg, setMaxRotationDeg] = useState(DEFAULT_FAN_CONFIG.maxRotationDeg);
+  const [spacingPx, setSpacingPx] = useState(DEFAULT_FAN_CONFIG.spacingPx);
+  const fanConfig: FanLayoutConfig = useMemo(
+    () => ({ overlap, arcDegrees, maxRotationDeg, spacingPx }),
+    [overlap, arcDegrees, maxRotationDeg, spacingPx],
+  );
+
+  const cards = useMemo(() => FULL_DECK.slice(0, handSize), [handSize]);
+  const totalWidth = computeFanWidth(cards.length, fanConfig);
 
   const handleSelect = useCallback((cardId: string) => {
     setSelectedCardId(current => (current === cardId ? null : cardId));
   }, []);
 
   return (
-    // Mirrors apps/mobile/src/components/DeselectableSurface.tsx: wrapping the root
-    // content in a Pressable clears selection on any tap that isn't already claimed
-    // by a more specific Pressable (a card's own onPress fires first via RN's normal
-    // touch-responder negotiation) — proven safe in both BatakTable and PistiTable.
-    <Pressable style={styles.container} onPress={() => setSelectedCardId(null)}>
-      <View style={[styles.hand, { width: totalWidth, height: SIMPLE_CARD_HEIGHT + HAND_TOP_OFFSET + 40 }]}>
-        {cards.map((card, i) => (
-          <SelectableDemoCard
-            key={card.id}
-            card={card}
-            slot={computeFanSlot(i, cards.length, FAN_CONFIG)}
-            selected={selectedCardId === card.id}
-            onSelect={handleSelect}
-          />
-        ))}
-      </View>
-    </Pressable>
+    // Wrapped in a ScrollView: the hand area plus the controls panel below it can
+    // together be taller than the screen (especially once TRAVEL_DISTANCE-reserving
+    // demos are involved) — without this, RN has no way to make room for content
+    // that doesn't fit and either clips it or squeezes a flexed sibling toward zero
+    // height, which is what made the controls panel appear to "disappear."
+    <ScrollView contentContainerStyle={styles.scrollContent}>
+      {/* Mirrors apps/mobile/src/components/DeselectableSurface.tsx: wrapping the
+          content in a Pressable clears selection on any tap that isn't already
+          claimed by a more specific Pressable (a card's own onPress fires first via
+          RN's normal touch-responder negotiation) — proven safe in both BatakTable
+          and PistiTable, and still fires normally for a plain tap inside a
+          ScrollView (only an actual drag/scroll gesture would suppress it). */}
+      <Pressable style={styles.container} onPress={() => setSelectedCardId(null)}>
+        <View style={[styles.hand, { width: totalWidth, height: SIMPLE_CARD_HEIGHT + HAND_TOP_OFFSET + 40 }]}>
+          {cards.map((card, i) => (
+            <SelectableDemoCard
+              key={card.id}
+              card={card}
+              slot={computeFanSlot(i, cards.length, fanConfig)}
+              selected={selectedCardId === card.id}
+              onSelect={handleSelect}
+            />
+          ))}
+        </View>
+        <FanConfigControls
+          handSize={handSize}
+          onHandSizeChange={setHandSize}
+          overlap={overlap}
+          onOverlapChange={setOverlap}
+          arcDegrees={arcDegrees}
+          onArcDegreesChange={setArcDegrees}
+          maxRotationDeg={maxRotationDeg}
+          onMaxRotationDegChange={setMaxRotationDeg}
+          spacingPx={spacingPx}
+          onSpacingPxChange={setSpacingPx}
+        />
+      </Pressable>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  scrollContent: { flexGrow: 1 },
+  container: { flexGrow: 1, alignItems: 'center' },
   hand: { position: 'relative' },
   cardSlot: { position: 'absolute' },
 });

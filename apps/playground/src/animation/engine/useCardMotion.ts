@@ -27,6 +27,11 @@ export interface CardMotionResult {
   // "Preserve Spatial Continuity" rule. Safe to call while a previous retarget is
   // still animating.
   retarget: (to: CardMotionKeyframe, options?: RetargetOptions) => void;
+  // Immediately sets every output value to the supplied keyframe, preserving
+  // visual continuity across a render that has already changed the caller's
+  // container/base position. Used by Demo 06's hand reflow to keep a card
+  // visually in place while its slot style jumps to the new layout.
+  jumpTo: (to: CardMotionKeyframe) => void;
   // The card's current interpolated keyframe, computed synchronously from elapsed
   // time (see legStartTimeRef's comment) — not read off the Animated.Values
   // themselves, which is what makes this safe to call with no native round-trip.
@@ -113,6 +118,19 @@ export function useCardMotion({
     Animated.timing(glyphScaleRef, { toValue: to.glyphScale, ...config }).start();
   }
 
+  function jumpTo(to: CardMotionKeyframe) {
+    xRef.setValue(to.x);
+    yRef.setValue(to.y);
+    rotateRef.setValue(to.rotateDeg);
+    scaleRef.setValue(to.scale);
+    glyphScaleRef.setValue(to.glyphScale);
+    fromRef.current = to;
+    toRef.current = to;
+    legStartTimeRef.current = Date.now();
+    durationRef.current = 0;
+    easingRef.current = defaultEasing;
+  }
+
   // Built once per Animated.Value identity (i.e. once ever, since xRef/yRef/etc.
   // are stable refs) — unlike the old design, there's no from/to baked into these,
   // so there's never a reason to rebuild them on retarget.
@@ -133,5 +151,5 @@ export function useCardMotion({
     [xRef, yRef, rotateRef, scaleRef],
   );
 
-  return { transform, glyphScale: glyphScaleRef, retarget, getCurrentKeyframe };
+  return { transform, glyphScale: glyphScaleRef, retarget, jumpTo, getCurrentKeyframe };
 }

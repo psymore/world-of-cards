@@ -20,10 +20,10 @@ const SUIT_GLYPHS: Record<Suit, string> = {
 };
 
 const SUIT_COLORS: Record<Suit, string> = {
-  hearts: "#c0392b",
-  diamonds: "#c0392b",
-  clubs: "#111111",
-  spades: "#111111",
+  hearts: "#9a2f2f",
+  diamonds: "#9a2f2f",
+  clubs: "#1c2451",
+  spades: "#1c2451",
 };
 
 export interface SimpleCardProps {
@@ -74,10 +74,15 @@ const styles = StyleSheet.create({
     height: SIMPLE_CARD_HEIGHT,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: "#999",
-    backgroundColor: "#fff",
+    borderColor: "#d8cca4",
+    backgroundColor: "#f3ecd9",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+    elevation: 3,
   },
   rank: { fontSize: 20, fontWeight: "700", textAlign: "center" },
   suit: { fontSize: 22, textAlign: "center" },
