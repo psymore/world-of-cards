@@ -1,8 +1,8 @@
 # Architecture Audit: <Feature Name>
 
-**Used per:** `AnimationReviewWorkflow.md` §2 (Architecture Audit) and §4 (Implementation Approval Process). Complete this before implementation begins; re-run it against the actual diff for Regression Review (`AnimationReviewWorkflow.md` §7).
+**Used per:** `../AnimationReviewWorkflow.md` §2 (Architecture Audit) and §4 (Implementation Approval Process). Complete this before implementation begins; re-run it against the actual diff for Regression Review (`../AnimationReviewWorkflow.md` §7).
 
-*For a Playground demo, this can be filled in directly inside that demo's own doc (see `demos/DemoTemplate.md`'s "Architecture Audit" section) instead of as a standalone file. Use a standalone copy of this template when the work spans multiple demos, touches production (`apps/mobile`), or is large enough that a Demo doc isn't the right container.*
+*For a Playground demo, this can be filled in directly inside that demo's own doc (see `../demos/DemoTemplate.md`'s "Architecture Audit" section) instead of as a standalone file. Use a standalone copy of this template, kept in this same folder, when the work spans multiple demos, touches production (`apps/mobile`), or is large enough that a Demo doc isn't the right container.*
 
 *For a change small and obvious enough to pass `QuickAuditTemplate.md`'s own eligibility checklist, use that instead — it satisfies this same requirement with less ceremony. If it doesn't clearly pass that checklist, use this template, not a shortened version of it.*
 

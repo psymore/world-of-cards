@@ -1,6 +1,6 @@
 # Quick Audit: <Change Name>
 
-**Used per:** `AnimationReviewWorkflow.md` §2 — the fast path for changes that are genuinely small and obvious. This is not a shortcut *around* the Architecture Audit; it *is* the Architecture Audit, scaled to a change too small to justify `AuditTemplate.md`'s full ownership tables. If this template's own eligibility check below doesn't clearly pass, that's not a reason to fill it out anyway — it's the signal to switch to `AuditTemplate.md`.
+**Used per:** `../AnimationReviewWorkflow.md` §2 — the fast path for changes that are genuinely small and obvious. This is not a shortcut *around* the Architecture Audit; it *is* the Architecture Audit, scaled to a change too small to justify `AuditTemplate.md`'s full ownership tables. If this template's own eligibility check below doesn't clearly pass, that's not a reason to fill it out anyway — it's the signal to switch to `AuditTemplate.md`.
 
 ---
 

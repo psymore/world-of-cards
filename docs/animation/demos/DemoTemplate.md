@@ -30,7 +30,7 @@
 
 ## Architecture Audit
 
-*Fill this out using `AuditTemplate.md`'s structure directly in this section (Current Ownership / Proposed Ownership / Layer Responsibilities / Boundary Violations / Severity Classification / Risks / Open Questions / Approval / Review Date / Reviewer). For a demo large enough to warrant its own standalone audit doc, link it here instead of duplicating it inline — see `AuditTemplate.md`'s own note on when to do that.*
+*Fill this out using `../audits/AuditTemplate.md`'s structure directly in this section (Current Ownership / Proposed Ownership / Layer Responsibilities / Boundary Violations / Severity Classification / Risks / Open Questions / Approval / Review Date / Reviewer). For a demo large enough to warrant its own standalone audit doc, create it in `../audits/` and link it here instead of duplicating it inline — see `../audits/AuditTemplate.md`'s own note on when to do that.*
 
 ## Current Behavior
 

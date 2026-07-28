@@ -22,9 +22,9 @@ An Architecture Audit is the act of checking a proposed or implemented animation
 2. Walk the Constitution's Architecture Review Checklist (§9), in the order given in §10 of this document, answering each applicable item against the change.
 3. For any item that does not clearly pass, check whether it's already a recorded Known Architectural Gap (Constitution §8) or a live Rejected Proposal (Constitution §6) being reconsidered without a qualifying spike. If neither applies, it's a new finding.
 4. Classify every new finding by severity (§3 below).
-5. Record the findings using `AuditTemplate.md`: for Playground work, filled in directly inside the demo's doc; for production work, as a standalone copy linked from the PR description or task doc.
+5. Record the findings using `audits/AuditTemplate.md`: for Playground work, filled in directly inside the demo's doc; for production work, as a standalone copy in `audits/`, linked from the PR description or task doc.
 
-For changes small and obvious enough to pass `QuickAuditTemplate.md`'s own eligibility checklist, that lighter template satisfies this same procedure — it is not an exemption from it, only a smaller artifact sized to a smaller change. It is not a way to skip a finding; a Critical or Major result on the quick path still means stop and switch to `AuditTemplate.md` (§3, §4).
+For changes small and obvious enough to pass `audits/QuickAuditTemplate.md`'s own eligibility checklist, that lighter template satisfies this same procedure — it is not an exemption from it, only a smaller artifact sized to a smaller change. It is not a way to skip a finding; a Critical or Major result on the quick path still means stop and switch to `audits/AuditTemplate.md` (§3, §4).
 
 An audit only checks the specific guarantees the Constitution names. Style, naming, and structure questions that don't touch a Foundational Principle belong to ordinary code review, not this process.
 
