@@ -9,6 +9,7 @@ import { Demo04Landing } from './demos/Demo04Landing';
 import { Demo05Transform } from './demos/Demo05Transform';
 import { Demo06HandReposition } from './demos/Demo06HandReposition';
 import { Demo07CompleteSequence } from './demos/Demo07CompleteSequence';
+import { Demo08ReanimatedHandReposition } from './demos/Demo08ReanimatedHandReposition';
 import { FeltBackground } from './components/FeltBackground';
 
 function renderDemo(demo: DemoId): React.ReactElement {
@@ -27,6 +28,8 @@ function renderDemo(demo: DemoId): React.ReactElement {
       return <Demo06HandReposition />;
     case 'complete-sequence':
       return <Demo07CompleteSequence />;
+    case 'reanimated-hand-reposition':
+      return <Demo08ReanimatedHandReposition />;
   }
 }
 
