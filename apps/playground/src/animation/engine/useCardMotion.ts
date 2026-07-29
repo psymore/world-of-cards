@@ -7,10 +7,32 @@ export interface RetargetOptions {
   easing?: EasingFunction;
 }
 
+// A pre-created set of Animated.Values a caller can hand in instead of letting
+// useCardMotion create its own — see the `pool` option below.
+export interface CardMotionValuePool {
+  x: Animated.Value;
+  y: Animated.Value;
+  rotate: Animated.Value;
+  scale: Animated.Value;
+  glyphScale: Animated.Value;
+}
+
 export interface UseCardMotionOptions {
   initial: CardMotionKeyframe;
   defaultDurationMs: number;
   defaultEasing: EasingFunction;
+  // Opt-in: reuse these externally-owned Animated.Values instead of creating a
+  // fresh set on every mount. For the 2026-07-29 Demo 6 revisit-stutter
+  // investigation — every mount normally creates its own 5 Animated.Values per
+  // card, each backed by a native-driver node once animated; nothing tears
+  // those down on unmount, so cleanup depends entirely on the JS objects
+  // actually being garbage-collected, which isn't immediate. A caller that
+  // owns a fixed, module-scoped pool of these (surviving every mount/unmount
+  // of the component that calls this hook) can pass it here so nothing new is
+  // ever created after the very first app launch — see
+  // Demo06HandReposition.tsx's HAND_MOTION_POOL for the real usage. Omit for
+  // the normal case (every other demo); this is purely additive.
+  pool?: CardMotionValuePool;
 }
 
 export interface CardMotionResult {
@@ -76,12 +98,45 @@ export function useCardMotion({
   initial,
   defaultDurationMs,
   defaultEasing,
+  pool,
 }: UseCardMotionOptions): CardMotionResult {
-  const xRef = useRef(new Animated.Value(initial.x)).current;
-  const yRef = useRef(new Animated.Value(initial.y)).current;
-  const rotateRef = useRef(new Animated.Value(initial.rotateDeg)).current;
-  const scaleRef = useRef(new Animated.Value(initial.scale)).current;
-  const glyphScaleRef = useRef(new Animated.Value(initial.glyphScale)).current;
+  // Always constructed (rules-of-hooks requires an unconditional call here),
+  // but thrown away unused whenever `pool` is provided — a bare, never-animated
+  // Animated.Value has no native-driver footprint, so this costs one small,
+  // immediately-GC-eligible allocation per mount in the pooled case. Simpler
+  // than conditionally skipping the useRef call, which would vary the number of
+  // hooks called between renders if `pool` ever changed (it doesn't in
+  // practice, but this reads correctly either way).
+  const ownX = useRef(new Animated.Value(initial.x)).current;
+  const ownY = useRef(new Animated.Value(initial.y)).current;
+  const ownRotate = useRef(new Animated.Value(initial.rotateDeg)).current;
+  const ownScale = useRef(new Animated.Value(initial.scale)).current;
+  const ownGlyphScale = useRef(new Animated.Value(initial.glyphScale)).current;
+
+  const xRef = pool?.x ?? ownX;
+  const yRef = pool?.y ?? ownY;
+  const rotateRef = pool?.rotate ?? ownRotate;
+  const scaleRef = pool?.scale ?? ownScale;
+  const glyphScaleRef = pool?.glyphScale ?? ownGlyphScale;
+
+  // A pooled value's CURRENT state is whatever its previous occupant (a
+  // different card, from a previous mount) last left it at — reset explicitly
+  // to THIS mount's own initial keyframe rather than visibly inheriting stale
+  // state. Run directly in the render body (not an effect) so it lands before
+  // this component's very first paint, not one frame after — mirrors why
+  // Demo06HandReposition's own reflow correction uses useLayoutEffect rather
+  // than useEffect. Guarded to run once per component instance; plain
+  // (non-pooled) callers skip this entirely since a freshly-constructed
+  // Animated.Value already starts at `initial` by construction.
+  const didInitPool = useRef(false);
+  if (pool && !didInitPool.current) {
+    didInitPool.current = true;
+    xRef.setValue(initial.x);
+    yRef.setValue(initial.y);
+    rotateRef.setValue(initial.rotateDeg);
+    scaleRef.setValue(initial.scale);
+    glyphScaleRef.setValue(initial.glyphScale);
+  }
 
   // Tracked purely so getCurrentKeyframe() can answer synchronously with no native
   // round-trip — NOT used to drive the animation itself; each Animated.Value above

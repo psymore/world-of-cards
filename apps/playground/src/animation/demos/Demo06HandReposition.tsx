@@ -26,13 +26,63 @@ import {
   railPosition,
   RailSlot,
 } from "../components/railFanLayout";
-import { useCardMotion } from "../engine/useCardMotion";
+import { CardMotionValuePool, useCardMotion } from "../engine/useCardMotion";
 import { FanConfigControls } from "../components/FanConfigControls";
 import { idleKeyframe } from "../types";
 import { TRAVEL_DISTANCE, TRAVEL_DURATION_MS } from "./Demo03PlayTravel";
 
 const FULL_DECK = createDeck({ deckCount: 1, includeJokers: false });
 const DEFAULT_HAND_SIZE = 6;
+// Matches FanConfigControls' own hand-size slider maximumValue — the largest
+// hand this demo can ever show, so the pool below always has enough slots.
+const MAX_HAND_SIZE = 13;
+
+// Fixed pool of per-slot Animated.Values, created ONCE at module load and
+// reused for the lifetime of the app — never torn down when
+// Demo06HandReposition itself unmounts/remounts (e.g. switching demo tabs and
+// back). This is fix attempt #2 for the 2026-07-29 revisit-stutter
+// investigation: every mount previously created a fresh set of 5
+// Animated.Values per card, each backed by a native-driver node once
+// animated, with nothing forcing their release on unmount — cleanup depended
+// entirely on JS garbage collection actually reclaiming the old objects,
+// which isn't immediate (fix #1, an explicit stopAnimation() on unmount,
+// didn't help — measured no change — because by the time a revisit happens
+// the previous mount's animations have long since finished naturally; there
+// was nothing in-flight left to stop). Pooling removes the GC-timing
+// dependency entirely: nothing new is ever created after the very first
+// launch, so there's nothing stale left to interfere.
+//
+// Keyed by a card's STABLE original-deal slot (originalIndexById below), not
+// its live position in `cards` — a card's own slot never changes for as long
+// as it's still in the hand (only reassigned to a DIFFERENT card once THIS
+// mount ends and a new one begins), so a pool slot's ownership can never
+// reassign mid-animation within a single mount.
+function createMotionValuePool(size: number): CardMotionValuePool[] {
+  return Array.from({ length: size }, () => ({
+    x: new Animated.Value(0),
+    y: new Animated.Value(0),
+    rotate: new Animated.Value(0),
+    scale: new Animated.Value(1),
+    glyphScale: new Animated.Value(1),
+  }));
+}
+const HAND_MOTION_POOL = createMotionValuePool(MAX_HAND_SIZE);
+// PlayedCard's own pool — a single slot, not an array like HAND_MOTION_POOL's
+// per-card-identity one, since only one card can ever be mid-departure at a
+// time (isPlayLocked enforces this). PlayedCard force-remounts on every play
+// (key={playedCard.card.id}, so a different card gets a genuinely fresh
+// component instance), which previously meant a fresh, unpooled set of 5
+// Animated.Values per play too — the exact same GC-timing-dependent stutter
+// source HAND_MOTION_POOL was built to eliminate for HandCard, just never
+// extended to this sibling component. See HAND_MOTION_POOL's own comment for
+// the full rationale.
+const PLAYED_CARD_MOTION_POOL: CardMotionValuePool = {
+  x: new Animated.Value(0),
+  y: new Animated.Value(0),
+  rotate: new Animated.Value(0),
+  scale: new Animated.Value(1),
+  glyphScale: new Animated.Value(1),
+};
 const DEFAULT_FAN_CONFIG: FanLayoutConfig = {
   overlap: 0.6,
   arcDegrees: 40,
@@ -88,6 +138,8 @@ function HandCardComponent({
   onPlay,
   registerPress,
   zIndex,
+  motionPool,
+  isPlayLocked,
 }: {
   card: Card;
   slot: RailSlot;
@@ -101,15 +153,26 @@ function HandCardComponent({
   onSelect: (cardId: string | null) => void;
   onPlay: (cardId: string, slot: RailSlot, wasSelected: boolean) => void;
   registerPress: (cardId: string, press: () => void) => void;
+  // True while ANY card (not just this one) is mid departure/hold/return
+  // cycle — see Demo06HandReposition's own isPlayLocked doc comment for why
+  // this exists. Blocks the entire handlePress (selection included, not just
+  // playing) so a locked card simply doesn't respond to taps at all, rather
+  // than allowing a select that could never complete.
+  isPlayLocked: boolean;
   // This card's own current index in the hand — see Demo06HandReposition's render
   // for why paint order is now controlled via this style property rather than
   // JSX/parent position.
   zIndex: number;
+  // This card's stable pool slot (HAND_MOTION_POOL[originalIndexById.get(card.id)])
+  // — see the pool's own module-level doc comment for why this exists and why
+  // it's keyed by original deal position, not live array index.
+  motionPool: CardMotionValuePool;
 }) {
   const motion = useCardMotion({
     initial: idleKeyframe({ rotateDeg: slot.angleDeg }),
     defaultDurationMs: DESELECT_DURATION_MS,
     defaultEasing: Easing.out(Easing.cubic),
+    pool: motionPool,
   });
   const wasSelected = useRef(selected);
   const prevAngleRef = useRef(slot.angleDeg);
@@ -172,6 +235,7 @@ function HandCardComponent({
   }, [slot.angleDeg]);
 
   function handlePress() {
+    if (isPlayLocked) return;
     if (playMode === "twoTap" && !selected) {
       onSelect(card.id);
       return;
@@ -250,7 +314,10 @@ function PlayedCard({
   // fixed the SSOT drift but lost that stacking relationship. See
   // docs/animation/audits/Demo06-ZIndexFix-Audit.md's Correction section.
   zIndex: number;
-  onComplete: () => void;
+  // Called once this card's full departure -> hold -> return cycle finishes,
+  // with the card itself, so the parent can re-add it to `cards` (see
+  // docs/animation/audits/Demo06-ReturnToHand-Audit.md).
+  onComplete: (card: Card) => void;
 }) {
   const origin = railPosition(departureAngleDeg, wasSelected ? SELECT_LIFT_PX : 0);
   // centerXAtPlay + origin.x is this card's CENTER (railPosition's x is always
@@ -264,6 +331,7 @@ function PlayedCard({
     initial: idleKeyframe({ rotateDeg: origin.rotateDeg }),
     defaultDurationMs: TRAVEL_DURATION_MS,
     defaultEasing: Easing.out(Easing.cubic),
+    pool: PLAYED_CARD_MOTION_POOL,
   });
 
   // useLayoutEffect, not useEffect: unlike Demo 03/05's persistent per-card
@@ -274,7 +342,20 @@ function PlayedCard({
   // before the animation actually starts — a visible pause-then-jump, not a single
   // continuous motion. A layout effect fires before that first paint instead, so
   // the very first rendered frame is already the start of the eased motion.
+  //
+  // Three legs, chained via nested timers (all cleared on unmount): depart ->
+  // hold -> RETURN back to this card's own resting keyframe -> onComplete. The
+  // return leg's destination is simply `idleKeyframe({ rotateDeg:
+  // origin.rotateDeg })` — this card's own angle, at zero extra radius — which
+  // is only valid because Demo06HandReposition's play-lock (isPlayLocked)
+  // guarantees no OTHER card can be played while this one is mid-cycle: the
+  // hand's composition when this card returns is provably identical to what it
+  // was the instant this card departed, so the same symmetric rail-distribution
+  // formula (railAngles) resolves to the exact same angle both times — no
+  // re-simulation of a hypothetical future array needed. See
+  // docs/animation/audits/Demo06-ReturnToHand-Audit.md.
   useLayoutEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
     motion.retarget(
       idleKeyframe({
         rotateDeg: origin.rotateDeg,
@@ -292,8 +373,16 @@ function PlayedCard({
       }),
       { durationMs: TRAVEL_DURATION_MS, easing: Easing.out(Easing.cubic) },
     );
-    const timer = setTimeout(onComplete, TRAVEL_DURATION_MS + HOLD_MS);
-    return () => clearTimeout(timer);
+    timers.push(
+      setTimeout(() => {
+        motion.retarget(idleKeyframe({ rotateDeg: origin.rotateDeg }), {
+          durationMs: TRAVEL_DURATION_MS,
+          easing: Easing.out(Easing.cubic),
+        });
+        timers.push(setTimeout(() => onComplete(card), TRAVEL_DURATION_MS));
+      }, TRAVEL_DURATION_MS + HOLD_MS),
+    );
+    return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -412,11 +501,21 @@ export function Demo06HandReposition() {
     [handSize],
   );
 
+  // Cleanup for departTimerRef (set inside handlePlay below) — mirrors
+  // PlayedCard's own timer cleanup pattern (see its useLayoutEffect). Only one
+  // play can ever be in flight at a time (isPlayLocked), so a single ref (not
+  // an array) is enough.
+  const departTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (departTimerRef.current != null) clearTimeout(departTimerRef.current);
+    };
+  }, []);
+
   const handlePlay = useCallback(
     (cardId: string, slot: RailSlot, wasSelected: boolean) => {
       const card = cards.find(c => c.id === cardId);
       if (!card) return;
-      setCards(prev => prev.filter(c => c.id !== cardId));
       setSelectedCardId(null);
       setPlayedCard({
         card,
@@ -424,13 +523,54 @@ export function Demo06HandReposition() {
         centerXAtPlay: centerX,
         wasSelected,
       });
+      // Per direct user request (2026-07-29): the remaining hand's reflow
+      // previously started in the SAME instant the played card began its
+      // departure flight (this setCards call used to fire immediately,
+      // above). Now it's delayed until the departure has actually landed —
+      // TRAVEL_DURATION_MS, the depart leg's own duration, not the full
+      // depart->hold->return cycle — so only one thing is visibly moving at
+      // a time: first the card leaves, then the hand closes the gap.
+      // `cards` still includes the departing card until this fires, so the
+      // OTHER cards keep their pre-play slot positions during the flight
+      // (see the render below, which explicitly skips rendering the
+      // departing card as a HandCard in the meantime).
+      departTimerRef.current = setTimeout(() => {
+        setCards(prev => prev.filter(c => c.id !== cardId));
+      }, TRAVEL_DURATION_MS);
     },
     [cards, centerX],
   );
 
-  const handleCompletedPlay = useCallback(() => {
-    setPlayedCard(null);
-  }, []);
+  // Re-adds the card to `cards`, sorted back into its original deal position
+  // (via originalIndexById — the same stable SSOT the zIndex/pool-slot fixes
+  // already rely on), so it reuses all of that existing machinery with no new
+  // cases: a reinserted card is indistinguishable from one that never left.
+  // See docs/animation/audits/Demo06-ReturnToHand-Audit.md.
+  const handleCompletedPlay = useCallback(
+    (card: Card) => {
+      setPlayedCard(null);
+      setCards(prev => {
+        const next = [...prev, card];
+        next.sort(
+          (a, b) => (originalIndexById.get(a.id) ?? 0) - (originalIndexById.get(b.id) ?? 0),
+        );
+        return next;
+      });
+    },
+    [originalIndexById],
+  );
+
+  // Only one card can ever be mid-cycle (departing -> holding -> returning) at
+  // a time — the direct fix for the collision risk flagged in
+  // docs/animation/audits/Demo06-ReturnToHand-Audit.md: re-adding a returning
+  // card to `cards` triggers the same reflow effect a departure triggers, and
+  // two overlapping reflow-triggering events (from two simultaneously-cycling
+  // cards) could compete for the same per-card jumpTo/retarget calls. Gating
+  // on this in HandCardComponent.handlePress means `cards` can only ever
+  // change once per full cycle, never with two cycles overlapping — and it's
+  // also what makes the return leg's angle-reuse simplification above valid
+  // (see that comment).
+  const isPlayLocked = playedCard !== null;
 
   // Full reset to this demo's initial mount conditions — every piece of state
   // this component owns, not just the hand. Explicit here rather than relying
@@ -533,22 +673,43 @@ export function Demo06HandReposition() {
               §5.II; see docs/animation/audits/Demo06-ZIndexFix-Audit.md and its
               Correction section). One shared map, read identically by both,
               has nothing left to drift and reproduces that stacking for free. */}
-          {cards.map((card, i) => (
-            <HandCard
-              key={card.id}
-              card={card}
-              slot={slots[i]}
-              centerX={centerX}
-              selected={selectedCardId === card.id}
-              playMode={playMode}
-              onSelect={setSelectedCardId}
-              onPlay={handlePlay}
-              registerPress={registerPress}
-              zIndex={originalIndexById.get(card.id) ?? i}
-            />
-          ))}
+          {cards.map((card, i) => {
+            // The departing card stays in `cards` (and therefore still owns
+            // slots[i]) until departTimerRef fires — see handlePlay's own
+            // comment. It's already rendered via <PlayedCard> below, so skip
+            // it here rather than double-rendering; every OTHER card keeps
+            // its pre-play slot (slots[i], from the still-unshrunk count)
+            // until that timer actually removes this card from `cards`.
+            if (playedCard && card.id === playedCard.card.id) return null;
+            const poolIndex = originalIndexById.get(card.id) ?? i;
+            return (
+              <HandCard
+                key={card.id}
+                card={card}
+                slot={slots[i]}
+                centerX={centerX}
+                selected={selectedCardId === card.id}
+                playMode={playMode}
+                onSelect={setSelectedCardId}
+                onPlay={handlePlay}
+                registerPress={registerPress}
+                zIndex={poolIndex}
+                motionPool={HAND_MOTION_POOL[poolIndex % HAND_MOTION_POOL.length]}
+                isPlayLocked={isPlayLocked}
+              />
+            );
+          })}
           {playedCard ? (
             <PlayedCard
+              // Forces a genuine unmount/remount whenever a DIFFERENT card
+              // becomes playedCard — without this, React reuses the same
+              // PlayedCard instance (same type, same JSX slot) across two
+              // different cards, and its one-time mount effect (empty deps,
+              // by design — see the component's own comment) silently never
+              // re-fires for the second card, omitting its departure
+              // animation entirely. See
+              // docs/animation/audits/Demo06-TrickCenterKeyFix-QuickAudit.md.
+              key={playedCard.card.id}
               card={playedCard.card}
               departureAngleDeg={playedCard.departureAngleDeg}
               centerXAtPlay={playedCard.centerXAtPlay}
