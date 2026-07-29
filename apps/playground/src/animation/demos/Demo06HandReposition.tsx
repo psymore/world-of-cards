@@ -47,8 +47,15 @@ const RESTING_SCALE = 0.7;
 const RESTING_GLYPH_SCALE = 0.75;
 const HAND_CARD_REPOSITION_DURATION_MS = 320;
 const HAND_CARD_REPOSITION_EASING = Easing.inOut(Easing.cubic);
-const HAND_CONTAINER_HEIGHT =
-  SIMPLE_CARD_HEIGHT + HAND_TOP_OFFSET + TRAVEL_DISTANCE + 60;
+// Sized to just the resting fan row, not the departure flight — the departing
+// card's motion overflows UPWARD (transform: translateY(-(SELECT_LIFT_PX +
+// TRAVEL_DISTANCE))), past this box's own top edge, not downward within it, so
+// reserving that distance in this box's own height doesn't actually keep the
+// flight visible — it just eats vertical budget that the SPACER below (which
+// sits ABOVE this box, where the flight actually needs headroom) could use
+// instead. See Demo03PlayTravel.tsx's identical spacer/hand-height split for the
+// full rationale.
+const HAND_CONTAINER_HEIGHT = SIMPLE_CARD_HEIGHT + HAND_TOP_OFFSET + 20;
 
 type PlayMode = "oneTap" | "twoTap";
 
@@ -234,9 +241,14 @@ function PlayedCard({
   // two-tap mode's second tap, so the card would instantly snap down before flying
   // up, breaking "single continuous motion."
   wasSelected: boolean;
-  // Fixed at this card's own original position among its former neighbors — see
-  // Demo06HandReposition's render for why this replaces the old two-JSX-layer
-  // stacking trick.
+  // This card's own stable, once-per-deal original position — the SAME value
+  // (and the SAME source: Demo06HandReposition's originalIndexById map) every
+  // remaining HandCard's own zIndex is read from, so this card stays correctly
+  // interleaved with its former neighbors (below the one originally to its
+  // right, above the one originally to its left) for its entire flight,
+  // instead of an earlier version's fixed "always on top" constant, which
+  // fixed the SSOT drift but lost that stacking relationship. See
+  // docs/animation/audits/Demo06-ZIndexFix-Audit.md's Correction section.
   zIndex: number;
   onComplete: () => void;
 }) {
@@ -332,10 +344,6 @@ export function Demo06HandReposition() {
     departureAngleDeg: number;
     centerXAtPlay: number;
     wasSelected: boolean;
-    // The card's index in the hand array at the moment it was played — used only
-    // to derive PlayedCard's zIndex (originalIndex + 0.5), so it stacks between
-    // its former neighbors' own zIndex values (see the render below).
-    originalIndex: number;
   } | null>(null);
   const pressFns = useRef<Map<string, () => void>>(new Map());
   const registerPress = useCallback((cardId: string, press: () => void) => {
@@ -384,11 +392,30 @@ export function Demo06HandReposition() {
   );
   const centerX = maxHandWidth / 2;
 
+  // Every card's STABLE, once-per-deal stacking slot — keyed only on handSize
+  // (this round's original deal), never on the live, shrinking `cards` array.
+  // Both HandCard and PlayedCard read their zIndex from this SAME map, so
+  // there is exactly one computation of "this card's stacking order," not two
+  // independently drifting ones (the original bug: HandCard's zIndex tracked
+  // the live, reflowed array position while PlayedCard's tracked a frozen
+  // snapshot of that same live position — two different reference frames for
+  // one fact). Because a remaining card's own entry here never changes when a
+  // sibling leaves, a departing card's entry (looked up the same way) stays
+  // correctly interleaved with its original neighbors — below the one
+  // originally to its right, above the one originally to its left — for its
+  // entire flight, matching Demo05Transform.tsx's own behavior (which never
+  // removes a played card from its array at all, so it never faces this
+  // problem in the first place). See
+  // docs/animation/audits/Demo06-ZIndexFix-Audit.md's Correction section.
+  const originalIndexById = useMemo(
+    () => new Map(FULL_DECK.slice(0, handSize).map((c, i) => [c.id, i])),
+    [handSize],
+  );
+
   const handlePlay = useCallback(
     (cardId: string, slot: RailSlot, wasSelected: boolean) => {
-      const index = cards.findIndex(c => c.id === cardId);
-      if (index === -1) return;
-      const card = cards[index];
+      const card = cards.find(c => c.id === cardId);
+      if (!card) return;
       setCards(prev => prev.filter(c => c.id !== cardId));
       setSelectedCardId(null);
       setPlayedCard({
@@ -396,7 +423,6 @@ export function Demo06HandReposition() {
         departureAngleDeg: slot.angleDeg,
         centerXAtPlay: centerX,
         wasSelected,
-        originalIndex: index,
       });
     },
     [cards, centerX],
@@ -405,6 +431,22 @@ export function Demo06HandReposition() {
   const handleCompletedPlay = useCallback(() => {
     setPlayedCard(null);
   }, []);
+
+  // Full reset to this demo's initial mount conditions — every piece of state
+  // this component owns, not just the hand. Explicit here rather than relying
+  // on the handSize effect above, since that effect only fires on a CHANGE to
+  // handSize and would silently no-op if handSize is already at its default.
+  function resetDemo() {
+    setHandSize(DEFAULT_HAND_SIZE);
+    setOverlap(DEFAULT_FAN_CONFIG.overlap);
+    setArcDegrees(DEFAULT_FAN_CONFIG.arcDegrees);
+    setMaxRotationDeg(DEFAULT_FAN_CONFIG.maxRotationDeg);
+    setSpacingPx(DEFAULT_FAN_CONFIG.spacingPx);
+    setCards(FULL_DECK.slice(0, DEFAULT_HAND_SIZE));
+    setSelectedCardId(null);
+    setPlayedCard(null);
+    setPlayMode("twoTap");
+  }
 
   function runStressTest() {
     const ids = cards.map(card => card.id);
@@ -419,7 +461,10 @@ export function Demo06HandReposition() {
 
   return (
     // Wrapped in a ScrollView — see Demo02Selection.tsx's identical wrapper for why.
-    <ScrollView contentContainerStyle={styles.scrollContent}>
+    // style={styles.scrollView} (flex: 1) makes this stretch to its own parent's
+    // full available height (confirmed via DOM measurement, not assumed) — needed
+    // for the bottom-anchoring spacer below to have real slack to grow into.
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
       <Pressable style={styles.container} onPress={() => setSelectedCardId(null)}>
         <View style={styles.modeRow}>
           {(["twoTap", "oneTap"] as const).map(mode => (
@@ -446,7 +491,18 @@ export function Demo06HandReposition() {
             style={[styles.modeButton, styles.stressButton]}>
             <Text style={styles.stressButtonText}>⚡ Play all</Text>
           </Pressable>
+          <Pressable
+            testID="demo06-reset"
+            onPress={resetDemo}
+            style={[styles.modeButton, styles.resetButton]}>
+            <Text style={styles.resetButtonText}>↺ Reset</Text>
+          </Pressable>
         </View>
+        {/* Pushes the hand down toward the bottom of the screen and guarantees
+            real room ABOVE it for the departing card's upward flight to be
+            visible — see Demo03PlayTravel.tsx's identical spacer/hand-height
+            pair (HAND_CONTAINER_HEIGHT above) for the full rationale. */}
+        <View style={styles.spacer} />
         <View
           style={[
             styles.handWrapper,
@@ -463,13 +519,20 @@ export function Demo06HandReposition() {
               silently unmounted and remounted, resetting its useCardMotion state
               and snapping instead of easing — a real, confirmed bug that only
               showed up for some plays (e.g. anything except the rightmost card,
-              which never needs to change groups) and not others. zIndex achieves
-              the exact same "stacks between its former neighbors" result without
-              ever moving a card's JSX position: each HandCard's zIndex is its own
-              current index (matching the pre-existing "higher index paints on
-              top" convention), and PlayedCard's zIndex sits at its own original
-              index + 0.5 — strictly above every card that was originally before
-              it, strictly below every one that was originally after it. */}
+              which never needs to change groups) and not others. zIndex controls
+              stacking without ever moving a card's JSX position: both HandCard
+              and PlayedCard read their zIndex from originalIndexById (defined
+              above) — a card's STABLE original deal position, never its live,
+              reflowed array position. An earlier version used the live index
+              `i` for HandCard and a frozen originalIndex + 0.5 (or later, a
+              fixed "always on top" constant) for PlayedCard — two independent
+              computations of the same "stacking slot" fact, which either
+              silently disagreed once `cards` reindexed post-play, or agreed but
+              lost the "beneath its original right neighbor, above its original
+              left neighbor" stacking a real fanned hand should have (Constitution
+              §5.II; see docs/animation/audits/Demo06-ZIndexFix-Audit.md and its
+              Correction section). One shared map, read identically by both,
+              has nothing left to drift and reproduces that stacking for free. */}
           {cards.map((card, i) => (
             <HandCard
               key={card.id}
@@ -481,7 +544,7 @@ export function Demo06HandReposition() {
               onSelect={setSelectedCardId}
               onPlay={handlePlay}
               registerPress={registerPress}
-              zIndex={i}
+              zIndex={originalIndexById.get(card.id) ?? i}
             />
           ))}
           {playedCard ? (
@@ -490,7 +553,7 @@ export function Demo06HandReposition() {
               departureAngleDeg={playedCard.departureAngleDeg}
               centerXAtPlay={playedCard.centerXAtPlay}
               wasSelected={playedCard.wasSelected}
-              zIndex={playedCard.originalIndex + 0.5}
+              zIndex={originalIndexById.get(playedCard.card.id) ?? 0}
               onComplete={handleCompletedPlay}
             />
           ) : null}
@@ -513,6 +576,7 @@ export function Demo06HandReposition() {
 }
 
 const styles = StyleSheet.create({
+  scrollView: { flex: 1 },
   scrollContent: { flexGrow: 1 },
   container: { flexGrow: 1, alignItems: "center" },
   modeRow: {
@@ -534,6 +598,11 @@ const styles = StyleSheet.create({
   modeButtonTextActive: { color: "#fff", fontWeight: "700" },
   stressButton: { backgroundColor: "#ff8c0033", borderColor: "#ff8c00" },
   stressButtonText: { color: "#ffb366", fontSize: 13, fontWeight: "700" },
+  resetButton: { backgroundColor: "#4a90e233", borderColor: "#4a90e2" },
+  resetButtonText: { color: "#9cc4f0", fontSize: 13, fontWeight: "700" },
+  // minHeight guarantees the upward flight's landing point stays visible
+  // regardless of viewport size; flex: 1 grows it further when there's slack.
+  spacer: { flex: 1, minHeight: SELECT_LIFT_PX + TRAVEL_DISTANCE + 40 },
   handWrapper: { position: "relative", alignSelf: "center" },
   cardSlot: { position: "absolute" },
   playedCard: { position: "absolute" },

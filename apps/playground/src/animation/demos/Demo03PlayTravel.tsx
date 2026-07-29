@@ -275,10 +275,11 @@ export function Demo03PlayTravel() {
   }
 
   return (
-    // Wrapped in a ScrollView — see Demo02Selection.tsx's identical wrapper for why:
-    // this hand area alone reserves TRAVEL_DISTANCE's worth of extra height for the
-    // fly-up animation, so hand + controls together can easily exceed the screen.
-    <ScrollView contentContainerStyle={styles.scrollContent}>
+    // Wrapped in a ScrollView — see Demo02Selection.tsx's identical wrapper for why.
+    // style={styles.scrollView} (flex: 1) makes this stretch to its own parent's
+    // full available height (confirmed via DOM measurement, not assumed) — needed
+    // for the bottom-anchoring spacer below to have real slack to grow into.
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
       {/* Mirrors apps/mobile/src/components/DeselectableSurface.tsx (see
           Demo02Selection.tsx) — the whole screen is the deselect surface, same as
           Demo 02's own container Pressable, not just the area around the hand.
@@ -311,13 +312,27 @@ export function Demo03PlayTravel() {
             <Text style={styles.stressButtonText}>⚡ Stress test: play all</Text>
           </Pressable>
         </View>
+        {/* Pushes the hand down toward the bottom of the screen and — the actual
+            fix for "can't see where cards landed" — guarantees real room ABOVE
+            the hand for the upward flight to be visible. The `hand` box below is
+            now sized to just its resting row (no travel budget baked in): a
+            card's flight is a `transform: translateY` overflowing UPWARD, past
+            the box's own top edge, into whatever renders BEFORE it — previously
+            that was the mode row with no reserved headroom at all, so a card
+            could fly most of the way off the top of the screen before landing.
+            minHeight (SELECT_LIFT_PX + TRAVEL_DISTANCE + a landing buffer)
+            guarantees that headroom exists regardless of viewport size; flex: 1
+            on top of that grows further on a taller screen, pushing the deck
+            even closer to the bottom (once the controls panel below is also
+            collapsed by default — see FanConfigControls.tsx — so it isn't
+            competing for the same space). */}
+        <View style={styles.spacer} />
         <View
           style={[
             styles.hand,
             {
               width: totalWidth,
-              height:
-                SIMPLE_CARD_HEIGHT + HAND_TOP_OFFSET + TRAVEL_DISTANCE + 60,
+              height: SIMPLE_CARD_HEIGHT + HAND_TOP_OFFSET + 20,
             },
           ]}>
           {cards.map((card, i) => (
@@ -350,6 +365,7 @@ export function Demo03PlayTravel() {
 }
 
 const styles = StyleSheet.create({
+  scrollView: { flex: 1 },
   scrollContent: { flexGrow: 1 },
   container: { flexGrow: 1, alignItems: "center" },
   modeRow: {
@@ -371,6 +387,9 @@ const styles = StyleSheet.create({
   modeButtonTextActive: { color: "#fff", fontWeight: "700" },
   stressButton: { backgroundColor: "#ff8c0033", borderColor: "#ff8c00" },
   stressButtonText: { color: "#ffb366", fontSize: 13, fontWeight: "700" },
+  // minHeight guarantees the upward flight's landing point stays visible
+  // regardless of viewport size; flex: 1 grows it further when there's slack.
+  spacer: { flex: 1, minHeight: SELECT_LIFT_PX + TRAVEL_DISTANCE + 40 },
   hand: { position: "relative" },
   cardSlot: { position: "absolute" },
 });

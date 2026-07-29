@@ -1,5 +1,5 @@
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LabeledSlider } from './LabeledSlider';
 import { SIMPLE_CARD_WIDTH } from './SimpleCard';
 
@@ -25,6 +25,16 @@ export interface FanConfigControlsProps {
 // rather than switching to this component, since it also layers its own local
 // small-hand percentage adjustment on top of these raw values — see that file's
 // own comment for why that stays separate and untouched.
+//
+// Collapsed by default (own isOpen state, not lifted to the caller — no consuming
+// demo currently needs to know or control this): these sliders are rarely tuned
+// mid-session, but every demo permanently reserved their full height whether open
+// or not, competing with the hand/travel area for whatever vertical space the
+// screen actually has. On a real device this could push a demo's actual content
+// (the fan, and — for demos with an upward travel — the landing point above it)
+// out of the visible viewport. Collapsing behind one toggle button gives that
+// space back by default, at the cost of an extra tap when a slider is actually
+// wanted.
 export function FanConfigControls({
   overlap,
   onOverlapChange,
@@ -37,55 +47,66 @@ export function FanConfigControls({
   handSize,
   onHandSizeChange,
 }: FanConfigControlsProps) {
+  const [isOpen, setIsOpen] = useState(false);
   return (
-    <View style={[styles.controls, styles.controlsContent]}>
-      {handSize !== undefined && onHandSizeChange ? (
-        <LabeledSlider
-          label="Hand size"
-          testID="control-hand-size"
-          minimumValue={1}
-          maximumValue={13}
-          step={1}
-          value={handSize}
-          onChange={value => onHandSizeChange(Math.round(value))}
-        />
+    <View style={styles.controls}>
+      <Pressable
+        testID="control-toggle"
+        onPress={() => setIsOpen(open => !open)}
+        style={styles.toggle}>
+        <Text style={styles.toggleText}>{isOpen ? "▾ Hide controls" : "▸ Show controls"}</Text>
+      </Pressable>
+      {isOpen ? (
+        <View style={styles.controlsContent}>
+          {handSize !== undefined && onHandSizeChange ? (
+            <LabeledSlider
+              label="Hand size"
+              testID="control-hand-size"
+              minimumValue={1}
+              maximumValue={13}
+              step={1}
+              value={handSize}
+              onChange={value => onHandSizeChange(Math.round(value))}
+            />
+          ) : null}
+          <LabeledSlider
+            label="Overlap"
+            testID="control-overlap"
+            minimumValue={0}
+            maximumValue={0.9}
+            step={0.01}
+            value={overlap}
+            onChange={onOverlapChange}
+          />
+          <LabeledSlider
+            label="Arc degrees"
+            testID="control-arc"
+            minimumValue={0}
+            maximumValue={90}
+            step={1}
+            value={arcDegrees}
+            onChange={onArcDegreesChange}
+          />
+          <LabeledSlider
+            label="Max rotation"
+            testID="control-max-rotation"
+            minimumValue={0}
+            maximumValue={45}
+            step={1}
+            value={maxRotationDeg}
+            onChange={onMaxRotationDegChange}
+          />
+          <LabeledSlider
+            label="Spacing"
+            testID="control-spacing"
+            minimumValue={SIMPLE_CARD_WIDTH * 0.2}
+            maximumValue={SIMPLE_CARD_WIDTH}
+            step={1}
+            value={spacingPx}
+            onChange={onSpacingPxChange}
+          />
+        </View>
       ) : null}
-      <LabeledSlider
-        label="Overlap"
-        testID="control-overlap"
-        minimumValue={0}
-        maximumValue={0.9}
-        step={0.01}
-        value={overlap}
-        onChange={onOverlapChange}
-      />
-      <LabeledSlider
-        label="Arc degrees"
-        testID="control-arc"
-        minimumValue={0}
-        maximumValue={90}
-        step={1}
-        value={arcDegrees}
-        onChange={onArcDegreesChange}
-      />
-      <LabeledSlider
-        label="Max rotation"
-        testID="control-max-rotation"
-        minimumValue={0}
-        maximumValue={45}
-        step={1}
-        value={maxRotationDeg}
-        onChange={onMaxRotationDegChange}
-      />
-      <LabeledSlider
-        label="Spacing"
-        testID="control-spacing"
-        minimumValue={SIMPLE_CARD_WIDTH * 0.2}
-        maximumValue={SIMPLE_CARD_WIDTH}
-        step={1}
-        value={spacingPx}
-        onChange={onSpacingPxChange}
-      />
     </View>
   );
 }
@@ -100,5 +121,7 @@ const styles = StyleSheet.create({
   // needs to report its real height, not compete for a fixed flex allotment that
   // can squeeze it to invisible when the hand area above it is already tall.
   controls: { alignSelf: 'stretch', backgroundColor: '#00000066' },
-  controlsContent: { paddingVertical: 12 },
+  toggle: { paddingVertical: 10, paddingHorizontal: 14 },
+  toggleText: { color: '#ffffffcc', fontSize: 13, fontWeight: '600' },
+  controlsContent: { paddingHorizontal: 14, paddingBottom: 12 },
 });

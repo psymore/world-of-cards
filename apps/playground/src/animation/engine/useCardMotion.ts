@@ -101,8 +101,21 @@ export function useCardMotion({
     return keyframeAt(fromRef.current, toRef.current, easingRef.current(rawT));
   }
 
+  // Retarget/jumpTo below skip a property's native call entirely when its target
+  // exactly equals its current value — a very common case in practice (any caller
+  // that constructs its `to` keyframe via idleKeyframe's defaults for properties
+  // it isn't intentionally changing — e.g. Demo06HandReposition.tsx's HandCard,
+  // whose scale/glyphScale never leave 1 — was otherwise paying for a real native
+  // bridge round-trip per property per call for zero visual effect). Exact
+  // equality only (no epsilon): conservative by design, so this can never skip a
+  // property that should genuinely animate, only ones that are provably already
+  // exactly where they need to be. See
+  // docs/animation/audits/Demo06-ReflowStutter-Audit.md for the root cause this
+  // addresses (native-only stutter during Demo 06's multi-card hand reflow, where
+  // this waste was concentrated across every remaining card at once).
   function retarget(to: CardMotionKeyframe, options?: RetargetOptions) {
-    fromRef.current = getCurrentKeyframe();
+    const current = getCurrentKeyframe();
+    fromRef.current = current;
     toRef.current = to;
     const duration = options?.durationMs ?? defaultDurationMs;
     const easing = options?.easing ?? defaultEasing;
@@ -111,19 +124,26 @@ export function useCardMotion({
     legStartTimeRef.current = Date.now();
 
     const config = { duration, easing, useNativeDriver: true };
-    Animated.timing(xRef, { toValue: to.x, ...config }).start();
-    Animated.timing(yRef, { toValue: to.y, ...config }).start();
-    Animated.timing(rotateRef, { toValue: to.rotateDeg, ...config }).start();
-    Animated.timing(scaleRef, { toValue: to.scale, ...config }).start();
-    Animated.timing(glyphScaleRef, { toValue: to.glyphScale, ...config }).start();
+    if (to.x !== current.x) Animated.timing(xRef, { toValue: to.x, ...config }).start();
+    if (to.y !== current.y) Animated.timing(yRef, { toValue: to.y, ...config }).start();
+    if (to.rotateDeg !== current.rotateDeg) {
+      Animated.timing(rotateRef, { toValue: to.rotateDeg, ...config }).start();
+    }
+    if (to.scale !== current.scale) {
+      Animated.timing(scaleRef, { toValue: to.scale, ...config }).start();
+    }
+    if (to.glyphScale !== current.glyphScale) {
+      Animated.timing(glyphScaleRef, { toValue: to.glyphScale, ...config }).start();
+    }
   }
 
   function jumpTo(to: CardMotionKeyframe) {
-    xRef.setValue(to.x);
-    yRef.setValue(to.y);
-    rotateRef.setValue(to.rotateDeg);
-    scaleRef.setValue(to.scale);
-    glyphScaleRef.setValue(to.glyphScale);
+    const current = getCurrentKeyframe();
+    if (to.x !== current.x) xRef.setValue(to.x);
+    if (to.y !== current.y) yRef.setValue(to.y);
+    if (to.rotateDeg !== current.rotateDeg) rotateRef.setValue(to.rotateDeg);
+    if (to.scale !== current.scale) scaleRef.setValue(to.scale);
+    if (to.glyphScale !== current.glyphScale) glyphScaleRef.setValue(to.glyphScale);
     fromRef.current = to;
     toRef.current = to;
     legStartTimeRef.current = Date.now();

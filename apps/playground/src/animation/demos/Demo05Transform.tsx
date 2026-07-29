@@ -231,7 +231,10 @@ export function Demo05Transform() {
 
   return (
     // Wrapped in a ScrollView — see Demo02Selection.tsx's identical wrapper for why.
-    <ScrollView contentContainerStyle={styles.scrollContent}>
+    // style={styles.scrollView} (flex: 1) makes this stretch to its own parent's
+    // full available height (confirmed via DOM measurement, not assumed) — needed
+    // for the bottom-anchoring spacer below to have real slack to grow into.
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
       {/* Same DeselectableSurface-style wrapper as Demo02Selection.tsx/Demo03PlayTravel.tsx. */}
       <Pressable style={styles.container} onPress={() => setSelectedCardId(null)}>
         <View style={styles.modeRow}>
@@ -260,13 +263,20 @@ export function Demo05Transform() {
             <Text style={styles.stressButtonText}>⚡ Stress test: play all</Text>
           </Pressable>
         </View>
+        {/* Pushes the hand down toward the bottom of the screen and guarantees
+            real room ABOVE it for the upward flight to be visible — see
+            Demo03PlayTravel.tsx's identical spacer/hand-height pair for the full
+            rationale (the `hand` box below is sized to just its resting row; the
+            travel headroom lives in the spacer's minHeight instead, since the
+            flight overflows upward past the box's own top edge, not downward
+            within it). */}
+        <View style={styles.spacer} />
         <View
           style={[
             styles.hand,
             {
               width: totalWidth,
-              height:
-                SIMPLE_CARD_HEIGHT + HAND_TOP_OFFSET + TRAVEL_DISTANCE + 60,
+              height: SIMPLE_CARD_HEIGHT + HAND_TOP_OFFSET + 20,
             },
           ]}>
           {cards.map((card, i) => (
@@ -299,6 +309,7 @@ export function Demo05Transform() {
 }
 
 const styles = StyleSheet.create({
+  scrollView: { flex: 1 },
   scrollContent: { flexGrow: 1 },
   container: { flexGrow: 1, alignItems: "center" },
   modeRow: {
@@ -320,6 +331,9 @@ const styles = StyleSheet.create({
   modeButtonTextActive: { color: "#fff", fontWeight: "700" },
   stressButton: { backgroundColor: "#ff8c0033", borderColor: "#ff8c00" },
   stressButtonText: { color: "#ffb366", fontSize: 13, fontWeight: "700" },
+  // minHeight guarantees the upward flight's landing point stays visible
+  // regardless of viewport size; flex: 1 grows it further when there's slack.
+  spacer: { flex: 1, minHeight: SELECT_LIFT_PX + TRAVEL_DISTANCE + 40 },
   hand: { position: "relative" },
   cardSlot: { position: "absolute" },
 });
