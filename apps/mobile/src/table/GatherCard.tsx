@@ -1,9 +1,10 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet } from 'react-native';
+import Animated, { Easing, interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import type { Card } from '@world-cards/engine';
 import { PlayingCard, CARD_DIMS } from '@world-cards/ui';
 import { useReducedMotion } from '../components/useReducedMotion';
-import { CARD_TRAVEL_DURATION_MS, CARD_TRAVEL_EASING } from './travelAnimation';
+import { CARD_TRAVEL_DURATION_MS } from './travelAnimation';
 
 export interface GatherCardProps {
   card: Card;
@@ -27,6 +28,13 @@ export interface GatherCardProps {
 // card would visibly shrink right at the moment a completed trick starts gathering.
 const GATHER_CARD_WIDTH = CARD_DIMS.normal.width;
 const GATHER_CARD_HEIGHT = CARD_DIMS.normal.height;
+
+// Reanimated's own Easing (a worklet-compatible curve, evaluated on the UI thread) — kept local to
+// this file rather than widening travelAnimation.ts's shared CARD_TRAVEL_EASING export until every
+// one of its consumers (TravelCard, KittyRevealCard) has also migrated off plain `Animated` — see
+// docs/superpowers/plans/2026-07-29-batak-reanimated-migration.md. Same curve
+// (Easing.out(Easing.cubic)) as the plain-Animated version this replaces.
+const GATHER_CARD_EASING = Easing.out(Easing.cubic);
 
 type FlipAxis = 'X' | 'Y';
 
@@ -60,117 +68,77 @@ function resolveFlipGeometry(destinationOffset: { x: number; y: number }): FlipG
   return { axis: 'Y', sign: 1, transformOrigin: '50% 50%' };
 }
 
-// Builds the correct transform-array entry for whichever axis this card's geometry uses — RN's
-// AnimatedTransform requires a distinct object key (rotateX vs rotateY) per property, so this
-// can't be a single shared interpolation object.
-function rotationTransform(
-  axis: FlipAxis,
-  value: Animated.AnimatedInterpolation<string>,
-): { rotateX: Animated.AnimatedInterpolation<string> } | { rotateY: Animated.AnimatedInterpolation<string> } {
-  return axis === 'X' ? { rotateX: value } : { rotateY: value };
-}
-
 // Flips a played card face-down and flies it toward destinationOffset in one animation pass —
 // used only for Batak's trick-gathering sweep (BatakTable's TrickCenter, when gatheringTrick is
 // set). One instance per gathered card; each runs once on mount and is unmounted along with its
 // parent once BatakScreen's gather timer commits the move, so there's no reset/retrigger case to
 // handle (unlike TravelCard, which is reused for multiple plays over one mounted lifetime).
 export function GatherCard({ card, destinationOffset, restRotateDeg = 0 }: GatherCardProps) {
-  const progress = useRef(new Animated.Value(0)).current;
+  const progress = useSharedValue(0);
   const reducedMotion = useReducedMotion();
+  const { axis, sign, transformOrigin } = resolveFlipGeometry(destinationOffset);
 
   useEffect(() => {
-    // Reduced-motion users jump straight to progress=1, i.e. fully faded out (see groupOpacity
-    // below) — matching the pre-existing (pre-this-feature) behavior of the trick just vanishing
-    // instantly on commit, with no flip/travel flourish. This is intentional, not a bug: the
-    // "meaningful end state" of this animation is the card being gone, so skipping straight to it
-    // is the correct reduced-motion behavior, not a state that needs to look presentable.
+    // Reduced-motion users jump straight to progress=1, i.e. fully faded out (see the group
+    // style's opacity below) — matching the pre-existing (pre-this-feature) behavior of the trick
+    // just vanishing instantly on commit, with no flip/travel flourish. This is intentional, not a
+    // bug: the "meaningful end state" of this animation is the card being gone, so skipping
+    // straight to it is the correct reduced-motion behavior, not a state that needs to look
+    // presentable.
     if (reducedMotion) {
-      progress.setValue(1);
+      progress.value = 1;
       return;
     }
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: CARD_TRAVEL_DURATION_MS,
-      easing: CARD_TRAVEL_EASING,
-      useNativeDriver: true,
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }).start();
-  }, [reducedMotion]);
+    progress.value = withTiming(1, { duration: CARD_TRAVEL_DURATION_MS, easing: GATHER_CARD_EASING });
+  }, [reducedMotion, progress]);
 
-  const translateX = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, destinationOffset.x],
-  });
-  const translateY = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, destinationOffset.y],
-  });
-  // Fades out over the animation's last third so the card visually dissolves as it nears the
-  // winner's side instead of appearing to stop abruptly — there's no literal pile graphic to land
-  // on (Batak's 2026-07-18 turn-indicator-simplification pass removed opponent card stacks
-  // entirely).
-  const groupOpacity = progress.interpolate({
-    inputRange: [0, 0.65, 1],
-    outputRange: [1, 1, 0],
-  });
+  const groupStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: interpolate(progress.value, [0, 1], [0, destinationOffset.x]) },
+      { translateY: interpolate(progress.value, [0, 1], [0, destinationOffset.y]) },
+      // restRotateDeg is a rotateZ (in-plane tilt); the flip below rotates the inner front/back
+      // layers around X or Y instead, so the two never conflict.
+      { rotate: `${restRotateDeg}deg` },
+    ],
+    // Fades out over the animation's last third so the card visually dissolves as it nears the
+    // winner's side instead of appearing to stop abruptly — there's no literal pile graphic to
+    // land on (Batak's 2026-07-18 turn-indicator-simplification pass removed opponent card
+    // stacks entirely).
+    opacity: interpolate(progress.value, [0, 0.65, 1], [1, 1, 0]),
+  }));
 
-  // Standard two-layer RN flip: a face-up layer rotating 0deg->(sign*180)deg and a face-down
-  // layer rotating (sign*180)deg->(sign*360)deg, each hard-cut via a doubled input-range opacity
-  // swap exactly at the midpoint (0.5). backfaceVisibility alone isn't reliably consistent across
+  // Standard two-layer flip: a face-up layer rotating 0deg->(sign*180)deg and a face-down layer
+  // rotating (sign*180)deg->(sign*360)deg, each hard-cut via a doubled input-range opacity swap
+  // exactly at the midpoint (0.5). backfaceVisibility alone isn't reliably consistent across
   // iOS/Android/web, so the opacity swap is the real mechanism here, not just a
   // belt-and-suspenders backup. Axis, sign, and pivot all come from resolveFlipGeometry, so the
   // card rotates around the edge nearest its destination — see that function's doc comment.
-  const { axis, sign, transformOrigin } = resolveFlipGeometry(destinationOffset);
-  const frontRotate = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', `${sign * 180}deg`],
+  const frontStyle = useAnimatedStyle(() => {
+    const rotateValue = `${interpolate(progress.value, [0, 1], [0, sign * 180])}deg`;
+    return {
+      backfaceVisibility: 'hidden' as const,
+      opacity: interpolate(progress.value, [0, 0.5, 0.5001, 1], [1, 1, 0, 0]),
+      transformOrigin,
+      transform: [{ perspective: 800 }, axis === 'X' ? { rotateX: rotateValue } : { rotateY: rotateValue }],
+    };
   });
-  const backRotate = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [`${sign * 180}deg`, `${sign * 360}deg`],
-  });
-  const frontOpacity = progress.interpolate({
-    inputRange: [0, 0.5, 0.5001, 1],
-    outputRange: [1, 1, 0, 0],
-  });
-  const backOpacity = progress.interpolate({
-    inputRange: [0, 0.4999, 0.5, 1],
-    outputRange: [0, 0, 1, 1],
+
+  const backStyle = useAnimatedStyle(() => {
+    const rotateValue = `${interpolate(progress.value, [0, 1], [sign * 180, sign * 360])}deg`;
+    return {
+      backfaceVisibility: 'hidden' as const,
+      opacity: interpolate(progress.value, [0, 0.4999, 0.5, 1], [0, 0, 1, 1]),
+      transformOrigin,
+      transform: [{ perspective: 800 }, axis === 'X' ? { rotateX: rotateValue } : { rotateY: rotateValue }],
+    };
   });
 
   return (
-    <Animated.View
-      style={{
-        width: GATHER_CARD_WIDTH,
-        height: GATHER_CARD_HEIGHT,
-        // restRotateDeg is a rotateZ (in-plane tilt); the flip below rotates the inner front/back
-        // layers around X or Y instead, so the two never conflict.
-        transform: [{ translateX }, { translateY }, { rotate: `${restRotateDeg}deg` }],
-        opacity: groupOpacity,
-      }}>
-      <Animated.View
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            backfaceVisibility: 'hidden',
-            opacity: frontOpacity,
-            transformOrigin,
-            transform: [{ perspective: 800 }, rotationTransform(axis, frontRotate)],
-          },
-        ]}>
+    <Animated.View style={[{ width: GATHER_CARD_WIDTH, height: GATHER_CARD_HEIGHT }, groupStyle]}>
+      <Animated.View style={[StyleSheet.absoluteFill, frontStyle]}>
         <PlayingCard card={card} size="normal" />
       </Animated.View>
-      <Animated.View
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            backfaceVisibility: 'hidden',
-            opacity: backOpacity,
-            transformOrigin,
-            transform: [{ perspective: 800 }, rotationTransform(axis, backRotate)],
-          },
-        ]}>
+      <Animated.View style={[StyleSheet.absoluteFill, backStyle]}>
         <PlayingCard card={card} faceDown size="normal" />
       </Animated.View>
     </Animated.View>

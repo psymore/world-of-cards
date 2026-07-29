@@ -1,16 +1,16 @@
-# Plan: Migrate Batak's `Animated` usage to Reanimated + Gesture Handler (Phase A)
+# Plan: Migrate Batak's `Animated` usage to Reanimated + Gesture Handler (scoped)
 
-Implements `ADR-002` (`docs/animation/ADR/ADR-002-reanimated-migration-apps-mobile.md`). Scope: the 5 Batak-only files with zero Pişti blast radius. Shared files (`SelectableCard.tsx`, `DealFlightOverlay.tsx`) are Phase B, a separate future plan — not touched here.
+**Superseded scope, see `ADR-003`** (`docs/animation/ADR/ADR-003-scope-reanimated-migration-to-evidenced-need.md`): the original 5-file Phase A below was narrowed to just 2 files, since the only evidenced problem (reflow-stutter + gesture-hit-testing) maps to `HumanHandFan.tsx` alone. `KittyRevealCard.tsx`, `CenteredDecisionModal.tsx`, and `TravelCard.tsx` are **no longer planned for migration** — struck through below, kept for the historical record of what was originally scoped. `GatherCard.tsx` was already migrated before the scope-down and is kept (tested, working, no benefit to reverting).
 
 ## Order (lowest-risk first)
 
-1. `apps/mobile/src/table/GatherCard.tsx` — trick-sweep flip + fly-out. One `progress` value driving translate/opacity/rotateX-or-Y interpolations, no gesture.
-2. `apps/mobile/src/table/KittyRevealCard.tsx` — `KittyRevealCard` (flip-reveal) + `KittyCollectCard` (fly-to-hand). Same shape as (1), no gesture.
-3. `apps/mobile/src/components/CenteredDecisionModal.tsx` — modal entrance (opacity/scale/translateY). No gesture; only consumer today is Batak's `BatakTable.tsx`.
-4. `apps/mobile/src/table/TravelCard.tsx` — played-card fly-in. Same shape as (1)/(2), no gesture, but consumed by both `TrickCenter.tsx` and `BurySlots.tsx` — the widest Batak-internal consumer count in this phase.
-5. `apps/mobile/src/games/batak/table/HumanHandFan.tsx` — hand reflow/entrance/local-departure. The only file in this phase with a genuine multi-card reflow (`AnimatedFanCard`) and a nested `SelectableCard` dependency (out of scope, stays `Animated`-based until Phase B — this file must keep working with `SelectableCard`'s existing `Animated`-based props unchanged).
+1. `apps/mobile/src/table/GatherCard.tsx` — trick-sweep flip + fly-out. One `progress` value driving translate/opacity/rotateX-or-Y interpolations, no gesture. **Done, kept.**
+2. ~~`apps/mobile/src/table/KittyRevealCard.tsx`~~ — **descoped by `ADR-003`.** Stays on plain `Animated` indefinitely.
+3. ~~`apps/mobile/src/components/CenteredDecisionModal.tsx`~~ — **descoped by `ADR-003`.** Stays on plain `Animated` indefinitely.
+4. ~~`apps/mobile/src/table/TravelCard.tsx`~~ — **descoped by `ADR-003`.** Stays on plain `Animated` indefinitely.
+5. `apps/mobile/src/games/batak/table/HumanHandFan.tsx` — hand reflow/entrance/local-departure. The one file with a genuine multi-card reflow (`AnimatedFanCard`) and the real target of this whole migration. Nested `SelectableCard` dependency stays `Animated`-based (not migrated) — this file must keep working with `SelectableCard`'s existing `Animated`-based props unchanged.
 
-Each step: same visuals/timing/easing/behavior as today, verified via `npx tsc --noEmit` (no test suite changes — decorative/motion code, per the standing 2026-07-07 testing policy) before moving to the next file.
+Each step: same visuals/timing/easing/behavior as today, verified via `npx tsc --noEmit` + the full mobile test suite (no new tests — decorative/motion code, per the standing 2026-07-07 testing policy) before moving to the next file.
 
 ## Per-file conversion pattern
 

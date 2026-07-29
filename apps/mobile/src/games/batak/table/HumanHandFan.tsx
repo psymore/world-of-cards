@@ -1,5 +1,13 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Easing, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import Animated, {
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from "react-native-reanimated";
 import type { Card, Suit } from "@world-cards/engine";
 import { compareRanks } from "@world-cards/engine/games/batak";
 import { CARD_DIMS } from "@world-cards/ui";
@@ -58,6 +66,12 @@ const GOMELI_HAND_TOP_ROW_STEP = Math.round(
 // Shared timing for every hand-card reposition (a card played, remaining cards sliding/rising to
 // close the gap) — see AnimatedFanCard. An ease-in-ease-out curve reads as a natural reflow
 // rather than either a sudden snap (no easing) or a bouncy entrance (an "out" curve alone).
+// Reanimated's own Easing (worklet-compatible, evaluated on the UI thread) — this file's shared
+// values are driven by withTiming, not RN's classic Animated.timing, per ADR-002/ADR-003
+// (docs/animation/ADR/). SelectableCard's own rotateEasing prop still accepts this: both RN's and
+// Reanimated's Easing functions are plain (t: number) => number curves, so passing this into
+// SelectableCard's still-Animated-based Animated.timing call (unmigrated, see ADR-003) works
+// identically to before.
 const HAND_CARD_REPOSITION_DURATION_MS = 320;
 const HAND_CARD_REPOSITION_EASING = Easing.inOut(Easing.cubic);
 
@@ -156,12 +170,12 @@ function slotTargetY(slot: HandSlot): number {
 }
 
 // A single human-hand card, absolutely positioned within the shared fan container and animated
-// (via its own persistent Animated.Value pair) whenever its target slot changes — e.g. a card
-// played elsewhere in the hand shifts every card after it to a new index, and shrinking a row can
-// even move a card from the top row to the bottom row (or vice versa). Because every card in both
-// rows now lives under one shared parent (HumanHandFan) instead of two separate row containers,
-// that row-crossing case animates smoothly too, rather than unmounting from one row's tree and
-// remounting in the other's.
+// (via its own persistent Reanimated shared-value pair) whenever its target slot changes — e.g. a
+// card played elsewhere in the hand shifts every card after it to a new index, and shrinking a row
+// can even move a card from the top row to the bottom row (or vice versa). Because every card in
+// both rows now lives under one shared parent (HumanHandFan) instead of two separate row
+// containers, that row-crossing case animates smoothly too, rather than unmounting from one row's
+// tree and remounting in the other's.
 interface AnimatedFanCardProps {
   slot: HandSlot;
   interactive: boolean;
@@ -194,8 +208,8 @@ function AnimatedFanCardComponent({
   const { card } = slot;
   const targetX = slotTargetX(slot, compact);
   const targetY = slotTargetY(slot);
-  const x = useRef(new Animated.Value(targetX)).current;
-  const y = useRef(new Animated.Value(targetY)).current;
+  const x = useSharedValue(targetX);
+  const y = useSharedValue(targetY);
   const mounted = useRef(false);
   const reducedMotion = useReducedMotion();
   const departed = useRef(false);
@@ -210,20 +224,14 @@ function AnimatedFanCardComponent({
   useEffect(() => {
     if (!isDeparting || departed.current || reducedMotion) return;
     departed.current = true;
-    Animated.parallel([
-      Animated.timing(x, {
-        toValue: targetX - departureDeltaX,
-        duration: LOCAL_DEPARTURE_DURATION_MS,
-        easing: LOCAL_DEPARTURE_EASING,
-        useNativeDriver: true,
-      }),
-      Animated.timing(y, {
-        toValue: targetY - LOCAL_DEPARTURE_DISTANCE,
-        duration: LOCAL_DEPARTURE_DURATION_MS,
-        easing: LOCAL_DEPARTURE_EASING,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    x.value = withTiming(targetX - departureDeltaX, {
+      duration: LOCAL_DEPARTURE_DURATION_MS,
+      easing: LOCAL_DEPARTURE_EASING,
+    });
+    y.value = withTiming(targetY - LOCAL_DEPARTURE_DISTANCE, {
+      duration: LOCAL_DEPARTURE_DURATION_MS,
+      easing: LOCAL_DEPARTURE_EASING,
+    });
   }, [isDeparting, reducedMotion, targetX, targetY, departureDeltaX, x, y]);
 
   useEffect(() => {
@@ -232,55 +240,43 @@ function AnimatedFanCardComponent({
       if (slot.enterFromOffset && !reducedMotion) {
         // A card returning from a bury slot: start offset from its true target and animate in,
         // reusing the exact same reposition timing/easing as an ordinary reflow.
-        x.setValue(targetX + slot.enterFromOffset.x);
-        y.setValue(targetY + slot.enterFromOffset.y);
-        Animated.parallel([
-          Animated.timing(x, {
-            toValue: targetX,
-            duration: HAND_CARD_REPOSITION_DURATION_MS,
-            easing: HAND_CARD_REPOSITION_EASING,
-            useNativeDriver: true,
-          }),
-          Animated.timing(y, {
-            toValue: targetY,
-            duration: HAND_CARD_REPOSITION_DURATION_MS,
-            easing: HAND_CARD_REPOSITION_EASING,
-            useNativeDriver: true,
-          }),
-        ]).start();
+        x.value = targetX + slot.enterFromOffset.x;
+        y.value = targetY + slot.enterFromOffset.y;
+        x.value = withTiming(targetX, {
+          duration: HAND_CARD_REPOSITION_DURATION_MS,
+          easing: HAND_CARD_REPOSITION_EASING,
+        });
+        y.value = withTiming(targetY, {
+          duration: HAND_CARD_REPOSITION_DURATION_MS,
+          easing: HAND_CARD_REPOSITION_EASING,
+        });
       }
       // Plain first render for a genuinely new card (the initial deal, or reducedMotion): jump
       // straight to its slot — EntranceCard supplies the deal's own fade/scale/rise flourish.
       return;
     }
     if (reducedMotion) {
-      x.setValue(targetX);
-      y.setValue(targetY);
+      x.value = targetX;
+      y.value = targetY;
       return;
     }
-    Animated.parallel([
-      Animated.timing(x, {
-        toValue: targetX,
-        duration: HAND_CARD_REPOSITION_DURATION_MS,
-        easing: HAND_CARD_REPOSITION_EASING,
-        useNativeDriver: true,
-      }),
-      Animated.timing(y, {
-        toValue: targetY,
-        duration: HAND_CARD_REPOSITION_DURATION_MS,
-        easing: HAND_CARD_REPOSITION_EASING,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    x.value = withTiming(targetX, {
+      duration: HAND_CARD_REPOSITION_DURATION_MS,
+      easing: HAND_CARD_REPOSITION_EASING,
+    });
+    y.value = withTiming(targetY, {
+      duration: HAND_CARD_REPOSITION_DURATION_MS,
+      easing: HAND_CARD_REPOSITION_EASING,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetX, targetY, reducedMotion, x, y]);
 
+  const positionStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: x.value }, { translateY: y.value }],
+  }));
+
   return (
-    <Animated.View
-      style={[
-        styles.fanCardSlot,
-        { transform: [{ translateX: x }, { translateY: y }] },
-      ]}>
+    <Animated.View style={[styles.fanCardSlot, positionStyle]}>
       <View ref={node => registerCardRef(card.id, node)}>
         <EntranceCard index={slot.indexInRow} playEntrance={playEntrance}>
           <SelectableCard
@@ -366,7 +362,7 @@ function EntranceCard({
   playEntrance: boolean;
   children: React.ReactNode;
 }) {
-  const progress = useRef(new Animated.Value(playEntrance ? 1 : 0)).current;
+  const progress = useSharedValue(playEntrance ? 1 : 0);
   const played = useRef(playEntrance);
   const reducedMotion = useReducedMotion();
 
@@ -374,40 +370,22 @@ function EntranceCard({
     if (playEntrance && !played.current) {
       played.current = true;
       if (reducedMotion) {
-        progress.setValue(1);
+        progress.value = 1;
         return;
       }
-      Animated.timing(progress, {
-        toValue: 1,
-        duration: 350,
-        delay: index * 40,
-        useNativeDriver: true,
-      }).start();
+      progress.value = withDelay(index * 40, withTiming(1, { duration: 350 }));
     }
   }, [playEntrance, index, progress, reducedMotion]);
 
-  return (
-    <Animated.View
-      style={{
-        opacity: progress,
-        transform: [
-          {
-            scale: progress.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0.4, 1],
-            }),
-          },
-          {
-            translateY: progress.interpolate({
-              inputRange: [0, 1],
-              outputRange: [-40, 0],
-            }),
-          },
-        ],
-      }}>
-      {children}
-    </Animated.View>
-  );
+  const style = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [
+      { scale: interpolate(progress.value, [0, 1], [0.4, 1]) },
+      { translateY: interpolate(progress.value, [0, 1], [-40, 0]) },
+    ],
+  }));
+
+  return <Animated.View style={style}>{children}</Animated.View>;
 }
 
 // Renders every human-hand card (both rows) under one shared parent — see AnimatedFanCard's doc
@@ -468,11 +446,10 @@ const styles = StyleSheet.create({
   // can no longer contribute to an auto-computed height the way normal-flow children would.
   handFan: { height: HAND_FAN_HEIGHT },
   // Each human-hand card's positioning anchor: centered horizontally (left:50% + a negative
-  // marginLeft of half the card's own width, the same "center-relative" convention TrickCenter's
-  // own trickSlot uses), with AnimatedFanCard supplying the actual per-card translateX/Y offset
-  // from that center point. No zIndex — natural render order (HumanHandFan renders the top row's
-  // slots before the bottom row's) already makes a lifted bottom-row card paint over the top row
-  // on its own, with no per-card override needed.
+  // marginLeft of half the card's own width), with AnimatedFanCard supplying the actual per-card
+  // translateX/Y offset from that center point. No zIndex — natural render order (HumanHandFan
+  // renders the top row's slots before the bottom row's) already makes a lifted bottom-row card
+  // paint over the top row on its own, with no per-card override needed.
   fanCardSlot: {
     position: "absolute",
     left: "50%",

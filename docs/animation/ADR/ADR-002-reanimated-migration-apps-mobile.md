@@ -1,9 +1,9 @@
 # ADR-002: Migrate `apps/mobile` from `Animated` to Reanimated + Gesture Handler, starting with Batak
 
-**Status:** Accepted
+**Status:** Accepted, but its Decision/Phased-order/Alternatives sections are **superseded by `ADR-003`** (narrowed from "migrate every `Animated` usage" to only files with evidenced need). Its `§7` item 1 Constitution amendment below still stands.
 **Date:** 2026-07-29
 **Related Constitution sections:** `§7` item 1 (superseded by this ADR for `apps/mobile`), `§5.VI`, `§5.VII`, `§6`, `§8` gap 3
-**Supersedes / Superseded by:** Supersedes Constitution `§7` item 1 for `apps/mobile` only. `apps/playground`'s Demo06 (plain `Animated`) and Demo08 (Reanimated) both continue to exist as playground experiments — this ADR does not retire either.
+**Supersedes / Superseded by:** Supersedes Constitution `§7` item 1 for `apps/mobile` only. Superseded in part by `ADR-003` — see its Status line. `apps/playground`'s Demo06 (plain `Animated`) and Demo08 (Reanimated) both continue to exist as playground experiments — this ADR does not retire either.
 
 ## Context
 
