@@ -7,7 +7,8 @@ export type DemoId =
   | 'landing'
   | 'transform'
   | 'hand-reposition'
-  | 'complete-sequence';
+  | 'complete-sequence'
+  | 'reanimated-hand-reposition';
 
 export const DEMO_ORDER: DemoId[] = [
   'fan-layout',
@@ -17,6 +18,7 @@ export const DEMO_ORDER: DemoId[] = [
   'transform',
   'hand-reposition',
   'complete-sequence',
+  'reanimated-hand-reposition',
 ];
 
 export const DEMO_LABELS: Record<DemoId, string> = {
@@ -27,6 +29,10 @@ export const DEMO_LABELS: Record<DemoId, string> = {
   transform: 'Demo 5: Transform',
   'hand-reposition': 'Demo 6: Hand Reposition',
   'complete-sequence': 'Demo 7: Complete Sequence',
+  // Standalone Reanimated + Gesture Handler experiment, per
+  // docs/animation/ADR/ADR-001-reanimated-demo08-experiment.md — does not replace
+  // Demo 6, which stays as today's Animated-based baseline.
+  'reanimated-hand-reposition': 'Demo 8: Reanimated Reposition',
 };
 
 // A single point in a card's animated life: position/rotation/scale, plus the
