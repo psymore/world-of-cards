@@ -4,16 +4,16 @@ import { PlayingCard, CARD_DIMS } from '@world-cards/ui';
 import { createDeck, createRng, shuffle } from '@world-cards/engine';
 import type { Card } from '@world-cards/engine';
 import { FanLayoutConfig } from '../components/fanLayout';
-import { railAngleStepDeg, railAngles, railPosition } from '../components/railFanLayout';
+import { RAIL_RADIUS, railAngleStepDeg, railAngles, railPosition } from '../components/railFanLayout';
 import { FanConfigControls } from '../components/FanConfigControls';
 import { LabeledSlider } from '../components/LabeledSlider';
 
 const CARD_WIDTH = CARD_DIMS.normal.width;
 const CARD_HEIGHT = CARD_DIMS.normal.height;
 
-// Provisional starting point (Demo08's own RAIL_RADIUS=230, scaled by the ratio of a real
-// PlayingCard's width to the playground SimpleCard's width it was originally tuned against,
-// 94/64 ≈ 1.47) — tune this live via the Radius-equivalent slider below; it's the first of the
+// Provisional starting point — scaled up from Demo08's own RAIL_RADIUS=230 to account for a
+// real PlayingCard being wider than the playground's SimpleCard it was originally tuned
+// against (94px vs 64px) — tune this live via the Radius slider below; it's the first of the
 // values this whole demo exists to let you replace with a real number.
 const INITIAL_RAIL_RADIUS = 330;
 
@@ -71,17 +71,31 @@ export function Demo09BatakHandTuning() {
   function renderRow(row: Card[], pivotYOffset: number) {
     const angleStepDeg = angleStepFor(row.length);
     const angles = railAngles(row.length, angleStepDeg, maxRotationDeg);
+    // The "Radius" slider is meant to tune the fan's actual curvature (the geometric radius
+    // cards ride along), not just push the whole row up/down — so it has to reach
+    // railPosition's own radius math, which only railFanLayout.ts's RAIL_RADIUS constant
+    // otherwise drives. railPosition's extraRadius param moves a point radially outward from
+    // the fixed pivot at (0, RAIL_RADIUS); passing the SAME extraRadius for every card in the
+    // row is equivalent to re-centering the whole row on a circle of radius `radius` instead
+    // of RAIL_RADIUS, still anchored at that same pivot — exactly "change the radius," not an
+    // ad hoc offset. At angle 0 (the row's own center card) this shifts pos.y by exactly
+    // -extraRadius, so `top` adds back +extraRadius to cancel it — the center card always
+    // lands at `pivotYOffset` regardless of the slider value (this is what keeps the row from
+    // flying off-screen at any point in the slider's range), while every other card's own
+    // droop/spread still scales with the chosen radius, so the slider visibly reshapes the
+    // curve.
+    const extraRadius = radius - RAIL_RADIUS;
     return row.map((card, i) => {
-      const pos = railPosition(angles[i]);
+      const pos = railPosition(angles[i], extraRadius);
       return (
         <View
           key={card.id}
           style={{
             position: 'absolute',
             left: '50%',
-            top: pivotYOffset,
+            top: pivotYOffset + extraRadius,
             marginLeft: -CARD_WIDTH / 2 + pos.x,
-            transform: [{ translateY: pos.y - radius }, { rotate: `${pos.rotateDeg}deg` }],
+            transform: [{ translateY: pos.y }, { rotate: `${pos.rotateDeg}deg` }],
           }}>
           <PlayingCard card={card} size="normal" />
         </View>
