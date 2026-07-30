@@ -1,4 +1,4 @@
-export { PlayingCard, CARD_DIMS } from './PlayingCard';
+export { PlayingCard, CARD_DIMS, SUIT_COLOR } from './PlayingCard';
 export type { PlayingCardProps, PlayingCardSize, PlayingCardBorderSpec, PlayingCardOverlayImage } from './PlayingCard';
 export { SuitIcon } from './SuitIcon';
 export type { SuitIconProps } from './SuitIcon';

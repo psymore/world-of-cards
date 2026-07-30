@@ -47,7 +47,7 @@ export interface PlayingCardProps {
 }
 
 const RED_SUITS: Suit[] = ["hearts", "diamonds"];
-const SUIT_COLOR = { red: "#c0392b", black: "#111" };
+export const SUIT_COLOR = { red: "#c0392b", black: "#111" };
 const CORNER_ICON_SIZE = { normal: 18, small: 12 };
 // Fixed width (not shrink-wrap) so every rank's corner index shares one consistent center axis:
 // the suit icon centers under "10" (the widest rank) exactly as it does under any single-character
