@@ -30,7 +30,8 @@
     "owner": "ragedapes-team",
     "plugins": [
       "expo-font",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      "expo-image"
     ]
   }
 }
