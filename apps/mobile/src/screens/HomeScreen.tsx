@@ -1,6 +1,11 @@
 import React from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getGames } from '@world-cards/engine';
+import { HomeBackground } from './home/HomeBackground';
+import { HeroCard } from './home/HeroCard';
+import { HomeWordmark } from './home/HomeWordmark';
+import { GameMenuRow } from './home/GameMenuRow';
+import { BaizeStrip } from './home/BaizeStrip';
 
 export interface HomeScreenProps {
   onSelectGame: (gameId: string) => void;
@@ -10,41 +15,36 @@ export function HomeScreen({ onSelectGame }: HomeScreenProps) {
   const games = getGames();
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>World Cards</Text>
-      <FlatList
-        data={games}
-        keyExtractor={(game) => game.id}
-        renderItem={({ item }) => (
-          <Pressable style={styles.gameCard} onPress={() => onSelectGame(item.id)}>
-            <Text style={styles.gameItem}>{item.displayName}</Text>
-          </Pressable>
-        )}
-        ListEmptyComponent={<Text style={styles.empty}>No games installed yet</Text>}
-      />
+      <HomeBackground />
+      <ScrollView contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic">
+        <HeroCard />
+        <HomeWordmark />
+        <View style={styles.menu}>
+          {games.length === 0 ? (
+            <Text style={styles.empty}>No games installed yet</Text>
+          ) : (
+            games.map((game) => (
+              <GameMenuRow
+                key={game.id}
+                displayName={game.displayName}
+                category={game.category}
+                minPlayers={game.minPlayers}
+                maxPlayers={game.maxPlayers}
+                onPress={() => onSelectGame(game.id)}
+                testID={`game-menu-row-${game.id}`}
+              />
+            ))
+          )}
+        </View>
+      </ScrollView>
+      <BaizeStrip />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 48, paddingHorizontal: 16, backgroundColor: '#12121f' },
-  title: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#f4c542',
-    letterSpacing: 1,
-    textShadowColor: '#7a5c00',
-    textShadowRadius: 6,
-  },
-  gameCard: {
-    backgroundColor: '#1e1e33',
-    borderWidth: 1,
-    borderColor: '#f4c542',
-    borderRadius: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 10,
-  },
-  gameItem: { fontSize: 18, fontWeight: '600', color: '#eee' },
-  empty: { fontSize: 16, color: '#888' },
+  container: { flex: 1, backgroundColor: '#1a0f2e' },
+  content: { flexGrow: 1, paddingTop: 48, paddingBottom: 40 },
+  menu: { paddingHorizontal: 22, marginTop: 20, gap: 12 },
+  empty: { fontSize: 14, color: '#f2e6ff88', textAlign: 'center', marginTop: 20 },
 });
