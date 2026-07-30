@@ -74,6 +74,13 @@ function cancelAnimation() {}
 
 function useAnimatedReaction() {}
 
+// Used internally by react-native-gesture-handler's GestureDetector (useAnimatedGesture.ts) to
+// build a native event handler ref. Tests never assert on real gesture-event-driven animation
+// output, so an inert ref satisfies every real call site without needing worklet semantics.
+function useEvent(_handler, _eventNames, _rebuild) {
+  return React.useRef(null);
+}
+
 // Any Easing.<name>(...) call resolves to a plain identity curve — real curve shape is never
 // asserted in these component-level tests, and (per this repo's migrated components) the easing
 // value is only ever handed to withTiming, which this mock ignores entirely.
@@ -100,6 +107,7 @@ module.exports = {
   useAnimatedProps,
   useDerivedValue,
   useAnimatedReaction,
+  useEvent,
   withTiming,
   withSpring,
   withDelay,
