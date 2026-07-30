@@ -18,6 +18,8 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: 34,
     transform: [{ rotate: '-4deg' }],
+    backgroundColor: '#fdfaf3',
+    borderRadius: 9,
     ...glowShadow('#1f5c3a', 20),
   },
   card: {

@@ -7,10 +7,7 @@ const STRIP_HEIGHT = 140;
 export const BaizeStrip = React.memo(function BaizeStrip() {
   const [width, setWidth] = useState(0);
   return (
-    <View
-      style={styles.container}
-      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
-      pointerEvents="none">
+    <View style={styles.container} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
       {width > 0 && (
         <Svg width={width} height={STRIP_HEIGHT}>
           <Defs>
@@ -27,5 +24,12 @@ export const BaizeStrip = React.memo(function BaizeStrip() {
 });
 
 const styles = StyleSheet.create({
-  container: { position: 'absolute', left: 0, right: 0, bottom: 0, height: STRIP_HEIGHT },
+  container: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: STRIP_HEIGHT,
+    pointerEvents: 'none',
+  },
 });

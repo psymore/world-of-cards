@@ -29,7 +29,7 @@ export default function App() {
     // apps/playground/App.tsx's existing wrapper.
     <GestureHandlerRootView style={styles.root}>
       <RootNavigator />
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
     </GestureHandlerRootView>
   );
 }

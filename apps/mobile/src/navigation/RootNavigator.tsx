@@ -15,7 +15,7 @@ export function RootNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator>
-        <Stack.Screen name="Home" options={{ title: 'World Cards' }}>
+        <Stack.Screen name="Home" options={{ title: 'World Cards', headerShown: false }}>
           {({ navigation }) => (
             <HomeScreen onSelectGame={(gameId) => navigation.navigate('Game', { gameId })} />
           )}
