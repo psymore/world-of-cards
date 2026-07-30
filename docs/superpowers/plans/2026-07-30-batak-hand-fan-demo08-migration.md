@@ -318,15 +318,29 @@ git commit -m "feat(playground): add Demo09 Batak hand-fan tuning tool"
 - Create: `apps/mobile/src/games/batak/table/batakRailFan.ts`
 
 **Interfaces:**
-- Consumes: nothing (pure math, only `CARD_DIMS` from `@world-cards/ui` for defaults).
-- Produces: `RAIL_RADIUS: number`, `RailAngleConfig` type (`{ overlap, arcDegrees, maxRotationDeg, spacingPx }`), `railAngleStepDeg(config, referenceRowSize): number`, `railAngles(count, angleStepDeg, maxRotationDeg): number[]`, `railPosition(angleDeg, extraRadius?): { x: number; y: number; rotateDeg: number }`. Consumed by Task 3.
+- Consumes: nothing (pure math).
+- Produces: `RailAngleConfig` type (`{ radius, overlap, arcDegrees, maxRotationDeg, spacingPx }`), `STANDARD_RAIL_CONFIG`/`COMPACT_RAIL_CONFIG` (the two tuned configs), `railAngleStepDeg(config, referenceRowSize): number`, `railAngles(count, angleStepDeg, maxRotationDeg): number[]`, `railPosition(angleDeg, radius, extraRadius?): { x: number; y: number; rotateDeg: number }`. Consumed by Task 5 (not Task 3 — Task 3's `useBatakCardMotion` is pure motion plumbing with no geometry dependency).
 
 - [ ] **Step 1: Write the file**
 
-Direct, Batak-owned port of `apps/playground/src/animation/components/railFanLayout.ts`'s math (not imported — see Global Constraints), with the playground's `SIMPLE_CARD_WIDTH`-dependent `railFanWidth` dropped (production doesn't need a computed container width the way the playground's centering trick does — `HumanHandFan`'s container is already sized via `styles.handFan`, unchanged from before). **Replace `RAIL_RADIUS` below with the exact value you tuned in Task 1, not the provisional one shown here:**
+Direct, Batak-owned port of `apps/playground/src/animation/components/railFanLayout.ts`'s math (not imported — see Global Constraints), with the playground's `SIMPLE_CARD_WIDTH`-dependent `railFanWidth` dropped (production doesn't need a computed container width the way the playground's centering trick does — `HumanHandFan`'s container is already sized via `styles.handFan`, unchanged from before).
+
+**Design correction found during Task 1's live tuning** (2026-07-30): the original design below assumed one fixed `RAIL_RADIUS` module constant for the whole app, matching Demo08 (where radius must never vary *during a single reflow*, since a reflow interpolates one card's angle along one fixed circle). Live tuning showed Standard Batak (13 cards) and gömmeli/compact (16 cards) genuinely need different radii (520 vs. 430) to look right. This doesn't violate the "must not vary during a reflow" invariant — a hand is always entirely Standard or entirely compact for its whole lifetime (`compact` is set once per table, never toggled mid-hand), so radius is still fixed for the duration of any single reflow, it's just no longer a single global constant. Fix: `radius` moves into `RailAngleConfig` itself, and `railPosition` takes it as an explicit parameter instead of reading a module constant.
+
+**Final tuned values (from Task 1's live session, both confirmed by the user):**
+
+| | Standard (13 cards) | Compact/gömmeli (16 cards) |
+|---|---|---|
+| `radius` | 520 | 430 |
+| `overlap` | 0.55 (default, unchanged) | 0.55 (default, unchanged) |
+| `arcDegrees` | 90 | 90 |
+| `maxRotationDeg` | 45 | 45 |
+| `spacingPx` | 47 (default, unchanged) | 45 |
+| row overlap (vertical, shared — see Task 5) | 40px | 40px |
 
 ```ts
 export interface RailAngleConfig {
+  radius: number;
   overlap: number;
   arcDegrees: number;
   maxRotationDeg: number;
@@ -335,14 +349,14 @@ export interface RailAngleConfig {
 
 // Tuned live against real PlayingCards and Batak's real two-row hand — see Task 1 of
 // docs/superpowers/plans/2026-07-30-batak-hand-fan-demo08-migration.md (Demo09BatakHandTuning).
-// One fixed radius for every rail-constrained fan, regardless of hand size: a card's reposition
-// is a straight interpolation of its OWN angle on this ONE circle — if the radius itself varied,
-// a reflow would need to blend between two different circles instead of sliding along one.
-export const RAIL_RADIUS = 330; // TODO(Task 1 output): replace with the tuned value
-
+// radius lives on the config (not a single module constant) because Standard and compact modes
+// tuned to genuinely different values (520 vs 430) — still safe: a hand is always entirely one
+// mode for its whole lifetime, so radius is still fixed for the duration of any single reflow,
+// which is the actual invariant that matters (a reflow interpolates one card's angle along one
+// fixed circle; it never needs to blend between two different circles mid-reflow).
 export function railAngleStepDeg(config: RailAngleConfig, referenceRowSize: number): number {
   const stepPx = config.spacingPx * (1 - config.overlap);
-  const stepDeg = (stepPx / RAIL_RADIUS) * (180 / Math.PI);
+  const stepDeg = (stepPx / config.radius) * (180 / Math.PI);
   const maxStepDeg =
     referenceRowSize > 1 ? config.arcDegrees / (referenceRowSize - 1) : config.arcDegrees;
   return Math.min(stepDeg, maxStepDeg);
@@ -367,18 +381,34 @@ export interface RailPosition {
 
 // extraRadius pushes a card straight out along its own angle (used for the select-lift) — never
 // sideways along the rail.
-export function railPosition(angleDeg: number, extraRadius = 0): RailPosition {
+export function railPosition(angleDeg: number, radius: number, extraRadius = 0): RailPosition {
   const rad = (angleDeg * Math.PI) / 180;
-  const radius = RAIL_RADIUS + extraRadius;
+  const r = radius + extraRadius;
   return {
-    x: radius * Math.sin(rad),
-    y: RAIL_RADIUS - radius * Math.cos(rad),
+    x: r * Math.sin(rad),
+    y: radius - r * Math.cos(rad),
     rotateDeg: angleDeg,
   };
 }
-```
 
-**IMPORTANT — this is a placeholder-with-explicit-TODO by necessity, not by oversight**: `RAIL_RADIUS`'s value literally cannot be known until Task 1's live tuning session happens (it's a visual judgment call against a running app, not something derivable from other numbers). If you are executing this plan and Task 1's tuning session hasn't actually been done yet (values reported back to you), STOP and ask for those values before proceeding past this step — do not silently keep `330`.
+// The two tuned configs from Task 1 — HumanHandFan.tsx (Task 5) selects between them via its
+// existing `compact` prop.
+export const STANDARD_RAIL_CONFIG: RailAngleConfig = {
+  radius: 520,
+  overlap: 0.55,
+  arcDegrees: 90,
+  maxRotationDeg: 45,
+  spacingPx: 47,
+};
+
+export const COMPACT_RAIL_CONFIG: RailAngleConfig = {
+  radius: 430,
+  overlap: 0.55,
+  arcDegrees: 90,
+  maxRotationDeg: 45,
+  spacingPx: 45,
+};
+```
 
 - [ ] **Step 2: Typecheck**
 
@@ -610,27 +640,23 @@ This is the largest task in the plan. Read the current (pre-rewrite) file in ful
 
 - [ ] **Step 1: Design the per-slot angle (replaces `slotTargetX`/`slotTargetY`/`fanRotationDeg`/`fanCurveY`)**
 
-Each row is its own independent rail (Task 2's math), with the bottom row's pivot offset down by `(CARD_DIMS.normal.height - HAND_ROW_OVERLAP_PX)` — same imbrication concept as before, just computed once as a Y offset added after `railPosition`'s own row-relative output, instead of a per-slot quadratic curve. **Use the exact `RailAngleConfig` values (overlap/arcDegrees/maxRotationDeg/spacingPx) you tuned in Task 1 — separately for Standard vs. compact (gömmeli) mode**, replacing the placeholders below:
+Each row is its own independent rail (Task 2's `STANDARD_RAIL_CONFIG`/`COMPACT_RAIL_CONFIG`), with the bottom row's pivot offset down by `(CARD_DIMS.normal.height - ROW_OVERLAP_PX)` — same imbrication concept as before, just computed once as a Y offset added after `railPosition`'s own row-relative output, instead of a per-slot quadratic curve:
 
 ```ts
-// TODO(Task 1 output): replace with the two tuned configs — Standard and gömmeli likely differ,
-// mirroring the old HUMAN_HAND_*/GOMELI_* split.
-const STANDARD_RAIL_CONFIG: RailAngleConfig = { overlap: 0.55, arcDegrees: 40, maxRotationDeg: 18, spacingPx: 47 };
-const COMPACT_RAIL_CONFIG: RailAngleConfig = { overlap: 0.6, arcDegrees: 45, maxRotationDeg: 20, spacingPx: 40 };
-const ROW_OVERLAP_PX = 33; // TODO(Task 1 output): replace with the tuned value
+import { STANDARD_RAIL_CONFIG, COMPACT_RAIL_CONFIG, railAngleStepDeg, railAngles, railPosition } from './batakRailFan';
+
+const ROW_OVERLAP_PX = 40; // Task 1's tuned value, same for both modes.
 
 function slotPosition(slot: HandSlot, compact: boolean): { x: number; y: number; angleDeg: number } {
   const config = compact ? COMPACT_RAIL_CONFIG : STANDARD_RAIL_CONFIG;
   const angleStepDeg = railAngleStepDeg(config, slot.rowCount);
   const angles = railAngles(slot.rowCount, angleStepDeg, config.maxRotationDeg);
   const angleDeg = angles[slot.indexInRow] ?? 0;
-  const pos = railPosition(angleDeg);
+  const pos = railPosition(angleDeg, config.radius);
   const rowYOffset = slot.row === 'top' ? 0 : CARD_DIMS.normal.height - ROW_OVERLAP_PX;
   return { x: pos.x, y: pos.y + rowYOffset, angleDeg: pos.rotateDeg };
 }
 ```
-
-**If you are executing this task and Task 1's tuning session output isn't available yet, stop and ask for it rather than proceeding with the placeholder numbers above.**
 
 `handCardRotationDeg(indexInRow, rowCount)` (still exported, still used by `BatakTable.tsx` for `TravelCard`'s `originRotateDeg`) becomes a thin wrapper: compute the same `angles` array as `slotPosition` does (Standard config only — `BatakTable.tsx`'s existing call sites don't pass `compact`, matching today's behavior, since the played card's rotation at travel-origin time is read before this rewrite ever distinguishes the two modes at this call site; if that turns out wrong once wired up in Task 6, surface it rather than guessing) and index into it.
 
@@ -695,7 +721,7 @@ export function HumanHandFan({
 
 Reflow (a slot's `target` changing because a sibling was added/removed) needs `BatakHandCard` to call `motion.setTarget` again whenever its `initial`-derived target changes across renders — since `initial` is only consulted at mount time per Task 4's own doc comment, add a `useEffect` inside `BatakHandCardComponent` (Task 4) keyed on the slot's own target values, calling `motion.setTarget({x, y, angleDeg})` with the standard reposition timing whenever they change post-mount. This is the direct analog of the original `AnimatedFanCardComponent`'s reflow `useEffect` keyed on `[targetX, targetY]` — thread `target.x`/`target.y`/`target.angleDeg` into `BatakHandCard`'s props (rename `initial` usage accordingly, or add a parallel `target` prop distinct from `initial` if that reads cleaner) and add that effect. Resolve the exact prop shape when you write this task — the plan's Task 4 code above establishes the pattern, not a frozen final signature.
 
-Selection lift (translating a selected card outward along its own rail angle by `SELECTED_LIFT_DISTANCE`) is also a `setTarget` call, fired from a `useEffect` keyed on `selected`, mirroring Demo08's own select/deselect effect (`railPosition(slot.angleDeg, selected ? SELECT_LIFT_PX : 0)` — here, `SELECTED_LIFT_DISTANCE` plays that role).
+Selection lift (translating a selected card outward along its own rail angle by `SELECTED_LIFT_DISTANCE`) is also a `setTarget` call, fired from a `useEffect` keyed on `selected`, mirroring Demo08's own select/deselect effect — in production this is `railPosition(angleDeg, config.radius, selected ? SELECTED_LIFT_DISTANCE : 0)` (the `config`/`angleDeg` this slot already computed in Step 1), converted into an `{x, y}` `setTarget` call.
 
 - [ ] **Step 4: Delete everything old**
 
@@ -898,5 +924,5 @@ git commit -m "docs(animation): add Architecture Audit for Batak hand-fan Demo08
 ## Plan Self-Review Notes
 
 - **Spec coverage:** §1 (playground tuning) → Task 1. §2 (production port) → Tasks 2-5. §3 (production-specific behavior mapping) → Task 5 Step 2. §4 (BatakTable origin fix) → Task 6. §5 (cross-game safety, DeselectableSurface/jest mock) → Task 7 + grep instructions throughout. §6 (process) → Task 8.
-- **Placeholder scan:** two numeric placeholders remain deliberately (`RAIL_RADIUS` in Task 2, the rail configs + `ROW_OVERLAP_PX` in Task 5) — both explicitly flagged as blocking on Task 1's live-tuning output, with an explicit "stop and ask" instruction rather than silently proceeding. This is a genuine external dependency (a human visual-tuning decision), not a filled-in-later laziness gap — every other step has real, complete code.
+- **Placeholder scan:** the two numeric placeholders originally in Task 2/Task 5 (radius, row overlap) were resolved during execution once Task 1's live-tuning session completed (2026-07-30) and are now filled in with real, user-confirmed values (`STANDARD_RAIL_CONFIG`/`COMPACT_RAIL_CONFIG`, `ROW_OVERLAP_PX = 40`) — no placeholders remain anywhere in this plan.
 - **Type consistency:** `useBatakCardMotion`'s return shape (`{ shared, setTarget, getValues }`) is identical across Tasks 3, 4, 5, 6. `BatakHandCardProps` gains no untracked fields between Task 4's initial definition and Task 5's Step 3 usage — Task 5 explicitly flags where it may need to extend Task 4's prop shape (the opacity/entrance addition, the `target` vs `initial` naming) rather than silently assuming a shape neither task actually froze.
