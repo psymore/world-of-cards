@@ -8,7 +8,8 @@ export type DemoId =
   | 'transform'
   | 'hand-reposition'
   | 'complete-sequence'
-  | 'reanimated-hand-reposition';
+  | 'reanimated-hand-reposition'
+  | 'batak-hand-tuning';
 
 export const DEMO_ORDER: DemoId[] = [
   'fan-layout',
@@ -19,6 +20,7 @@ export const DEMO_ORDER: DemoId[] = [
   'hand-reposition',
   'complete-sequence',
   'reanimated-hand-reposition',
+  'batak-hand-tuning',
 ];
 
 export const DEMO_LABELS: Record<DemoId, string> = {
@@ -33,6 +35,10 @@ export const DEMO_LABELS: Record<DemoId, string> = {
   // docs/animation/ADR/ADR-001-reanimated-demo08-experiment.md — does not replace
   // Demo 6, which stays as today's Animated-based baseline.
   'reanimated-hand-reposition': 'Demo 8: Reanimated Reposition',
+  // Tunes the real Batak hand-fan geometry (real PlayingCard, real two-row layout) against
+  // Demo08's proven rail/angle model, before those values get hardcoded into production — see
+  // docs/superpowers/specs/2026-07-30-batak-hand-fan-demo08-migration-design.md.
+  'batak-hand-tuning': 'Demo 9: Batak Hand Tuning',
 };
 
 // A single point in a card's animated life: position/rotation/scale, plus the
