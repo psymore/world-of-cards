@@ -16,6 +16,10 @@ export interface FanConfigControlsProps {
   // size is driven by the shared 4-seat deal rather than being a free variable.
   handSize?: number;
   onHandSizeChange?: (value: number) => void;
+  // Overrides the Spacing slider's range (SIMPLE_CARD_WIDTH * 0.2..SIMPLE_CARD_WIDTH by default)
+  // — used by Demo09BatakHandTuning, whose real PlayingCard is wider than the playground's
+  // SimpleCard. Omitting this reproduces every existing demo's exact slider range.
+  cardWidth?: number;
 }
 
 // The same 5 live-tunable sliders Demo01FanLayout.tsx introduced (Hand size,
@@ -46,6 +50,7 @@ export function FanConfigControls({
   onSpacingPxChange,
   handSize,
   onHandSizeChange,
+  cardWidth = SIMPLE_CARD_WIDTH,
 }: FanConfigControlsProps) {
   const [isOpen, setIsOpen] = useState(false);
   return (
@@ -99,8 +104,8 @@ export function FanConfigControls({
           <LabeledSlider
             label="Spacing"
             testID="control-spacing"
-            minimumValue={SIMPLE_CARD_WIDTH * 0.2}
-            maximumValue={SIMPLE_CARD_WIDTH}
+            minimumValue={cardWidth * 0.2}
+            maximumValue={cardWidth}
             step={1}
             value={spacingPx}
             onChange={onSpacingPxChange}
