@@ -23,7 +23,7 @@ export function HomeScreen({ onSelectGame }: HomeScreenProps) {
           {games.length === 0 ? (
             <Text style={styles.empty}>No games installed yet</Text>
           ) : (
-            games.map((game) => (
+            games.map((game, index) => (
               <GameMenuRow
                 key={game.id}
                 displayName={game.displayName}
@@ -31,6 +31,7 @@ export function HomeScreen({ onSelectGame }: HomeScreenProps) {
                 minPlayers={game.minPlayers}
                 maxPlayers={game.maxPlayers}
                 onPress={() => onSelectGame(game.id)}
+                entranceDelayMs={index * 60}
                 testID={`game-menu-row-${game.id}`}
               />
             ))
