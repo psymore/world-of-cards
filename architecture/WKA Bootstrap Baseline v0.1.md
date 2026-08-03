@@ -4,136 +4,82 @@
 
 ---
 
-## Bootstrap Goals
+# Mission
 
 This document is an **AI Context Bootstrap Artifact**.
 
-Its purpose is **not** to fully describe WKA.
+Its purpose is to provide the minimum architectural context required for a human or AI agent to contribute consistently to a WKA-based project.
 
-Its purpose is to enable rapid architectural understanding.
+It enables rapid architectural understanding within **2–5 minutes** while keeping the **WKA Design Baseline** as the architectural authority.
 
-A human or AI agent should be able to read this document in approximately **2–5 minutes** and begin making consistent architectural decisions.
+This document is **not** the architectural authority.
 
-If this document becomes comprehensive enough to replace the **WKA Design Baseline**, it has failed its purpose.
-
-The **WKA Design Baseline** remains the architectural authority.
-
-The **WKA Bootstrap Baseline** exists to accelerate context acquisition while preserving architectural consistency.
+Normative definitions are provided by the **WKA Design Baseline**, which takes precedence whenever additional detail or clarification is required.
 
 ---
 
 ## Design Objectives
 
-This artifact SHOULD:
+This document MUST:
 
-- Minimize onboarding time.
-- Maximize architectural consistency.
-- Preserve architectural intent.
-- Avoid unnecessary detail.
-- Provide a reliable mental model.
-- Direct readers to authoritative sources when deeper knowledge is required.
+- minimize onboarding time;
+- preserve architectural intent;
+- maximize architectural consistency;
+- provide a reliable mental model;
+- direct readers to authoritative sources when deeper knowledge is required.
 
-This artifact MUST NOT:
+This document MUST NOT:
 
-- Redefine normative concepts.
-- Duplicate the Design Baseline.
-- Become a complete specification.
-- Become implementation documentation.
-- Introduce new architectural concepts.
+- redefine normative concepts;
+- duplicate the Design Baseline;
+- become a complete specification;
+- become implementation documentation;
+- introduce new architectural concepts.
 
 ---
 
 ## Success Criteria
 
-This document is successful if a new contributor can:
+After reading this document, a contributor should be able to:
 
-- Understand WKA's architectural philosophy.
-- Identify the correct architectural layer for a given task.
-- Distinguish normative specifications from architectural rationale.
-- Know where authoritative definitions are located.
-- Make architectural decisions consistent with WKA.
-- Navigate the architecture without first reading the complete Design Baseline.
+- understand WKA's architectural philosophy;
+- identify the correct architectural layer for a task;
+- distinguish specifications from architectural rationale;
+- locate authoritative sources;
+- make architecturally consistent decisions.
 
-If any of these objectives cannot be achieved, the reader should consult the **WKA Design Baseline**, which remains the normative source of truth.
-
----
-
-
-## Document Map
-
-WKA Bootstrap Baseline v0.1
-
-├── How to Use This Document
-├── Purpose
-├── Mental Model
-├── Golden Rules
-├── Core Definitions
-├── Architecture Model
-│   ├── Concept Ownership Matrix
-│   ├── Relationship Matrix
-│   ├── Governance Model
-│   ├── Documentation Architecture
-│   └── Knowledge Lifecycle
-├── Working Model
-│   ├── Authoring Order
-│   ├── Reading Order
-│   ├── ADR Philosophy
-│   ├── Decision Checklist
-│   └── Working Agreement
-└── Completion
-    ├── Anti-Patterns
-    ├── Architectural Compass
-    ├── Bootstrap Completion Criteria
-    ├── Quick Reference
-    └── Final Notes
+If additional detail is required, consult the **WKA Design Baseline**.
 
 ---
 
-
-# 1. Mission
-
-The purpose of this document is to provide the minimum architectural context required for a human or AI agent to contribute consistently to a WKA-based project.
-
-This document is intentionally concise.
-
-It is **not** the architectural authority.
-
-Normative definitions belong to the **WKA Design Baseline**.
-
-If a conflict exists between this document and the Design Baseline, the Design Baseline always takes precedence.
-
----
-
-# 2. Purpose
+# Purpose
 
 WKA (Knowledge Architecture) is an architecture for organizing, governing, representing, and evolving engineering knowledge.
 
-Its primary goal is to preserve architectural consistency over time while making knowledge understandable, maintainable, and reusable by both humans and AI agents.
+Its goal is to preserve architectural consistency while making knowledge understandable, maintainable, and reusable by both humans and AI agents.
 
-WKA is architecture-first.
-
-Documentation is only one representation of knowledge.
+WKA is architecture-first: documentation represents knowledge but does not define it.
 
 ---
 
-# 3. How to Use This Document
+# How to Use This Document
 
-Read this document completely before making architectural decisions.
+Read this document before making architectural decisions.
 
 When contributing to a WKA-based project:
 
-1. Follow Purpose.
-2. Follow Engineering Principles.
-3. Follow Governance.
+1. Start with the Purpose.
+2. Apply the Engineering Principles.
+3. Follow the Governance.
 4. Prefer refinement over expansion.
 5. Preserve Single Source of Truth.
 6. Preserve Single Responsibility.
 
-Do not introduce new concepts unless refinement is demonstrably insufficient.
+Do not introduce new concepts unless refinement is insufficient.
 
 ---
 
-# 4. Mental Model
+# Mental Model
 
 ```
 Purpose
@@ -151,9 +97,7 @@ Documentation
 Reference Implementations
 ```
 
-The architectural flow is intentionally top-down.
-
-Each layer depends only on layers above it.
+The architecture is intentionally layered.
 
 Authority flows downward.
 
@@ -161,9 +105,11 @@ Knowledge evolves upward through refinement.
 
 ---
 
-# 5. Architectural Principles
+# Working Principles
 
-These principles govern every architectural decision.
+These principles provide guidance for consistent architectural decisions.
+
+---
 
 ## Single Responsibility
 
@@ -171,17 +117,13 @@ Every architectural element has one primary responsibility.
 
 Every document answers one primary question.
 
-Responsibilities must not overlap.
-
 ---
 
 ## Single Source of Truth
 
-Every architectural concept is defined exactly once.
+Every architectural concept is defined once.
 
-Definitions are referenced.
-
-Definitions are never duplicated.
+Definitions are referenced, not duplicated.
 
 ---
 
@@ -189,7 +131,7 @@ Definitions are never duplicated.
 
 Normative architectural knowledge belongs in specifications.
 
-Supporting artifacts must reference specifications rather than redefine them.
+Supporting artifacts should reference specifications rather than redefine them.
 
 ---
 
@@ -197,7 +139,7 @@ Supporting artifacts must reference specifications rather than redefine them.
 
 Improve existing concepts before introducing new ones.
 
-New abstractions are the last resort.
+New abstractions require clear justification.
 
 ---
 
@@ -207,27 +149,23 @@ Knowledge exists independently from documentation.
 
 Documentation represents knowledge.
 
-Documentation is never the knowledge itself.
-
 ---
 
 ## Explicit over Implicit
 
-Architectural intent should always be explicit.
+Architectural intent should be explicit.
 
 Hidden assumptions should be avoided.
 
 ---
 
-# 6. Core Definitions
+# Core Definitions
 
 ## Purpose
 
-Defines why the architecture exists.
+The architectural reason for existence.
 
-Purpose is the architectural north star.
-
-Purpose is expected to be the most stable architectural element.
+Purpose guides all architectural decisions and remains highly stable.
 
 ---
 
@@ -235,35 +173,31 @@ Purpose is expected to be the most stable architectural element.
 
 Architectural quality goals that influence design decisions.
 
-Examples include consistency, maintainability, discoverability, extensibility, and clarity.
+Examples: consistency, maintainability, discoverability, extensibility, and clarity.
 
 ---
 
 ## Engineering Principles
 
-Normative engineering rules that govern architectural decisions.
+Normative rules that govern architectural decisions.
 
-Engineering Principles operationalize the Purpose.
+Engineering Principles operationalize Purpose.
 
 ---
 
 ## Governance
 
-Defines the common rules by which Knowledge Domains are documented, validated, and evolved.
+The common rules by which Knowledge Domains are documented, validated, and evolved.
 
-Governance defines rules.
-
-It does not define implementations.
+Governance defines rules, not implementations.
 
 ---
 
 ## Knowledge Domain
 
-A bounded area of engineering knowledge with a clearly defined responsibility.
+A bounded area of engineering knowledge with a defined responsibility.
 
-Knowledge Domains organize architectural knowledge.
-
-They do not define representation.
+Knowledge Domains organize knowledge but do not define representation.
 
 ---
 
@@ -271,7 +205,7 @@ They do not define representation.
 
 A discrete unit of governed knowledge.
 
-Examples include:
+Examples:
 
 - Specifications
 - ADRs
@@ -279,7 +213,7 @@ Examples include:
 - Maps
 - Reference Implementations
 
-Artifacts belong to exactly one Knowledge Domain.
+Artifacts belong to one Knowledge Domain.
 
 ---
 
@@ -287,9 +221,7 @@ Artifacts belong to exactly one Knowledge Domain.
 
 Defines how documentation artifacts are organized.
 
-It represents knowledge.
-
-It does not own knowledge.
+It represents knowledge but does not own it.
 
 ---
 
@@ -297,15 +229,11 @@ It does not own knowledge.
 
 Defines how documentation artifacts are discovered and navigated.
 
-The Documentation Map is the primary entry point into the documentation architecture.
-
 ---
 
 ## Naming
 
-Defines naming conventions.
-
-Naming improves consistency and discoverability.
+Defines naming conventions that improve consistency and discoverability.
 
 Naming does not define semantics.
 
@@ -313,11 +241,9 @@ Naming does not define semantics.
 
 ## Templates
 
-Reusable structural patterns for representing knowledge.
+Reusable patterns for representing knowledge.
 
-Templates standardize representation.
-
-Templates never define architectural meaning.
+Templates standardize representation but do not define meaning.
 
 ---
 
@@ -325,17 +251,13 @@ Templates never define architectural meaning.
 
 Defines how knowledge evolves over time.
 
-The Lifecycle governs architectural evolution rather than implementation history.
-
 ---
 
 ## Specification
 
 The authoritative source of normative architectural knowledge.
 
-Specifications define architecture.
-
-They do not explain architectural history.
+Specifications define architecture, not architectural history.
 
 ---
 
@@ -343,9 +265,7 @@ They do not explain architectural history.
 
 Preserves the rationale behind significant architectural decisions.
 
-ADRs explain why.
-
-They do not define normative architecture.
+ADRs explain why; they do not define normative architecture.
 
 ---
 
@@ -353,23 +273,19 @@ They do not define normative architecture.
 
 A tool or process that supports Governance by enabling its rules to be applied consistently.
 
-Mechanisms support Governance.
-
-They are not Governance.
+Mechanisms are not Governance.
 
 ---
 
 ## Reference Implementation
 
-A concrete realization of one or more specifications.
+A concrete realization of specifications.
 
-Reference Implementations demonstrate architecture.
-
-They do not define architecture.
+Reference Implementations demonstrate architecture but do not define it.
 
 ---
 
-# 7. Golden Rules
+# Golden Rules
 
 1. Purpose is the architectural north star.
 
@@ -407,36 +323,47 @@ The next section defines:
 - Documentation Architecture
 - Knowledge Lifecycle
 
-
 ---
 
 # Part 2 — Architecture Model
 
 ---
 
-# 8. Concept Ownership Matrix
+# Concept Ownership Matrix
 
-This matrix defines the architectural owner and responsibility of each core concept.
+This matrix defines the owner and primary responsibility of each core concept.
 
 A concept SHOULD be modified only by its owning layer.
 
-| Concept | Owner | Primary Responsibility | Must NOT Define |
-|----------|-------|------------------------|-----------------|
-| Purpose | Foundation Layer | Architectural intent | Governance, Documentation |
-| Quality Attributes | Foundation Layer | Quality goals | Knowledge Domains |
-| Engineering Principles | Foundation Layer | Engineering decision rules | Domain-specific knowledge |
-| Governance | Conceptual Layer | Common governance rules | Specifications, ADRs |
-| Knowledge Domain | Conceptual Layer | Knowledge boundaries | Documentation organization |
-| Knowledge Artifact | Conceptual Layer | Governed knowledge unit | Governance rules |
-| Documentation Structure | Representation Layer | Documentation organization | Architectural meaning |
-| Documentation Map | Representation Layer | Navigation | Knowledge definitions |
-| Naming | Representation Layer | Naming conventions | Semantics |
-| Templates | Representation Layer | Representation patterns | Knowledge ownership |
-| Knowledge Lifecycle | Evolution Layer | Knowledge evolution | Governance |
-| Specification | Specification Layer | Normative architecture | Architectural rationale |
-| ADR | Governance Mechanism | Architectural rationale | Normative rules |
-| Mechanisms | Governance | Governance support | Governance itself |
-| Reference Implementation | Implementation Layer | Practical realization | Architecture |
+| Concept                  | Owner                | Responsibility             | Must NOT Define            |
+| ------------------------ | -------------------- | -------------------------- | -------------------------- |
+| Purpose                  | Foundation Layer     | Architectural intent       | Governance, Documentation  |
+| Quality Attributes       | Foundation Layer     | Quality goals              | Knowledge Domains          |
+| Engineering Principles   | Foundation Layer     | Decision rules             | Domain-specific knowledge  |
+| Governance               | Conceptual Layer     | Common governance rules    | Specifications, ADRs       |
+| Knowledge Domain         | Conceptual Layer     | Knowledge boundaries       | Documentation organization |
+| Knowledge Artifact       | Conceptual Layer     | Governed knowledge unit    | Governance rules           |
+| Documentation Structure  | Representation Layer | Documentation organization | Architectural meaning      |
+| Documentation Map        | Representation Layer | Navigation                 | Knowledge definitions      |
+| Naming                   | Representation Layer | Naming conventions         | Semantics                  |
+| Templates                | Representation Layer | Representation patterns    | Knowledge ownership        |
+| Knowledge Lifecycle      | Evolution Layer      | Knowledge evolution        | Governance                 |
+| Specification            | Specification Layer  | Normative architecture     | Architectural rationale    |
+| ADR                      | Governance Mechanism | Architectural rationale    | Normative rules            |
+| Mechanism                | Governance Support   | Applying governance rules  | Governance itself          |
+| Reference Implementation | Implementation Layer | Practical realization      | Architecture               |
+
+---
+
+## Ownership Rule
+
+Each concept has exactly one architectural owner.
+
+Ownership determines where a concept is defined, not where it may be referenced.
+
+Definitions are centralized.
+
+References are distributed.
 
 ---
 
@@ -454,27 +381,27 @@ References are distributed.
 
 ---
 
-# 9. Relationship Matrix
+# Relationship Matrix
 
-The following relationships describe how the architecture is composed.
+The following relationships describe how core concepts interact.
 
-| Concept | Owns | Uses | Governed By |
-|----------|------|------|--------------|
-| Purpose | Architectural Intent | Quality Attributes, Engineering Principles | — |
-| Quality Attributes | Quality Goals | Engineering Principles | Purpose |
-| Engineering Principles | Decision Rules | Entire Architecture | Purpose |
-| Governance | Governance Rules | Mechanisms | Engineering Principles |
-| Knowledge Domain | Knowledge Artifacts | Governance | Governance |
-| Knowledge Artifact | Domain Knowledge | Documentation Structure, Lifecycle | Governance |
-| Documentation Structure | Documentation Organization | Naming, Templates | Governance |
-| Documentation Map | Navigation | Documentation Structure | Governance |
-| Naming | Naming Conventions | Documentation Structure | Governance |
-| Templates | Representation Patterns | Documentation Structure | Governance |
-| Knowledge Lifecycle | Knowledge Evolution | Knowledge Artifacts | Governance |
-| Specification | Normative Knowledge | Core Definitions | Governance |
-| ADR | Architectural Rationale | Specifications | Governance |
-| Mechanisms | Governance Support | Governance Rules | Governance |
-| Reference Implementation | Practical Realization | Specifications | Governance |
+| Concept                  | Owns                    | Uses                                       | Governed By            |
+| ------------------------ | ----------------------- | ------------------------------------------ | ---------------------- |
+| Purpose                  | Architectural Intent    | Quality Attributes, Engineering Principles | —                      |
+| Quality Attributes       | Quality Goals           | Engineering Principles                     | Purpose                |
+| Engineering Principles   | Decision Rules          | Architecture                               | Purpose                |
+| Governance               | Governance Rules        | Mechanisms                                 | Engineering Principles |
+| Knowledge Domain         | Knowledge Artifacts     | Governance                                 | Governance             |
+| Knowledge Artifact       | Governed Knowledge      | Documentation Structure, Lifecycle         | Governance             |
+| Documentation Structure  | Organization            | Naming, Templates                          | Governance             |
+| Documentation Map        | Navigation              | Documentation Structure                    | Governance             |
+| Naming                   | Conventions             | Documentation Structure                    | Governance             |
+| Templates                | Representation Patterns | Documentation Structure                    | Governance             |
+| Knowledge Lifecycle      | Knowledge Evolution     | Knowledge Artifacts                        | Governance             |
+| Specification            | Normative Knowledge     | Architecture                               | Governance             |
+| ADR                      | Architectural Rationale | Specifications                             | Governance             |
+| Mechanism                | Governance Support      | Governance Rules                           | Governance             |
+| Reference Implementation | Practical Realization   | Specifications                             | Governance             |
 
 ---
 
@@ -482,29 +409,23 @@ The following relationships describe how the architecture is composed.
 
 Relationships SHOULD be explicit.
 
-Dependencies SHOULD always point upward.
-
-Authority SHOULD never point downward.
+Dependencies SHOULD follow architectural authority.
 
 Representations MUST NOT own architectural concepts.
 
 ---
 
-# 10. Governance Model
+# Governance Model
 
-Governance is responsible for architectural consistency.
-
-Its responsibility is to define the common rules by which Knowledge Domains are documented, validated, and evolved.
+Governance defines the common rules by which Knowledge Domains are documented, validated, and evolved.
 
 Governance owns rules.
 
-Governance does not own knowledge.
-
-Governance does not own implementations.
+Governance does not own knowledge or implementations.
 
 ---
 
-## Governance Hierarchy
+    ## Governance Hierarchy
 
 ```
 Governance
@@ -526,9 +447,7 @@ Governance applies equally across every Knowledge Domain.
 
 ## Governance Mechanisms
 
-Governance may be supported by mechanisms.
-
-Examples include:
+Governance is supported by mechanisms such as:
 
 - ADRs
 - Reviews
@@ -536,7 +455,7 @@ Examples include:
 - Conformance checks
 - Automation
 
-Mechanisms implement consistency.
+Mechanisms support the governance model by enabling its rules to be applied consistently.
 
 They do not define governance.
 
@@ -547,28 +466,23 @@ They do not define governance.
 Governance MUST:
 
 - preserve architectural consistency;
-
 - preserve Single Source of Truth;
-
 - preserve Single Responsibility;
-
 - preserve architectural intent.
 
 Governance SHOULD:
 
 - minimize coupling;
-
 - encourage refinement;
-
 - discourage unnecessary abstraction.
 
 ---
 
-# 11. Documentation Architecture
+# Documentation Architecture
 
 Documentation is a representation layer.
 
-It is not the knowledge itself.
+It represents knowledge but does not define or own it.
 
 Documentation exists to make knowledge understandable and discoverable.
 
@@ -596,23 +510,28 @@ Documentation Map
 Reader / AI Agent
 ```
 
-Knowledge always precedes documentation.
+Knowledge precedes documentation.
 
-Changing documentation does not necessarily change knowledge.
+Documentation changes do not necessarily change knowledge.
 
-Changing knowledge usually requires documentation updates.
+Knowledge changes may require documentation updates.
 
 ---
 
 ## Documentation Rules
 
-Documentation MUST represent architecture faithfully.
+Documentation MUST:
 
-Documentation SHOULD remain concise.
+- represent architecture faithfully;
+- reference authoritative definitions.
 
-Documentation MUST NOT redefine concepts.
+Documentation SHOULD:
 
-Documentation SHOULD reference authoritative definitions.
+- remain concise.
+
+Documentation MUST NOT:
+
+- redefine concepts.
 
 ---
 
@@ -620,47 +539,39 @@ Documentation SHOULD reference authoritative definitions.
 
 The Documentation Map is the canonical navigation model.
 
-Its responsibility is discoverability.
+It provides discoverability.
 
-It does not own definitions.
-
-It does not own governance.
-
-It does not own lifecycle.
+It does not own definitions, governance, or lifecycle.
 
 ---
 
-# 12. Knowledge Lifecycle
+# Knowledge Lifecycle
 
-Knowledge evolves.
+Knowledge evolves through controlled refinement.
 
-Implementations change.
-
-Architecture matures.
-
-The Lifecycle governs this evolution.
+The Lifecycle governs how knowledge changes over time.
 
 ---
 
 ## Lifecycle States
 
-| State | Meaning |
-|--------|---------|
-| Proposed | Candidate knowledge awaiting evaluation |
-| Accepted | Officially adopted |
-| Active | Current authoritative knowledge |
-| Deprecated | Maintained for compatibility but discouraged |
-| Archived | Preserved as historical knowledge |
+| State      | Meaning                                 |
+| ---------- | --------------------------------------- |
+| Proposed   | Candidate knowledge awaiting evaluation |
+| Accepted   | Officially adopted knowledge            |
+| Active     | Current authoritative knowledge         |
+| Deprecated | Maintained but discouraged              |
+| Archived   | Preserved historical knowledge          |
 
 ---
 
 ## Lifecycle Principles
 
-Knowledge SHOULD evolve through controlled refinement.
+Knowledge SHOULD:
 
-History SHOULD be preserved.
-
-Deletion SHOULD be exceptional.
+- evolve through controlled refinement;
+- preserve historical context;
+- avoid unnecessary deletion.
 
 Purpose SHOULD remain stable.
 
@@ -670,11 +581,9 @@ Architecture SHOULD evolve more slowly than implementations.
 
 ## Lifecycle Rule
 
-Knowledge is refined.
+Knowledge is refined, not accumulated.
 
-Knowledge is rarely replaced.
-
-Architecture evolves through refinement rather than accumulation.
+Architecture evolves through refinement rather than replacement.
 
 ---
 
@@ -695,11 +604,11 @@ The next section defines:
 
 ---
 
-# 13. Authoring Order
+# Authoring Order
 
-Authoring Order defines how WKA itself is established and maintained.
+Authoring Order defines how WKA is established and maintained.
 
-It reflects architectural establishment rather than knowledge acquisition.
+It reflects architectural establishment, not knowledge acquisition.
 
 ```
 ADR-000
@@ -721,21 +630,18 @@ ADR-000
 
 ## Authoring Principles
 
-Architectural authority is established before normative specifications.
-
-Specifications are authored against an accepted architectural baseline.
-
-Reference Implementations are created only after specifications exist.
-
-Architecture evolves through controlled refinement.
+- Architectural authority is established before specifications.
+- Specifications are authored against an accepted baseline.
+- Reference Implementations follow specifications.
+- Architecture evolves through controlled refinement.
 
 ---
 
-# 14. Reading Order
+# Reading Order
 
 Reading Order defines how WKA should be learned.
 
-It reflects progressive understanding rather than historical creation.
+It reflects progressive understanding, not historical creation.
 
 ```
 00 Overview
@@ -755,25 +661,19 @@ It reflects progressive understanding rather than historical creation.
 
 ## Reading Principles
 
-Readers begin with architectural intent.
-
-Readers progress from abstract concepts toward concrete implementations.
-
-Historical rationale (ADRs) is optional for understanding.
-
-ADRs become valuable after architectural understanding has been established.
+- Readers begin with architectural intent.
+- Readers progress from concepts toward implementations.
+- ADRs are optional for initial understanding and provide value after architectural context is established.
 
 ---
 
-# 15. ADR Philosophy
+# ADR Philosophy
 
-Architecture Decision Records preserve architectural rationale.
+ADRs preserve the rationale behind significant architectural decisions.
 
 Specifications define architecture.
 
-ADRs explain why architecture became what it is.
-
-They intentionally serve different purposes.
+ADRs explain why architectural decisions were made.
 
 ---
 
@@ -782,14 +682,14 @@ They intentionally serve different purposes.
 An ADR SHOULD:
 
 - preserve significant architectural decisions;
-- explain the architectural rationale;
-- describe considered alternatives;
-- record the chosen direction.
+- explain rationale;
+- record considered alternatives;
+- document the chosen direction.
 
 An ADR MUST NOT:
 
 - redefine specifications;
-- duplicate architectural definitions;
+- duplicate definitions;
 - become implementation documentation;
 - become a changelog.
 
@@ -799,48 +699,40 @@ An ADR MUST NOT:
 
 An ADR should exist only when the architecture could reasonably have been designed differently.
 
-Use the following decision filter:
+Use this filter:
 
-### Question 1
+1. Does the decision introduce or fundamentally change architecture?
+2. Were multiple reasonable alternatives possible?
+3. Would future readers benefit from knowing why this choice was made?
 
-Does this decision introduce or fundamentally change the architecture?
-
-### Question 2
-
-Were multiple reasonable architectural alternatives available?
-
-### Question 3
-
-Would future readers benefit from understanding why this option was chosen?
-
-If the answer is **No** to any of these questions, an ADR is usually unnecessary.
+If any answer is **No**, an ADR is usually unnecessary.
 
 ---
 
 ## Typical ADR Candidates
 
-- Introduce a new architectural layer.
-- Introduce Governance.
-- Introduce Knowledge Lifecycle.
-- Replace the architectural organization model.
-- Introduce a new architectural philosophy.
+- New architectural layers.
+- New governance models.
+- New lifecycle models.
+- Changes to architectural organization.
+- New architectural approaches.
 
 ---
 
 ## Not ADR Candidates
 
-- Rename a document.
-- Improve wording.
-- Reorganize sections.
-- Expand terminology.
-- Correct documentation.
-- Small refinements.
+- Document renaming.
+- Wording improvements.
+- Section reorganization.
+- Terminology expansion.
+- Documentation corrections.
+- Minor refinements.
 
 ---
 
-# 16. Decision Checklist
+# Decision Checklist
 
-Every architectural proposal SHOULD follow this process.
+Every architectural proposal SHOULD follow this decision process.
 
 ```
 Need to change something?
@@ -880,53 +772,40 @@ Refine     Can refinement solve it?
 
 ---
 
+---
+
 ## Architectural Questions
 
-Before introducing any change, ask:
+Before introducing a change, ask:
 
-What responsibility changes?
-
-Who owns this concept?
-
-Does this duplicate existing knowledge?
-
-Can refinement solve this?
-
-Will this improve clarity?
-
-Does this preserve architectural intent?
+- What responsibility changes?
+- Who owns this concept?
+- Does this duplicate existing knowledge?
+- Can refinement solve this?
+- Does this preserve architectural intent?
 
 ---
 
-# 17. Working Agreement
+# Working Agreement
 
-Every contributor should follow these agreements.
+Every contributor should preserve architectural consistency.
 
 ---
 
-## Architectural Consistency
+## Preserve
 
 Always preserve:
 
-- Purpose
-- Engineering Principles
-- Governance
-- Architectural intent
+- Purpose;
+- Engineering Principles;
+- Governance;
+- Architectural intent;
+- Single Source of Truth;
+- Single Responsibility.
 
 ---
 
-## Knowledge Consistency
-
-Always preserve:
-
-- Single Source of Truth
-- Single Responsibility
-- Explicit definitions
-- Clear ownership
-
----
-
-## Documentation Consistency
+## Documentation Rules
 
 Documentation SHOULD:
 
@@ -937,49 +816,39 @@ Documentation SHOULD:
 Documentation MUST NOT:
 
 - redefine concepts;
-- own architectural knowledge;
 - duplicate specifications.
 
 ---
 
-## Evolution Consistency
+## Evolution Rules
 
-Architecture SHOULD evolve through refinement.
+Architecture evolves through refinement.
 
-Expansion SHOULD occur only when refinement is insufficient.
-
-Architectural stability is preferred over architectural novelty.
+Expansion occurs only when refinement is insufficient.
 
 ---
 
-## Collaboration Principles
+## Collaboration Rules
 
 When uncertain:
 
-Do not invent.
-
-Do not duplicate.
-
-Do not generalize prematurely.
-
-Return to the Design Baseline.
-
-Refine first.
-
-Expand only when justified.
+- do not invent;
+- do not duplicate;
+- do not generalize prematurely;
+- return to the Design Baseline;
+- refine before expanding.
 
 ---
 
 ## AI Agent Expectations
 
-An AI agent working on a WKA-based project is expected to:
+AI agents should:
 
 - understand Purpose before proposing changes;
 - preserve architectural intent;
 - respect concept ownership;
-- avoid introducing unnecessary abstractions;
+- avoid unnecessary abstractions;
 - follow Governance;
-- produce specification-oriented output;
 - distinguish rationale from normative content.
 
 ---
@@ -1000,23 +869,15 @@ The final section defines:
 
 ---
 
-# 18. Anti-Patterns
+# Anti-Patterns
 
-The following patterns violate the architectural philosophy of WKA.
-
-Avoid them unless explicitly justified.
+The following patterns violate WKA principles.
 
 ---
 
 ## Duplicate Definitions
 
 Defining the same concept in multiple locations.
-
-Consequences:
-
-- Multiple sources of truth
-- Inconsistent evolution
-- Increased maintenance cost
 
 Prefer:
 
@@ -1026,13 +887,7 @@ Reference the authoritative definition.
 
 ## Responsibility Overlap
 
-Allowing one artifact to answer multiple primary questions.
-
-Consequences:
-
-- Blurred ownership
-- Coupling
-- Difficult maintenance
+Allowing artifacts to have multiple primary responsibilities.
 
 Prefer:
 
@@ -1043,13 +898,7 @@ One primary responsibility.
 
 ## Premature Abstraction
 
-Introducing new concepts before existing concepts have been refined.
-
-Consequences:
-
-- Unnecessary complexity
-- Vocabulary inflation
-- Reduced clarity
+Introducing concepts before existing ones are refined.
 
 Prefer:
 
@@ -1059,12 +908,7 @@ Refinement over expansion.
 
 ## Documentation as Knowledge
 
-Treating documentation itself as the architecture.
-
-Consequences:
-
-- Representation becomes authority
-- Knowledge becomes fragmented
+Treating documentation as the source of knowledge.
 
 Prefer:
 
@@ -1074,12 +918,7 @@ Knowledge precedes representation.
 
 ## Specification Duplication
 
-Repeating normative content across multiple documents.
-
-Consequences:
-
-- Divergence
-- Contradictory definitions
+Repeating normative content across documents.
 
 Prefer:
 
@@ -1092,11 +931,6 @@ Never duplicate.
 
 Relying on implicit practices instead of explicit rules.
 
-Consequences:
-
-- Inconsistent decisions
-- Difficult onboarding
-
 Prefer:
 
 Explicit governance.
@@ -1105,22 +939,15 @@ Explicit governance.
 
 ## Architecture by Implementation
 
-Changing architecture because an implementation happens to work.
-
-Consequences:
-
-- Architecture follows tools
-- Short-term optimization
+Allowing implementations to define architecture.
 
 Prefer:
 
 Implementations conform to architecture.
 
-Never reverse the dependency.
-
 ---
 
-# 19. Architectural Compass
+# Architectural Compass
 
 When uncertainty exists, follow this priority order.
 
@@ -1143,7 +970,6 @@ Implementation
 Lower layers should never redefine higher layers.
 
 Higher layers provide context for lower layers.
-
 
 # Architectural Decision Compass
 
@@ -1209,23 +1035,22 @@ New concepts are introduced only when refinement can no longer satisfy the archi
 
 The Navigation Compass helps contributors identify the authoritative artifact for a specific task.
 
-| If you are... | Read... |
-|---------------|----------|
-| Understanding WKA | Overview |
-| Understanding architectural intent | Purpose |
-| Making architectural decisions | Foundation Layer |
-| Working with concepts | Conceptual Layer |
-| Organizing documentation | Representation Layer |
-| Defining knowledge evolution | Evolution Layer |
-| Understanding architectural rationale | ADRs |
-| Building software | Specifications |
-| Looking for implementation examples | Reference Implementations |
-| Joining the project | Bootstrap Baseline |
+| If you are...                         | Read...                   |
+| ------------------------------------- | ------------------------- |
+| Understanding WKA                     | Overview                  |
+| Understanding architectural intent    | Purpose                   |
+| Making architectural decisions        | Foundation Layer          |
+| Working with concepts                 | Conceptual Layer          |
+| Organizing documentation              | Representation Layer      |
+| Defining knowledge evolution          | Evolution Layer           |
+| Understanding architectural rationale | ADRs                      |
+| Building software                     | Specifications            |
+| Looking for implementation examples   | Reference Implementations |
+| Joining the project                   | Bootstrap Baseline        |
 
 ## Principle
 
 Always consult the authoritative artifact before introducing or modifying architectural knowledge.
-
 
 # Evolution Compass
 
@@ -1289,8 +1114,6 @@ Specifications define change.
 
 Reference Implementations demonstrate change.
 
-
-
 ---
 
 ## Architectural Priorities
@@ -1311,104 +1134,43 @@ When two alternatives are both technically correct, prefer the one that better p
 
 ---
 
-# 20. Bootstrap Completion Criteria
+# Bootstrap Completion Criteria
 
 After reading this document, a contributor should understand:
 
-✓ Why WKA exists.
-
-✓ The role of Purpose.
-
-✓ The role of Engineering Principles.
-
-✓ The responsibility of Governance.
-
-✓ What a Knowledge Domain is.
-
-✓ What a Knowledge Artifact is.
-
-✓ The difference between knowledge and documentation.
-
-✓ The Documentation Architecture.
-
-✓ The Knowledge Lifecycle.
-
-✓ The relationship between Specifications and ADRs.
-
-✓ Authoring Order.
-
-✓ Reading Order.
-
-✓ The decision-making process.
-
+✓ Why WKA exists.  
+✓ The role of Purpose.  
+✓ The role of Engineering Principles.  
+✓ The responsibility of Governance.  
+✓ Knowledge Domains and Knowledge Artifacts.  
+✓ The difference between knowledge and documentation.  
+✓ Documentation Architecture and Knowledge Lifecycle.  
+✓ The relationship between Specifications and ADRs.  
+✓ Authoring Order and Reading Order.  
+✓ The architectural decision process.  
 ✓ The Working Agreement.
 
-✓ The core architectural philosophy.
-
-If any of these remain unclear, revisit the WKA Design Baseline before proposing architectural changes.
+If any of these remain unclear, consult the **WKA Design Baseline** before proposing architectural changes.
 
 ---
 
-# 21. Quick Reference
+# Quick Reference
 
-## Specifications
-
-Define architecture.
-
----
-
-## ADRs
-
-Explain architectural rationale.
-
----
-
-## Governance
-
-Defines common rules.
+| Concept                   | Responsibility                  |
+| ------------------------- | ------------------------------- |
+| Specifications            | Define architecture             |
+| ADRs                      | Explain architectural rationale |
+| Governance                | Define common rules             |
+| Mechanisms                | Support Governance              |
+| Knowledge Domains         | Organize knowledge              |
+| Knowledge Artifacts       | Represent governed knowledge    |
+| Documentation             | Represent knowledge             |
+| Lifecycle                 | Govern knowledge evolution      |
+| Reference Implementations | Demonstrate specifications      |
 
 ---
 
-## Mechanisms
-
-Support Governance.
-
----
-
-## Knowledge Domains
-
-Organize knowledge.
-
----
-
-## Knowledge Artifacts
-
-Represent governed knowledge.
-
----
-
-## Documentation
-
-Represents knowledge.
-
----
-
-## Lifecycle
-
-Governs knowledge evolution.
-
----
-
-## Reference Implementations
-
-Demonstrate specifications.
-
-
----
-
-
-
-# 22. Final Notes
+# Final Notes
 
 This document is a context artifact.
 

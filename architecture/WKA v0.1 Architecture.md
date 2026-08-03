@@ -286,10 +286,9 @@ Governance is responsible for:
 - defining common architectural rules;
 - preserving architectural consistency;
 - governing knowledge evolution;
-- establishing architectural policies;
-- ensuring that Knowledge Domains evolve consistently.
+- establishing architectural policies.
 
-Governance does **not** own knowledge, documentation, or implementations.
+Governance does **not** own Knowledge Domains, documentation, implementations, or governance mechanisms.
 
 ---
 
@@ -364,7 +363,7 @@ Governance does not:
 - define Knowledge Domains;
 - record architectural rationale.
 
-Its sole responsibility is to define the common rules by which architectural knowledge is governed.
+Its sole responsibility is to define the common rules governing architectural knowledge.
 
 # Knowledge Domain
 
@@ -382,8 +381,7 @@ Knowledge Domains are responsible for:
 
 - organizing architectural knowledge;
 - establishing clear ownership boundaries;
-- reducing conceptual overlap;
-- enabling independent evolution within a governed framework.
+- enabling independent evolution under Governance.
 
 Knowledge Domains do **not** define governance or documentation rules.
 
@@ -407,11 +405,9 @@ Knowledge Domains do **not** define governance or documentation rules.
 
 ### Referenced by
 
-Representation Layer
-
-Knowledge Lifecycle
-
-Reference Implementations
+- Representation Layer
+- Knowledge Lifecycle
+- Reference Implementations
 
 ---
 
@@ -446,15 +442,15 @@ Knowledge Domains do not:
 - organize documentation;
 - prescribe implementation details.
 
-Their sole responsibility is organizing architectural knowledge into coherent bounded areas.
+Their sole responsibility is to organize architectural knowledge into coherent, bounded areas.
 
 # Knowledge Artifact
 
 ## Definition
 
-A Knowledge Artifact is a discrete, governed unit of architectural knowledge.
+A Knowledge Artifact is a discrete unit of architectural knowledge.
 
-Artifacts are the primary building blocks through which knowledge is represented, maintained, and evolved.
+Artifacts are the primary building blocks through which architectural knowledge is represented, maintained, and evolved.
 
 ---
 
@@ -462,14 +458,12 @@ Artifacts are the primary building blocks through which knowledge is represented
 
 Knowledge Artifacts are responsible for:
 
-- representing governed knowledge;
+- representing architectural knowledge;
 - providing reusable architectural information;
 - supporting architectural evolution;
 - serving as the units managed by the Knowledge Lifecycle.
 
-Artifacts do **not** define Governance.
-
-Artifacts do **not** define architectural authority.
+Knowledge Artifacts do **not** define Governance or architectural authority.
 
 ---
 
@@ -516,7 +510,7 @@ Knowledge Artifacts SHOULD:
 Knowledge Artifacts MUST NOT:
 
 - duplicate authoritative concepts;
-- belong to multiple domains simultaneously;
+- belong to multiple Knowledge Domains simultaneously;
 - redefine Governance.
 
 ---
@@ -529,7 +523,7 @@ Knowledge Artifacts do not:
 - define architectural principles;
 - replace Knowledge Domains.
 
-Their sole responsibility is representing governed architectural knowledge.
+Their sole responsibility is to represent architectural knowledge.
 
 # Documentation Structure
 
@@ -537,7 +531,7 @@ Their sole responsibility is representing governed architectural knowledge.
 
 Documentation Structure defines how architectural knowledge is organized and represented.
 
-It provides a consistent structure for documenting Knowledge Artifacts without changing their meaning.
+It provides a consistent structure for Knowledge Artifacts without changing their meaning.
 
 Documentation Structure defines representation, not knowledge.
 
@@ -547,12 +541,12 @@ Documentation Structure defines representation, not knowledge.
 
 Documentation Structure is responsible for:
 
-- organizing architectural documents;
+- organizing Knowledge Artifacts;
 - defining structural consistency;
 - improving discoverability;
 - supporting maintainable documentation.
 
-Documentation Structure does not define architectural concepts or governance rules.
+Documentation Structure does **not** define architectural concepts or governance rules.
 
 ---
 
@@ -604,16 +598,16 @@ Documentation Structure MUST NOT:
 Documentation Structure does not:
 
 - define architecture;
-- define governance;
+- define Governance;
 - define lifecycle behavior.
 
-Its sole responsibility is organizing documentation consistently.
+Its sole responsibility is to organize architectural documentation consistently.
 
 # Documentation Map
 
 ## Definition
 
-Documentation Map defines how documentation is discovered and navigated.
+Documentation Map defines how architectural documentation is discovered and navigated.
 
 It provides the canonical navigation model for the architecture.
 
@@ -627,10 +621,10 @@ Documentation Map is responsible for:
 
 - guiding readers;
 - improving navigation;
-- exposing relationships between documents;
+- exposing relationships between documentation artifacts;
 - reducing onboarding effort.
 
-Documentation Map does not define architectural concepts.
+Documentation Map does **not** define architectural concepts.
 
 ---
 
@@ -647,9 +641,8 @@ Documentation Map does not define architectural concepts.
 
 ### Referenced by
 
-Human contributors
-
-AI agents
+- Human contributors
+- AI agents
 
 ---
 
@@ -681,7 +674,7 @@ Documentation Map does not:
 - replace documentation;
 - introduce governance rules.
 
-Its sole responsibility is making architectural knowledge discoverable.
+Its sole responsibility is to make architectural knowledge discoverable.
 
 # Naming
 
@@ -833,9 +826,9 @@ Their sole responsibility is standardizing representation.
 
 Knowledge Lifecycle defines how Knowledge Artifacts evolve over time.
 
-It establishes the common lifecycle model that governs the creation, refinement, adoption, evolution, and retirement of architectural knowledge.
+It establishes the common lifecycle model for the creation, refinement, adoption, evolution, and retirement of architectural knowledge.
 
-Knowledge Lifecycle governs knowledge evolution, not implementation evolution.
+Knowledge Lifecycle governs architectural knowledge, not implementations.
 
 ---
 
@@ -843,13 +836,12 @@ Knowledge Lifecycle governs knowledge evolution, not implementation evolution.
 
 Knowledge Lifecycle is responsible for:
 
-- defining the states of Knowledge Artifacts;
-- defining how knowledge evolves;
+- defining the lifecycle states of Knowledge Artifacts;
+- supporting controlled knowledge evolution;
 - preserving architectural continuity;
-- supporting controlled refinement;
 - preventing uncontrolled architectural drift.
 
-Knowledge Lifecycle does not define Governance policies or implementation workflows.
+Knowledge Lifecycle does **not** define Governance policies or implementation workflows.
 
 ---
 
@@ -907,7 +899,7 @@ A typical lifecycle may include:
 - Deprecated
 - Archived
 
-The exact state model is governed by Governance and may evolve independently of this baseline.
+The exact lifecycle model is governed by Governance and may evolve over time.
 
 ---
 
@@ -919,7 +911,7 @@ Knowledge Lifecycle does not:
 - define software development workflows;
 - define project management processes.
 
-Its sole responsibility is governing the evolution of architectural knowledge.
+Its sole responsibility is to govern the evolution of architectural knowledge.
 
 # Architectural Decisions
 
@@ -936,11 +928,11 @@ Their purpose is to preserve architectural rationale rather than define architec
 Architectural Decisions are responsible for:
 
 - preserving architectural history;
-- documenting significant decisions;
+- documenting significant architectural decisions;
 - recording considered alternatives;
-- explaining architectural rationale.
+- preserving architectural rationale.
 
-Architectural Decisions do not define normative architecture.
+Architectural Decisions do **not** define normative architecture.
 
 ---
 
@@ -956,7 +948,7 @@ Architectural Decisions do not define normative architecture.
 
 ### Represented by
 
-Architecture Decision Records (ADRs)
+- Architecture Decision Records (ADRs)
 
 ---
 
@@ -965,7 +957,7 @@ Architecture Decision Records (ADRs)
 Architectural Decisions MUST:
 
 - record only significant architectural decisions;
-- explain architectural rationale;
+- explain the architectural rationale;
 - reference authoritative specifications.
 
 Architectural Decisions SHOULD:
@@ -989,177 +981,4 @@ Architectural Decisions do not:
 - replace specifications;
 - replace Governance.
 
-Their sole responsibility is preserving architectural rationale.
-
-# Design Rationale
-
-## Definition
-
-Design Rationale explains why the architecture has its current form.
-
-It preserves the reasoning behind architectural choices without redefining the architecture itself.
-
----
-
-## Responsibility
-
-Design Rationale is responsible for:
-
-- preserving architectural intent;
-- documenting trade-offs;
-- explaining rejected alternatives;
-- supporting future refinement.
-
----
-
-## Relationships
-
-### Depends on
-
-- Architectural Decisions
-
-### Influences
-
-- Future architectural evolution
-
-### Referenced by
-
-Architects and maintainers.
-
----
-
-## Rules
-
-Design Rationale MUST:
-
-- explain architectural reasoning;
-- remain implementation-independent;
-- reference authoritative specifications.
-
-Design Rationale MUST NOT:
-
-- redefine architectural concepts;
-- duplicate specifications.
-
----
-
-## Non-Goals
-
-Design Rationale does not define architecture.
-
-Its sole responsibility is explaining why the architecture evolved as it did.
-
-# Rejected Alternatives
-
-## Definition
-
-Rejected Alternatives preserve architectural approaches that were intentionally not adopted.
-
-They provide historical context and prevent previously rejected ideas from being reconsidered without justification.
-
----
-
-## Responsibility
-
-Rejected Alternatives are responsible for:
-
-- documenting evaluated options;
-- preserving architectural context;
-- improving future decision-making.
-
----
-
-## Relationships
-
-### Depends on
-
-- Architectural Decisions
-
-### Referenced by
-
-Future ADRs
-
-Future architectural reviews
-
----
-
-## Rules
-
-Rejected Alternatives MUST:
-
-- explain why they were rejected;
-- reference the adopted alternative.
-
-Rejected Alternatives MUST NOT:
-
-- redefine architecture;
-- replace ADRs.
-
----
-
-## Non-Goals
-
-Rejected Alternatives do not preserve normative architecture.
-
-Their sole responsibility is preserving architectural context.
-
-# Future Evolution
-
-## Definition
-
-Future Evolution defines how the architecture is expected to evolve over time.
-
-It provides guidance for architectural refinement while preserving stability.
-
----
-
-## Responsibility
-
-Future Evolution is responsible for:
-
-- guiding long-term architectural growth;
-- preserving architectural consistency;
-- encouraging controlled refinement.
-
----
-
-## Relationships
-
-### Depends on
-
-- Purpose
-- Governance
-- Knowledge Lifecycle
-- Architectural Decisions
-
-### Influences
-
-Future versions of WKA.
-
----
-
-## Rules
-
-Future Evolution MUST:
-
-- preserve architectural intent;
-- prioritize refinement over expansion;
-- maintain architectural consistency.
-
-Future Evolution SHOULD:
-
-- encourage iterative improvement;
-- minimize unnecessary conceptual growth.
-
-Future Evolution MUST NOT:
-
-- introduce architectural change without justification;
-- bypass Governance.
-
----
-
-## Non-Goals
-
-Future Evolution does not define future features.
-
-Its sole responsibility is defining how architectural evolution should occur.
+Their sole responsibility is to preserve architectural rationale.
