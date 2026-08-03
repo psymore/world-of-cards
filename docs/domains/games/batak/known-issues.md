@@ -1,0 +1,29 @@
+# Batak — Known Issues
+
+**Owner:** whoever finds/confirms an issue here. **Load:** starting new Batak work. Entries are deleted, not marked "done," once fixed.
+
+---
+
+### Bidding AI miscalibration
+
+Medium/Hard bidding AI bids too aggressively relative to what it can actually make. Empirically confirmed, not just anecdotal: in the 4-player individual variant, Hard AI's win rate against 3×Easy dropped to 49/200 (24.5%) — statistically indistinguishable from the ~25% pure-chance baseline — once Easy AI stopped competing for the bid (a separate, deliberate change), meaning Hard AI wins the contract almost every hand and then fails it often enough that its net score is no better than chance. In 3-player gömmeli, the same unmodified heuristic performs meaningfully better: Hard AI beat 2×Easy in 136/200 games (68%), well above the ~33% chance baseline. The bug's severity is not uniform across variants — a 4-player fix should not be assumed to generalize cleanly to gömmeli, and vice versa.
+
+Likely starting point: `estimateBidDecision`/the shared hand-strength heuristic in `packages/engine/src/games/batak/ai/handStrength.ts` (shared by Medium and Hard, both variants). Possible causes, not yet investigated: overweighting honor cards relative to suit length/distribution, not accounting for the mandatory-raise rule's cost, or never having been validated against actual bid-fulfillment rate (only win rate was checked during the original AI sub-project). `packages/engine/src/games/batak/simulate.test.ts`'s Hard-vs-Easy assertion was deliberately coarsened from `hardWins > 70` to `hardWins > 30` (a "hasn't collapsed" floor, not a quality bar) pending this fix — restore it toward `> 70` once resolved.
+
+### Trick-center resize workaround
+
+`TrickCenter.tsx` sidesteps the landing-resize mismatch (see `decisions.md`) by rendering the traveling card at a constant `size="normal"` for the whole flight, avoiding the mismatch rather than solving it. A real "card shrinks smoothly as it lands" motion is still unbuilt. The Animation Playground's Demo 05 (`scale/glyph transformation, single timeline`) is the intended venue for working this out in isolation before porting it back — not yet done.
+
+### Human-hand travel-origin gap
+
+The human hand's card-travel origin is a fixed generic offset (`resolveRevealOrigin`/`revealOriginOffset` in `apps/mobile/src/table/seating.ts` always resolves the human's own plays to a single `{x:0, y:195}` "bottom" vector), not the specific hand card's real position. Reads fine for opponents (no per-card visual exists for them since the turn-indicator simplification removed the face-down opponent card stacks), but is visibly wrong for the human's own hand, where the player has a precise expectation of which card should move from where.
+
+Not yet decided or spec'd. Three approaches were discussed: (A) compute the origin analytically from the same deterministic layout formulas already used to render the hand (cheap, but the destination sits inside a `flex: 1` region whose real height is fragile to compute exactly without measuring); (B) measure both ends for real via `measureInWindow` (robust, more plumbing); (C) a hybrid — cache the trick center's destination position once via `onLayout`, measure only the played card's real position live at tap time. Leaning toward (C), but unconfirmed.
+
+### Reduced-motion timing gap
+
+`GatherCard` instances jump `progress` to 1 instantly when `useReducedMotion()` is true (cards vanish right away), but `BatakScreen.tsx`'s `gatherTimeoutRef` still waits the full `CARD_TRAVEL_DURATION_MS` (530ms) before calling `performMove` and incrementing the winner's tricks-won badge. Net effect: reduced-motion users see the 4 cards vanish, then ~530ms of an empty trick center, then the badge ticks up. Fix if picked up: when `reducedMotion` is true, commit immediately instead of arming the full-duration timer.
+
+### Under-commented non-null assertions
+
+`BatakScreen.tsx`'s trick-completing snapshot block (inside `commitMove`) uses several non-null assertions (`...find(...)!`, `state.trumpSuit!`) that are safe by the pre-commit-state invariant (3 prior cards guaranteed present in the trick zone; `trumpSuit` always set during the playing phase) but are load-bearing and not explained inline. A one-line comment noting they rely on `state` being the pre-4th-play snapshot would help a future reader.

@@ -1,0 +1,28 @@
+# Known Issues — Index
+
+**Owner:** whoever adds/removes an entry to match a domain's own list. **Scope:** an INDEX only — see `architecture/phase-2-knowledge-architecture-design.md` §5.1. **Load:** starting new work (quick check against duplicating known-broken territory), or when a symptom matches a known issue.
+
+**This file must never directly hold the substantive description of a domain-specific problem** — root cause, reproduction, affected sub-systems. That detail lives exactly once, inside the domain that owns it. This file's only content, for a domain-owned issue, is a one-line description plus a link into the owning domain's file. The only exception is an issue that is genuinely cross-cutting, owned by no single domain — those may hold their full text directly here, because there is no more-specific home for them.
+
+If an entry below is ever found holding more than a one-line pointer (except in the Cross-cutting section), that's a signal the discipline has slipped — move the detail back into its owning domain's file.
+
+---
+
+## Domain-owned issues (pointers only — full detail lives in the linked file)
+
+- [Batak bidding AI is miscalibrated (Medium/Hard bid too aggressively relative to what they can make)](../domains/games/batak/known-issues.md#bidding-ai-miscalibration)
+- [Batak's trick-center card resize is a workaround, not a real fix](../domains/games/batak/known-issues.md#trick-center-resize-workaround)
+- [Batak's human-hand card-travel origin is a fixed generic offset, not the card's real position](../domains/games/batak/known-issues.md#human-hand-travel-origin)
+- [Engine: `RuleEngine.setup(options: unknown, ...)` loses type safety across the options-passing chain](../domains/engine/known-issues.md#ruleengine-options-typing)
+- [Engine: `GameState.rngState` isn't exercised by any game's mid-game randomness yet](../domains/engine/known-issues.md#rngstate-not-exercised)
+- [UI: navy/gold/wood theme color literals are duplicated across several shared components](../domains/ui-visual-system/known-issues.md#theme-color-duplication)
+- [UI: the "Dim Unplayable Cards" setting only has a gear/settings icon on Batak's screen, not Pişti's](../domains/ui-visual-system/known-issues.md#settings-icon-asymmetry)
+- [Pişti: Hard AI has never been profiled on a real device](../domains/games/pisti/known-issues.md#hard-ai-unprofiled-on-device)
+- [Pişti: `GameResultModal`'s tests have a known, deferred `act()` warning](../domains/games/pisti/known-issues.md#gameresultmodal-act-warning)
+- [Animation: the rail-fan animation backlog (deselect stutter, fly discontinuity, landing resize, reflow)](../../docs/animation/00-DocumentationMap.md) — tracked in `docs/animation/`'s own documentation ecosystem, not duplicated here.
+
+## Cross-cutting issues (owned by no single domain — held here directly, and only here)
+
+- **Native on-device verification remains incomplete for most of the actual game UI.** Most historical UI/visual work on Pişti's and Batak's mobile screens, and the HomeScreen redesign, has only ever been verified via the `react-native-web` + Playwright browser workaround (see `docs/domains/mobile-expo/overview.md`) or, more recently, an Android emulator's coarse frame-timing signal — never a real physical device. This is *not* uniformly true anymore: the Animation Playground has had genuine physical-device verification for specific items (e.g. the Reanimated rail-fan experiment, the `useCardMotion` jump-artifact rewrite), both confirmed live on the user's own phone. But that verification has not yet extended back to the production game screens — the Batak Reanimated migration and the HomeScreen redesign were both still flagged as "not yet verified on the user's own device" as of this migration. Treat any specific game-screen claim of "visually verified" in a domain's `decisions.md` as browser/emulator-verified unless it explicitly says otherwise.
+
+  **Provenance note (added during Phase 3A audit remediation):** the original `CLAUDE.md` narrative stated a blanket "no native on-device verification has ever been done," repeated verbatim across roughly fifteen entries. This entry corrects that blanket claim rather than re-asserting it, based on direct evidence in `docs/animation/ADR/ADR-001-reanimated-demo08-experiment.md`'s own "Outcome" section: *"The decisive result is the user's own live test on their physical Android Studio setup: ... 'all flow is robust on Demo 08'."* This is a **factual correction made during migration**, using evidence already present in the repo — not a new policy, not a new verification requirement, and not a claim that the underlying gap (production game screens still lacking native verification) has closed.
