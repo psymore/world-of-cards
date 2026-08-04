@@ -42,3 +42,10 @@ yarn-error.*
 
 # Subagent-driven-development scratch state
 .superpowers/
+
+# Code Index — generated runtime outputs (regenerate via update_codeindex.ps1)
+code-index/code_index.db
+code-index/code_index.db-*
+code-index/ctags_raw.json
+code-index/LAYOUT.md
+code-index/LAYOUT_*.md
