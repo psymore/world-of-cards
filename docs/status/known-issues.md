@@ -12,7 +12,7 @@ If an entry below is ever found holding more than a one-line pointer (except in 
 
 - [Batak bidding AI is miscalibrated (Medium/Hard bid too aggressively relative to what they can make)](../domains/games/batak/known-issues.md#bidding-ai-miscalibration)
 - [Batak's trick-center card resize is a workaround, not a real fix](../domains/games/batak/known-issues.md#trick-center-resize-workaround)
-- [Batak's human-hand card-travel origin is a fixed generic offset, not the card's real position](../domains/games/batak/known-issues.md#human-hand-travel-origin)
+- [Batak's human-hand card-travel origin is a fixed generic offset, not the card's real position](../domains/games/batak/known-issues.md#human-hand-travel-origin-gap)
 - [Engine: `RuleEngine.setup(options: unknown, ...)` loses type safety across the options-passing chain](../domains/engine/known-issues.md#ruleengine-options-typing)
 - [Engine: `GameState.rngState` isn't exercised by any game's mid-game randomness yet](../domains/engine/known-issues.md#rngstate-not-exercised)
 - [UI: navy/gold/wood theme color literals are duplicated across several shared components](../domains/ui-visual-system/known-issues.md#theme-color-duplication)
