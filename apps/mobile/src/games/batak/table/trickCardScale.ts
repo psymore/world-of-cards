@@ -11,3 +11,15 @@ export const TRICK_CARD_CONTENT_SCALE = 0.91;
 // reads as too abrupt once checked live — this exact split was flagged as unconfirmed during
 // design (docs/superpowers/specs/2026-08-05-batak-trick-resize-design.md §3), not settled.
 export const LOCAL_DEPARTURE_SCALE = TRICK_CARD_SCALE;
+
+// Known gap in that first pass: TRICK_CARD_CONTENT_SCALE is NOT applied during the local-departure
+// leg. BatakHandCard renders a plain <PlayingCard size="normal"> (no contentScale), so only the
+// card's body `scale` and position animate while it departs — the corner index and suit watermark
+// stay at their full, uncompensated size for the whole leg, then drop to their compensated
+// (slightly smaller) size the instant TrickCenter's TravelCard mounts with
+// contentScale={TRICK_CARD_CONTENT_SCALE}. The card body's own scale is continuous across that
+// handoff; the glyphs are not. Accepted for now, not fixed: pushing contentScale down into
+// BatakHandCard would just relocate the jump to departure-start (where the eye is already on the
+// card, arguably worse), and making it genuinely continuous means extending useBatakCardMotion
+// with a fifth shared value carried across the component boundary. Flagged for the on-device pass
+// in docs/animation/audits/BatakTrickResize-Audit.md — fix only if it actually reads as a pop.

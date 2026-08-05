@@ -46,11 +46,17 @@
 
 **Why:** full detail and the engine-choice rationale live in `docs/animation/ADR/ADR-003-scope-reanimated-migration-to-evidenced-need.md` — this entry exists so Batak's own decision log doesn't omit the fact, not to duplicate the reasoning. See `docs/domains/mobile-expo/overview.md` for the resulting infra/maintenance-cost note.
 
-## TrickCenter's card-resize sidestep is a deliberate stopgap, not a fix
+## Trick cards shrink via a uniform scale on one size variant, never by switching variants
 
-**Decision:** the traveling card in `TrickCenter.tsx` renders at a constant `size="normal"` for its entire flight to the trick center, rather than actually shrinking smoothly to match the resting trick card's footprint.
+**Decision:** trick-center cards render at a genuinely smaller footprint than in-hand cards, achieved by keeping the card at `size="normal"` throughout and applying a uniform outer `scale` (`TRICK_CARD_SCALE`) plus a separate `contentScale` compensation for the corner index and suit watermark. `PlayingCard`'s `"small"` variant is never used for a trick card. All three constants live in one module, `apps/mobile/src/games/batak/table/trickCardScale.ts`, consumed by name at every call site.
 
-**Why:** `PlayingCard`'s `"small"`/`"normal"` variants have independently-tuned internal proportions, not a uniform scale of one another — a naive scale interpolation still landed on a visibly different shape at arrival, reading as an abrupt "settle." The shipped fix sidesteps the mismatch rather than solving it; see `known-issues.md` for the still-open problem this leaves behind.
+**Why:** this replaces an earlier stopgap that held the traveling card at full in-hand size for its entire flight, dodging the resize rather than performing it. The reason a naive fix wasn't possible: `PlayingCard`'s `"small"`/`"normal"` variants have independently-tuned internal proportions, not a uniform scale of one another, so interpolating between them still landed on a visibly different shape at arrival — an abrupt "settle" (this exact approach was tried and reverted once before, in `d954399`). Staying on one variant makes the transition a true uniform scale, which *is* linearly interpolable; `contentScale` exists precisely because the two sub-elements whose constants aren't proportional need their own correction factor. Remaining open items (on-device verification, the `contentScale` handoff discontinuity, the local-departure/flight split) are tracked in `known-issues.md` and `docs/animation/audits/BatakTrickResize-Audit.md`.
+
+## `GatherCard` takes card size as props, so its two consumers can differ
+
+**Decision:** `apps/mobile/src/table/GatherCard.tsx` — shared between Batak's trick gather and its gömmeli bury flight — takes `cardScale`/`contentScale` props defaulting to `1`, rather than importing Batak's trick-card constants directly. `TrickCenter` passes the shrunk trick values; `KittyExchangeCenter`'s bury flight takes the full-size defaults. The uniform scale is applied on `GatherCard`'s outer group layer (default center transform origin), never on the inner flip layers, whose `transformOrigin` is an edge.
+
+**Why:** two separate defects in one shape. Hardcoding the constants silently shrank the bury flight too — a flow the design spec explicitly never scoped — because both features share the component. And scaling on the flip layers would have anchored the card to the flip's edge origin instead of shrinking it in place, displacing it ~16px vertically / ~12px horizontally at the instant the flip starts. Both were caught in final whole-plan review, not before; the props also keep the shared `apps/mobile/src/table/` tree free of any compile-time dependency on `games/`.
 
 ## Deal sequence: a stylized "scatter" shuffle, not a literal riffle simulation
 
