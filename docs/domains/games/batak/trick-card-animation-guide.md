@@ -1,6 +1,9 @@
 # Batak trick-card play animation — plain-language guide
 
-**Owned by:** `docs/domains/games/batak/` — see that domain's `overview.md`.
+**Owned by:** this domain (`docs/domains/games/batak/`) — indexed from `overview.md`. The
+animation-specific rules referenced below (coordinated timelines, velocity continuity) are owned by
+`docs/animation/animation-architecture-constitution.md` §V–VI; this guide illustrates them for
+Batak's trick-play pipeline, it doesn't restate or override them.
 
 This is a living reference, not a historical spec — edit it whenever the animation changes. It
 explains the whole "human plays a card" pipeline in Batak, where every knob lives, and the traps
@@ -80,9 +83,10 @@ rather than the row container — it hasn't caused a *reported* bug, but it's th
 as the Pişti one. If a future report says "the card launches from the wrong spot" in Batak, this is
 the first place to look.
 
-### Trap 2: velocity discontinuities at stage boundaries
+### Trap 2: velocity discontinuities at stage boundaries (Constitution §V)
 
-This is the "stops, then speeds up again" bug from earlier this session. Two animations bolted
+This is the "stops, then speeds up again" bug from earlier this session — a concrete instance of
+`animation-architecture-constitution.md` §V (Visual State Continuity). Two animations bolted
 end-to-end can each be individually smooth and *still* produce a visible hitch where they meet, if
 their velocities don't match at that instant.
 
@@ -97,9 +101,10 @@ So:
 If you ever add a new stage boundary (e.g., splitting stage 3 into two legs for some reason), check
 the easing pairing at that seam the same way, not just each leg in isolation.
 
-## Why scale gets special treatment (two separate Animated values)
+## Why scale gets special treatment (two separate Animated values) (Constitution §VI)
 
-Position/rotation and scale intentionally use **different, independent** driving values inside
+This is Batak's concrete case of `animation-architecture-constitution.md` §VI (Coordinated
+Property Timelines). Position/rotation and scale intentionally use **different, independent** driving values inside
 `TravelCard.tsx` (`progress` vs. `scaleProgress`), not the same one. Reasons, in order of when we
 learned them:
 
