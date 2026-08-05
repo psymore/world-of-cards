@@ -5,6 +5,7 @@ import type { Card } from '@world-cards/engine';
 import { PlayingCard, CARD_DIMS } from '@world-cards/ui';
 import { useReducedMotion } from '../../../components/useReducedMotion';
 import { useBatakCardMotion } from './useBatakCardMotion';
+import { LOCAL_DEPARTURE_SCALE } from './trickCardScale';
 
 const CARD_WIDTH = CARD_DIMS.normal.width;
 
@@ -210,6 +211,7 @@ function BatakHandCardComponent({
     motion.setTarget({
       x: current.x - departureDeltaX,
       y: current.y - localDepartureDistance,
+      scale: LOCAL_DEPARTURE_SCALE,
       timing: { duration: localDepartureDurationMs, easing: Easing.in(Easing.linear) },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
