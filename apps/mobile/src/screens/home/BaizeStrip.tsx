@@ -12,8 +12,8 @@ export const BaizeStrip = React.memo(function BaizeStrip() {
         <Svg width={width} height={STRIP_HEIGHT}>
           <Defs>
             <LinearGradient id="baizeStripGradient" x1="0%" y1="100%" x2="0%" y2="0%">
-              <Stop offset="0%" stopColor="#0d2818" stopOpacity={0.55} />
-              <Stop offset="100%" stopColor="#0d2818" stopOpacity={0} />
+              <Stop offset="0%" stopColor="#0b6623" stopOpacity={0.55} />
+              <Stop offset="100%" stopColor="#0b6623" stopOpacity={0} />
             </LinearGradient>
           </Defs>
           <Rect width={width} height={STRIP_HEIGHT} fill="url(#baizeStripGradient)" />

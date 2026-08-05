@@ -20,6 +20,7 @@ import {
   HAND_BADGE_HEIGHT,
   HAND_FRAME_REVEAL_MARGIN,
   HAND_FRAME_BOTTOM_OVERSHOOT,
+  WOOD_TRIM_COLOR,
 } from '@world-cards/ui';
 import { SelectableCard, DEFAULT_LIFT_DISTANCE } from '../../components/SelectableCard';
 import { DeselectableSurface } from '../../components/DeselectableSurface';
@@ -562,7 +563,7 @@ const styles = StyleSheet.create({
   },
   pileCount: { marginTop: 8, fontSize: 13, color: '#f5f0e6' },
   bannerArea: { minHeight: 24, alignItems: 'center', justifyContent: 'center' },
-  banner: { fontSize: 16, fontWeight: '700', color: '#ffd966' },
+  banner: { fontSize: 16, fontWeight: '700', color: WOOD_TRIM_COLOR },
   // Fixed height since every card inside is now absolutely positioned (see AnimatedHandCard) and
   // can no longer contribute to an auto-computed height the way normal-flow flex children would.
   handRow: { height: HUMAN_CARD_HEIGHT },

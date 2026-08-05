@@ -1,10 +1,12 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { WOOD_TRIM_COLOR } from '@world-cards/ui';
 import { PlatformWoodBackground } from './PlatformWoodBackground';
 
-// WOOD_TRIM_COLOR (#ffd966) at 85% opacity, as an rgba literal since this is a plain View
-// borderColor (not an SVG stroke, which takes strokeOpacity as a separate prop elsewhere).
-const PLATFORM_TRIM_COLOR = 'rgba(255, 217, 102, 0.85)';
+// WOOD_TRIM_COLOR at 85% opacity (matching WOOD_TRIM_STROKE_OPACITY), as an 8-digit hex-alpha
+// string since this is a plain View borderColor (not an SVG stroke, which takes strokeOpacity as
+// a separate prop elsewhere). 'D9' = round(0.85 * 255) in hex.
+const PLATFORM_TRIM_COLOR = `${WOOD_TRIM_COLOR}D9`;
 
 // Raises the panel above CenteredDecisionModal's default dead-center resting spot, per the
 // approved mockup — pass to CenteredDecisionModal's own `raiseBy` prop alongside a DecisionPanel.
