@@ -28,6 +28,7 @@ Implementation                    (the actual code)
 - **`docs/governance/` → domains, specs/plans, status.** A standing engineering principle or guardrail applies regardless of domain; a domain's own docs don't override it. `docs/governance/architecture-escalation.md` is what decides when a domain-level pattern has actually become an architecture-level question — see its own "five triggers" and filtering guidance before assuming a repeated problem needs escalating.
 - **`docs/domains/` → specs/plans, status.** A domain's `overview.md`/`decisions.md` describe stable architecture and reasoning; a feature spec/plan for that domain should be consistent with them, not redefine them.
 - **`docs/status/` never governs anything below it** — it only reflects current state. `docs/status/known-issues.md` specifically is an index, not a store (see `architecture/phase-2-knowledge-architecture-design.md` §5.1) — it never holds a domain-specific issue's actual detail, only a pointer into the owning domain's own `known-issues.md`.
+- **`docs/references/` holds no authority over anything.** It's supporting visual/design source material, not a knowledge document — nothing in the hierarchy above depends on it, and it never governs a decision on its own (a domain's `decisions.md` may cite an image as evidence, but the reference material itself never overrides a document).
 
 No lower-level document may override a higher-level one. If a domain's reasoning seems to require breaking a governance rule or an architectural principle, that's a signal to stop and check `docs/governance/architecture-escalation.md`, not to let the domain doc quietly win.
 
@@ -51,6 +52,7 @@ No lower-level document may override a higher-level one. If a domain's reasoning
 | Feature plan (how, task by task) | `docs/superpowers/plans/<date>-<feature>.md` | Feature author | Same |
 | Current roadmap/priorities | `docs/status/roadmap.md` | Project owner | Session start, planning next work |
 | Known-issues index | `docs/status/known-issues.md` | Whoever adds/removes an entry | Starting new work, repo-wide quick check |
+| Visual/design reference material (screenshots, mockups, source images) | `docs/references/<topic>/` | Whoever adds the reference | Design/UI work needing a visual source of truth |
 | Claude-personal/sandbox facts | `memory/*.md` (outside the repo tree) | Claude, per the memory system's own rules | Governed entirely by that system, unaffected by this map |
 
 ---
