@@ -1,3 +1,14 @@
-# Expo HAS CHANGED
+# Canonical External References
 
-Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any code.
+## Expo SDK
+
+Canonical version: Expo SDK 57
+
+Usage policy:
+
+- Use repository context first.
+- Consult the official documentation only when implementing or modifying Expo-specific functionality, or when version-specific behavior is relevant.
+- Avoid unnecessary external documentation lookups.
+
+Official documentation:
+https://docs.expo.dev/versions/v57.0.0/
