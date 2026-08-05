@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
+import { WOOD_TRIM_COLOR } from '@world-cards/ui';
 
 export interface PlayerAvatarProps {
   accent?: boolean;
@@ -14,7 +15,7 @@ const DIMENSIONS = {
   small: { ring: 14, glyph: 9 },
 } as const;
 
-const ACCENT_COLOR = '#ffd966';
+const ACCENT_COLOR = WOOD_TRIM_COLOR;
 const MUTED_RING_COLOR = 'rgba(255, 255, 255, 0.15)';
 const MUTED_GLYPH_COLOR = '#cbd5c9';
 
