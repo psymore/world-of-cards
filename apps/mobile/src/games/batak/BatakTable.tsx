@@ -31,10 +31,9 @@ import {
   HAND_ROW_OVERLAP_PX,
   sortHandForDisplay,
   handCardRotationDeg,
-  slotTargetX,
-  SELECTED_LIFT_DISTANCE,
 } from './table/HumanHandFan';
 import type { HandSlot } from './table/HumanHandFan';
+import type { useBatakCardMotion } from './table/useBatakCardMotion';
 import type { PendingBatakPlay, GatheringTrick } from './table/types';
 import { KittyPile, kittyPileCards } from './table/KittyPile';
 import { useBurySlots } from './table/useBurySlots';
@@ -363,17 +362,22 @@ export function BatakTable({
     });
   }
 
-  // One ref per currently-rendered human hand card, keyed by card id — still used for the Y
-  // measurement below (see playWithMeasuredOrigin's own doc comment for why X no longer reads
-  // this).
-  const handCardRefs = useRef(new Map<string, View>()).current;
-  const registerHandCardRef = useCallback((cardId: string, node: View | null) => {
-    if (node) {
-      handCardRefs.set(cardId, node);
-    } else {
-      handCardRefs.delete(cardId);
-    }
-  }, [handCardRefs]);
+  // One motion controller per currently-rendered human hand card, keyed by card id — each
+  // BatakHandCard hands the table its own setTarget/getValues controller on mount (see
+  // HumanHandFan's registerHandMotion prop). Replaces the old handCardRefs measureInWindow-based
+  // ref map entirely: playWithMeasuredOrigin (below) now reads a card's real committed position
+  // directly instead of measuring a transform-affected DOM node.
+  const handMotionRef = useRef(new Map<string, ReturnType<typeof useBatakCardMotion>>()).current;
+  const registerHandMotion = useCallback(
+    (cardId: string, motion: ReturnType<typeof useBatakCardMotion> | null) => {
+      if (motion) {
+        handMotionRef.set(cardId, motion);
+      } else {
+        handMotionRef.delete(cardId);
+      }
+    },
+    [handMotionRef],
+  );
 
   // The hand fan's own horizontal center, measured once (re-measured on layout, same as
   // destCenter) off handArea — a plain, never-transformed wrapper `View` — rather than off any
@@ -405,46 +409,35 @@ export function BatakTable({
   // fixed per-seat offset. Falls back to a plain onPlayCard(cardId) call (no origin — TravelCard
   // then uses the fixed 'bottom' offset, same as today) whenever a needed measurement isn't ready.
   //
-  // X is computed analytically (handAreaCenterX + slotTargetX), not measured off the tapped
-  // card's own node: that node sits inside AnimatedFanCard's own translateX-driven wrapper, and
-  // measureInWindow on a transform-affected node is a documented source of stale/incorrect
-  // results (native transform commits are async relative to the JS-side measureInWindow call) —
-  // this was traced as the likely cause of an occasional small horizontal drift at the start of a
-  // played card's flight. slotTargetX is the exact pure function AnimatedFanCard itself uses to
-  // compute that same transform, so this reads the authoritative value directly instead of trying
-  // to measure its rendered effect.
-  //
-  // Y keeps the existing per-card measureInWindow + SELECTED_LIFT_DISTANCE-compensation approach
-  // (see DEFAULT_LIFT_DISTANCE's doc comment in SelectableCard.tsx): the vertical case has no
-  // equivalent complaint, and re-deriving it analytically would also need to account for
-  // SelectableCard's own curveOffsetY, not just AnimatedFanCard's row placement.
+  // Both x and y now read the tapped card's real committed position directly from its own
+  // useBatakCardMotion controller (getValues()) — no DOM measurement, no duplicated slot-position
+  // math, no staleness risk. This card is necessarily selected/lifted at this point
+  // (playWithMeasuredOrigin only ever fires as the confirming second tap on an already-selected
+  // card — see useCardSelection's own doc comment for why selection isn't cleared first), so
+  // getValues() already reflects the selection lift; no separate SELECTED_LIFT_DISTANCE
+  // compensation is needed the way the old measureInWindow-based approach required.
   const playWithMeasuredOrigin = useCallback(
     (cardId: string) => {
       const slot = handSlotsRef.current.find((s) => s.card.id === cardId);
       const originRotateDeg = slot ? handCardRotationDeg(slot.indexInRow, slot.rowCount) : undefined;
-      const node = handCardRefs.get(cardId);
+      const motion = handMotionRef.get(cardId);
       const dest = destCenterRef.current;
       const handCenterX = handAreaCenterXRef.current;
-      if (!node || !dest || !slot || handCenterX == null) {
+      if (!motion || !dest || !slot || handCenterX == null) {
         onPlayCard(cardId, undefined, originRotateDeg);
         return;
       }
-      node.measureInWindow((_x, y, _width, height) => {
-        onPlayCard(
-          cardId,
-          {
-            x: handCenterX + slotTargetX(slot, compact) - dest.x,
-            // This card is necessarily selected (playWithMeasuredOrigin only ever fires as the
-            // confirming second tap on an already-selected card), so it's currently lifted by
-            // exactly SELECTED_LIFT_DISTANCE — see DEFAULT_LIFT_DISTANCE's doc comment in
-            // SelectableCard.tsx for why this can't just be measured off the transformed node.
-            y: y + height / 2 - SELECTED_LIFT_DISTANCE - dest.y,
-          },
-          originRotateDeg
-        );
-      });
+      const values = motion.getValues();
+      onPlayCard(
+        cardId,
+        {
+          x: handCenterX + values.x - dest.x,
+          y: values.y - dest.y,
+        },
+        originRotateDeg
+      );
     },
-    [handCardRefs, onPlayCard, compact]
+    [handMotionRef, onPlayCard]
   );
 
   // Relocated here (from immediately after isHumanInteractive) because playWithMeasuredOrigin is
@@ -566,7 +559,7 @@ export function BatakTable({
           selectedCardId={activeSelectedCardId}
           selectCard={activeSelectCard}
           playEntrance={dealPhase === 'revealing'}
-          registerCardRef={registerHandCardRef}
+          registerHandMotion={registerHandMotion}
           compact={compact}
           departingCard={localDeparture ?? null}
         />
