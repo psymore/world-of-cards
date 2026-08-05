@@ -167,7 +167,9 @@ for r in records:
         r.get("scope"),
         r.get("namespace"),
         r.get("signature"),
-        r.get("access", "private"),
+        # "unspecified", not "private" — an extractor for a language with no
+        # access-modifier concept shouldn't have a false claim fabricated for it
+        r.get("access", "unspecified"),
         file_id,
         r.get("line", 0),
         file_map[path]["module"],

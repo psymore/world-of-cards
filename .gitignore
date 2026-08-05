@@ -47,5 +47,6 @@ yarn-error.*
 code-index/code_index.db
 code-index/code_index.db-*
 code-index/ctags_raw.json
+code-index/edges_raw.jsonl
 code-index/LAYOUT.md
 code-index/LAYOUT_*.md

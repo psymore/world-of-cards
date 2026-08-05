@@ -11,6 +11,7 @@ This file is a navigation entry point only. It routes you to where knowledge act
 | If you need... | Go to |
 |---|---|
 | The generic WKA meta-architecture | `architecture/WKA*.md` |
+| The WKA v1.0 canonical model (entities, relationships, lifecycle, invariants) applied to this repository's Code Index | `architecture/wka-v1.0-canonical-model.md` |
 | World Cards' own Purpose/Quality Attributes | `architecture/world-cards-purpose.md` |
 | Standing engineering principles (engine purity, testing policy, build pipeline, etc.) | `docs/governance/engineering-principles.md` |
 | Standing behavioral guardrails (commit/merge, branch workflow, cross-app visual changes, etc.) | `docs/governance/guardrails.md` |

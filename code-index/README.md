@@ -1,6 +1,6 @@
 # Queryable Code Index
 
-A lightweight SQLite-based code index for C# / .NET solutions that lets Claude Code query symbols, namespaces, and file dependencies on demand — without loading raw source files into context.
+A lightweight SQLite-based code index that lets Claude Code query symbols and file dependencies on demand — without loading raw source files into context. The extraction layer is per-language (`extractor/csharp/`, `extractor/typescript/`); everything downstream (`ingest.py`, `ingest_edges.py`, `aggregate_edges.py`, `generate_layouts.py`) is language-neutral — see `extractor/CONTRACT.md` and `extractor/CONTRACT_EDGES.md`.
 
 ## How it works
 
@@ -24,13 +24,23 @@ Raw source files are **never** loaded speculatively.
 ├── .claude/
 │   └── settings.local.json      # Permissions only (MCP is registered separately — see setup)
 ├── .codeindex/
-│   ├── extract_symbols.csx      # Phase 1: Roslyn symbol extractor
-│   ├── ingest.py                # Phase 3: SQLite ingest
-│   ├── extract_edges.py         # Phase 4: File import edges
+│   ├── extractor/
+│   │   ├── CONTRACT.md          # Symbol extractor <-> ingest.py data contract
+│   │   ├── CONTRACT_EDGES.md    # Edge extractor <-> ingest_edges.py data contract
+│   │   ├── csharp/
+│   │   │   ├── extract_symbols.csx      # Roslyn symbol extractor
+│   │   │   └── extract_edges.py         # using-directive edge extractor (emits JSONL)
+│   │   └── typescript/
+│   │       ├── extract_symbols.js       # TS/TSX symbol extractor (TS Compiler API)
+│   │       ├── extract_edges.js         # TS/TSX import/export edge extractor (emits JSONL)
+│   │       └── LIMITATIONS.md           # Known gaps — read before relying on its output
+│   ├── ingest.py                # Phase 3: SQLite ingest (symbols)
+│   ├── ingest_edges.py          # Ingest edge JSONL into file_edges
 │   ├── aggregate_edges.py       # Phase 5: Module-level edges
 │   ├── generate_layouts.py      # Phase 7: Generate LAYOUT*.md files
 │   ├── find_violations.py       # Utility: find architecture violations
 │   ├── ctags_raw.json           # Generated — symbol dump
+│   ├── edges_raw.jsonl          # Generated — edge dump
 │   ├── code_index.db            # Generated — SQLite database
 │   ├── LAYOUT.md                # Generated — global layout (always loaded)
 │   └── LAYOUT_<module>.md       # Generated — one per module
@@ -71,13 +81,14 @@ Run all commands from the **repo root**.
 python .codeindex\discover_projects.py
 
 # Step 2 — Extract symbols (first run downloads Roslyn NuGet, ~30s)
-dotnet script .codeindex\extract_symbols.csx . .codeindex\ctags_raw.json
+dotnet script .codeindex\extractor\csharp\extract_symbols.csx . .codeindex\ctags_raw.json
 
 # Step 3 — Ingest symbols into SQLite
 python .codeindex\ingest.py .codeindex\ctags_raw.json .codeindex\code_index.db
 
-# Step 4 — Build file-level dependency edges
-python .codeindex\extract_edges.py . .codeindex\code_index.db
+# Step 4 — Extract file-level dependency edges (C#), then ingest them
+python .codeindex\extractor\csharp\extract_edges.py . .codeindex\code_index.db .codeindex\edges_raw.jsonl
+python .codeindex\ingest_edges.py .codeindex\edges_raw.jsonl .codeindex\code_index.db
 
 # Step 5 — Roll up to module-level edges
 python .codeindex\aggregate_edges.py .codeindex\code_index.db

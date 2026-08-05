@@ -1,5 +1,26 @@
 {
-  "modules": [],
+  "modules": [
+    {
+      "key": "mobile",
+      "pathPrefix": "apps/mobile",
+      "description": "mobile \u2014 "
+    },
+    {
+      "key": "playground",
+      "pathPrefix": "apps/playground",
+      "description": "playground \u2014 "
+    },
+    {
+      "key": "engine",
+      "pathPrefix": "packages/engine",
+      "description": "engine \u2014 "
+    },
+    {
+      "key": "ui",
+      "pathPrefix": "packages/ui",
+      "description": "ui \u2014 "
+    }
+  ],
   "unmatchedPolicy": "default",
   "defaultKey": "api"
 }

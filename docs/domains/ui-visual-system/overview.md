@@ -12,6 +12,10 @@
 
 The one process rule that goes with this isolation: whenever a change is made to how cards or the table look in `apps/mobile` (or a deliberate update to the playground's look), that is a trigger to explicitly discuss with the user whether/how the other side should be updated to match or extend — see `docs/governance/guardrails.md` §4 for the canonical rule text. This file records the domain fact (the isolation exists and why); the guardrails file owns the process rule about it.
 
+## Shared mobile-app interaction components
+
+`apps/mobile/src/components/*` and `apps/mobile/src/table/*` (`SelectableCard`, `GameResultModal`, `PlayerBadge`, `TravelCard`, `GatherCard`, `DeselectableSurface`, `CenteredDecisionModal`, `PlayerAvatar`, `GameScreenLayout`, and others) are owned by this domain, not `mobile-expo` or any individual game. They're shared, cross-game visual/interaction components — the same kind of thing this domain already owns in `packages/ui` — just located in `apps/mobile` because they depend on app-level state (e.g. `useCardSelection`) that can't live in the pure-UI package. A new game's screen consumes these directly rather than rebuilding its own.
+
 ## Shared spec/plan index (cross-game `packages/ui` work)
 
 Specs/plans for changes that touched shared visual components used by more than one game (rather than one game's own table/UI), so they're indexed here instead of duplicated across every game's own overview:
@@ -32,7 +36,7 @@ Specs/plans for changes that touched shared visual components used by more than 
 
 ## HomeScreen
 
-The app's Home screen (`apps/mobile/src/screens/home/`) is its own deliberate visual identity, distinct from the in-game felt/wood table look — see `docs/domains/ui-visual-system/decisions.md` for the reasoning.
+`apps/mobile/src/screens/home/*` is owned by this domain, not `mobile-expo` — its visual identity is this domain's concern even though the files live inside the `mobile` module. The app's Home screen is its own deliberate visual identity, distinct from the in-game felt/wood table look — see `docs/domains/ui-visual-system/decisions.md` for the reasoning.
 
 ## Animation Playground
 

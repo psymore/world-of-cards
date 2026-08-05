@@ -6,6 +6,10 @@
 
 **Expo has changed since training-data knowledge of it** — see `AGENTS.md`, which is the canonical one-line pointer to read the exact versioned docs at `https://docs.expo.dev/versions/v57.0.0/` before writing any Expo-related code. This file exists for anything longer than that one line.
 
+## Cross-game hooks and the game registry
+
+`apps/mobile/src/hooks/*` (e.g. `useAITurn.ts`) and `apps/mobile/src/games/registry.ts` are owned by this domain — shared, cross-game app-level plumbing that isn't specific to any one game and has no visual surface of its own (unlike `ui-visual-system`'s shared components), consistent with this domain's own scope above.
+
 ## Animation engine: two vocabularies, by design
 
 `apps/mobile` deliberately runs two animation vocabularies side by side, not a single migrated one: plain React Native `Animated` as the default, and `react-native-reanimated` only where a specific multi-card reflow or gesture problem justifies it (currently `games/batak/table/HumanHandFan.tsx` and `GatherCard.tsx`). This is the accepted **permanent** end state, not a transient migration phase — see `docs/animation/ADR/ADR-003-scope-reanimated-migration-to-evidenced-need.md` for the full reasoning and the per-file engine table. Do not treat the presence of Reanimated in two files as license to migrate the rest opportunistically; each further migration needs its own evidenced justification, per that ADR.

@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 # discover_projects.py
-# Scans solution for .csproj files and writes discovered module metadata to
-# module_map.json. This script only produces data — it never modifies
-# another source file.
+# Scans a repository for project-marker files and writes discovered module
+# metadata to module_map.json. This script only produces data — it never
+# modifies another source file.
+#
+# Discovery is repository-oriented, not language-specific: it recognizes a
+# flat set of marker filenames (below) as module boundaries. Adding a marker
+# here does not require a new extractor or parser — discovery only ever
+# reads a filename, never the file's contents or syntax.
 
 import json
 import os
@@ -16,24 +21,46 @@ MODULE_MAP_PATH = SCRIPT_DIR / "module_map.json"
 DEFAULT_KEY = "api"
 UNMATCHED_POLICY = "default"
 
+# Marker files that count as a module boundary. .csproj carries its own
+# name in the filename (e.g. "Example.csproj" -> "Example"); the others
+# don't, so the containing folder's name is used instead.
+CSPROJ_SUFFIX = ".csproj"
+NAMED_PROJECT_MARKERS = ("package.json", "pyproject.toml", "Cargo.toml")
 
-def find_projects(repo_root):
-    projects = []
+EXCLUDED_DIRS = {"obj", "bin", "node_modules", ".venv", "target", "dist", ".git"}
+
+
+def scan_repository(repo_root):
+    """Walks the repo and returns raw module candidates — one per recognized
+    project-marker file. This is the only place that knows which marker
+    filenames count as a module boundary; everything downstream works with
+    plain {name, rel_path} data, not marker types.
+    """
+    candidates = []
     abs_root = os.path.realpath(repo_root)
 
     for dirpath, dirnames, filenames in os.walk(abs_root):
-        dirnames[:] = [d for d in dirnames if d not in ("obj", "bin")]
-        for filename in filenames:
-            if filename.endswith(".csproj"):
-                rel_path = os.path.relpath(dirpath, abs_root).replace("\\", "/")
-                name = os.path.splitext(filename)[0]
-                projects.append({
-                    "name": name,
-                    "rel_path": rel_path,
-                    "full_path": dirpath,
-                })
+        dirnames[:] = [d for d in dirnames if d not in EXCLUDED_DIRS]
 
-    return sorted(projects, key=lambda p: p["rel_path"])
+        for filename in filenames:
+            if filename.endswith(CSPROJ_SUFFIX):
+                name = os.path.splitext(filename)[0]
+            elif filename in NAMED_PROJECT_MARKERS:
+                name = os.path.basename(dirpath)
+            else:
+                continue
+
+            rel_path = os.path.relpath(dirpath, abs_root).replace("\\", "/")
+            if not rel_path or rel_path == ".":
+                continue  # a marker at the repo root isn't a module boundary
+
+            candidates.append({
+                "name": name,
+                "rel_path": rel_path,
+                "full_path": dirpath,
+            })
+
+    return sorted(candidates, key=lambda p: p["rel_path"])
 
 
 def print_table(projects):
@@ -79,7 +106,7 @@ def write_module_map(projects, output_path=MODULE_MAP_PATH):
 
 def main():
     repo_root = sys.argv[1] if len(sys.argv) > 1 else "."
-    projects = find_projects(repo_root)
+    projects = scan_repository(repo_root)
 
     print(f"Found {len(projects)} projects:")
     if projects:

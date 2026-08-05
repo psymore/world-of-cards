@@ -1,5 +1,7 @@
 # Batak trick-card play animation — plain-language guide
 
+**Owned by:** `docs/domains/games/batak/` — see that domain's `overview.md`.
+
 This is a living reference, not a historical spec — edit it whenever the animation changes. It
 explains the whole "human plays a card" pipeline in Batak, where every knob lives, and the traps
 that have already bitten us once (so you don't have to hit them again).

@@ -21,6 +21,7 @@ Rules and state design: `docs/superpowers/specs/2026-07-14-batak-rules-and-state
 - Travel preserve hand rotation: `docs/superpowers/specs/2026-07-22-batak-travel-preserve-hand-rotation-design.md`
 - Reanimated migration: `docs/superpowers/plans/2026-07-29-batak-reanimated-migration.md` (see `docs/animation/ADR/ADR-002-reanimated-migration-apps-mobile.md` / `ADR-003-scope-reanimated-migration-to-evidenced-need.md` for the governing decision)
 - Hand-fan Demo08 migration tuning: `docs/superpowers/specs/2026-07-30-batak-hand-fan-demo08-migration-design.md` / `docs/superpowers/plans/2026-07-30-batak-hand-fan-demo08-migration.md`
+- Card-play animation pipeline walkthrough (living reference, not a spec — edited as the animation changes): `docs/batak-trick-card-animation-guide.md`
 
 Card face/turn-indicator, court-card-frame, and typography-polish specs that touched Batak as part of a *shared* `packages/ui` change are indexed from `docs/domains/ui-visual-system/overview.md` instead of duplicated here.
 

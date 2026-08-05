@@ -53,6 +53,13 @@ def module_stats(m):
     symbols = q1("SELECT COUNT(*) FROM symbols WHERE module=?", m)
     return files, symbols
 
+# Deliberately conditional, not a fixed per-language section: a module
+# with no namespace-bearing symbols (e.g. every current TypeScript module —
+# extractor/typescript/ never fabricates a namespace, see CONTRACT.md)
+# simply yields an empty result, and the caller skips the section entirely
+# rather than rendering it empty. This already is the "smallest correct
+# solution" for namespace handling — no rename or removal needed, the
+# existing IS NOT NULL filter + conditional render was already right.
 def module_namespaces(m):
     return q("""
         SELECT namespace, COUNT(*) as cnt
@@ -63,15 +70,46 @@ def module_namespaces(m):
         LIMIT 12
     """, m)
 
-def top_classes(m, limit=20):
-    return q("""
-        SELECT s.name, s.namespace, s.kind
-        FROM symbols s
-        WHERE s.module=? AND s.kind IN ('class','interface','record','enum','struct')
-          AND s.access='public' AND s.scope IS NULL
-        ORDER BY s.name
-        LIMIT ?
-    """, m, limit)
+def pluralize(word):
+    if word.endswith(("s", "sh", "ch", "x", "z")):
+        return word + "es"
+    if word.endswith("y") and word[-2:-1] not in "aeiou":
+        return word[:-1] + "ies"
+    return word + "s"
+
+def kind_heading(kind):
+    plural = pluralize(kind)
+    return plural[0].upper() + plural[1:]
+
+# Language-neutral "what's here" summary. Every symbol kind actually
+# present in the module gets its own group — not a fixed per-language
+# list like the old top_classes()/top_public_methods() this replaces, so
+# TypeScript's "component"/"function"/"type" and C#'s "class"/"struct"/
+# "delegate" are treated identically: whatever kind values the extractor
+# used, that's what shows up here.
+#
+# "access NOT LIKE '%private%'" replaces the old "access='public'" filter.
+# access vocabulary is entirely extractor-defined (see extractor/
+# CONTRACT.md) — C# uses "public"/"private"/"private protected"/etc.,
+# TypeScript uses "exported"/"module-private" for top-level declarations
+# and "public"/"private"/"protected" for class members. There is no
+# shared "public" value to filter on across languages. A substring check
+# for "private" works for both without hardcoding either vocabulary, and
+# correctly treats C#'s "private protected" as private-like too. Symbols
+# with an unrecognized or missing access value (e.g. ingest.py's
+# "unspecified" fallback) are shown, not hidden — surfacing real indexed
+# data beats silently dropping it on an unrecognized value.
+def symbols_by_kind(m):
+    rows = q("""
+        SELECT kind, name, scope
+        FROM symbols
+        WHERE module=? AND access NOT LIKE '%private%'
+        ORDER BY kind, (scope IS NOT NULL), scope, name
+    """, m)
+    grouped = defaultdict(list)
+    for row in rows:
+        grouped[row["kind"]].append(row)
+    return grouped
 
 def most_imported(m, limit=8):
     return q("""
@@ -100,15 +138,6 @@ def incoming_modules(m):
         ORDER BY edge_count DESC
     """, m)
 
-def top_public_methods(m, limit=15):
-    return q("""
-        SELECT s.name, s.scope, s.signature
-        FROM symbols s
-        WHERE s.module=? AND s.kind='method' AND s.access='public'
-        ORDER BY s.scope, s.name
-        LIMIT ?
-    """, m, limit)
-
 # ── LAYOUT.md (global, always loaded) ────────────────────────────────────────
 
 def generate_global():
@@ -116,11 +145,10 @@ def generate_global():
     lines.append("# LAYOUT.md — Queryable Code Index")
     lines.append("")
     lines.append("## Codebase")
-    lines.append("Language: C# / .NET · Architecture: Clean Architecture + DDD + CQRS")
 
     total_files   = q1("SELECT COUNT(*) FROM files")
     total_symbols = q1("SELECT COUNT(*) FROM symbols")
-    lines.append(f"Scale: {total_files} files · {total_symbols} symbols across 5 modules")
+    lines.append(f"Scale: {total_files} files · {total_symbols} symbols across {len(MODULES)} modules")
     lines.append("")
 
     lines.append("## Modules")
@@ -132,10 +160,19 @@ def generate_global():
     lines.append("")
 
     lines.append("## Dependency Graph (cross-module edges)")
-    lines.append("```")
-    for row in q("SELECT from_module, to_module, edge_count FROM module_edges ORDER BY edge_count DESC"):
-        lines.append(f"  {row['from_module']:<16} → {row['to_module']:<16} ({row['edge_count']} file edges)")
-    lines.append("```")
+    edges = q("SELECT from_module, to_module, edge_count FROM module_edges ORDER BY edge_count DESC")
+    if edges:
+        lines.append("```")
+        for row in edges:
+            lines.append(f"  {row['from_module']:<16} → {row['to_module']:<16} ({row['edge_count']} file edges)")
+        lines.append("```")
+    else:
+        # Not necessarily zero real dependencies — no edge extractor has
+        # run for every language present (extract_edges.py is C#-only,
+        # see extractor/typescript/LIMITATIONS.md). Say so explicitly
+        # rather than rendering an empty code block, which would look
+        # like "checked, found nothing" instead of "not indexed yet".
+        lines.append("_(no edge data indexed)_")
     lines.append("")
 
     lines.append("## Per-module layout files")
@@ -145,7 +182,7 @@ def generate_global():
 
     lines.append("## Query protocol (CLAUDE.md)")
     lines.append("1. Check this file for module ownership")
-    lines.append("2. Load LAYOUT_<module>.md for namespace/class map")
+    lines.append("2. Load LAYOUT_<module>.md for that module's symbol summary")
     lines.append("3. Query DB: `SELECT * FROM symbols WHERE name LIKE ?`")
     lines.append("4. Fetch source only for files you need")
     lines.append("")
@@ -156,12 +193,13 @@ def generate_global():
     lines.append("")
     lines.append("### Useful queries")
     lines.append("```sql")
-    lines.append("-- Find a class")
-    lines.append("SELECT name, kind, namespace, path, line FROM symbols WHERE name = 'MyClass';")
+    lines.append("-- Find a symbol by name")
+    lines.append("SELECT name, kind, namespace, path, line FROM symbols WHERE name = 'MySymbol';")
     lines.append("")
-    lines.append("-- All public methods on a class")
-    lines.append("SELECT name, signature, line FROM symbols")
-    lines.append("WHERE scope = 'MyClass' AND kind = 'method' AND access = 'public';")
+    lines.append("-- All methods on a class/type (access vocabulary is extractor-defined —")
+    lines.append("-- see extractor/CONTRACT.md before filtering on a specific access value)")
+    lines.append("SELECT name, signature, line, access FROM symbols")
+    lines.append("WHERE scope = 'MyClass' AND kind = 'method';")
     lines.append("")
     lines.append("-- What files does file X import?")
     lines.append("SELECT t.path FROM file_edges fe")
@@ -169,10 +207,10 @@ def generate_global():
     lines.append("JOIN files f ON f.id = fe.from_file_id")
     lines.append("WHERE f.path LIKE '%FileName%';")
     lines.append("")
-    lines.append("-- All public surface of a module")
-    lines.append("SELECT name, kind, scope, namespace FROM symbols")
-    lines.append("WHERE module = 'application' AND access = 'public'")
-    lines.append("ORDER BY namespace, scope, name;")
+    lines.append("-- Everything indexed in a module, grouped by kind")
+    lines.append("SELECT kind, name, scope, access FROM symbols")
+    lines.append("WHERE module = 'application'")
+    lines.append("ORDER BY kind, scope, name;")
     lines.append("```")
 
     return "\n".join(lines)
@@ -188,18 +226,28 @@ def generate_module(m):
     lines.append(f"Files: {files} · Symbols: {symbols}")
     lines.append("")
 
-    # Dependencies
+    # Dependencies — always rendered, explicit about absent data rather
+    # than silently omitting the line. "No edge data indexed" is true
+    # whether a module genuinely has zero dependencies or simply has no
+    # edge extractor for its language yet (extract_edges.py is C#-only) —
+    # deliberately not distinguishing the two, since that would require
+    # this script to branch on which language produced the data, which is
+    # exactly the kind of per-language special-casing this phase removes.
     out = outgoing_modules(m)
     inc = incoming_modules(m)
     if out:
         deps = ", ".join(f"`{r['to_module']}` ({r['edge_count']})" for r in out)
         lines.append(f"**Depends on:** {deps}")
+    else:
+        lines.append("**Depends on:** _(no edge data indexed for this module)_")
     if inc:
         used = ", ".join(f"`{r['from_module']}` ({r['edge_count']})" for r in inc)
         lines.append(f"**Used by:** {used}")
+    else:
+        lines.append("**Used by:** _(no edge data indexed for this module)_")
     lines.append("")
 
-    # Namespaces
+    # Namespaces — conditional by design, see module_namespaces()'s docstring
     nss = module_namespaces(m)
     if nss:
         lines.append("## Namespaces")
@@ -207,25 +255,33 @@ def generate_module(m):
             lines.append(f"- `{row['namespace']}` ({row['cnt']} symbols)")
         lines.append("")
 
-    # Key types
-    classes = top_classes(m, limit=30)
-    if classes:
-        lines.append("## Key public types (top 30)")
-        lines.append("| Name | Kind | Namespace |")
-        lines.append("|------|------|-----------|")
-        for row in classes:
-            ns = row['namespace'] or ""
-            lines.append(f"| `{row['name']}` | {row['kind']} | `{ns}` |")
+    # Symbol summary — one section per kind actually present, alphabetical
+    # by kind for determinism (not a fixed per-language priority order).
+    # See symbols_by_kind()'s docstring for the access-filtering rationale.
+    grouped = symbols_by_kind(m)
+    per_kind_limit = 30
+    for kind in sorted(grouped.keys()):
+        rows = grouped[kind]
+        lines.append(f"## {kind_heading(kind)}")
+        shown = rows[:per_kind_limit]
+        for row in shown:
+            label = f"{row['scope']}.{row['name']}" if row["scope"] else row["name"]
+            lines.append(f"- `{label}`")
+        remaining = len(rows) - len(shown)
+        if remaining > 0:
+            lines.append(f"- _(+{remaining} more)_")
         lines.append("")
 
     # Most imported files
     hot = most_imported(m, limit=8)
+    lines.append("## Most-imported files (hotspots)")
     if hot:
-        lines.append("## Most-imported files (hotspots)")
         for row in hot:
             fname = Path(row['path']).name
             lines.append(f"- `{fname}` — {row['cnt']}x  `{row['path']}`")
-        lines.append("")
+    else:
+        lines.append("_(no edge data indexed for this module)_")
+    lines.append("")
 
     return "\n".join(lines)
 
