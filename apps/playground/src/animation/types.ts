@@ -9,7 +9,8 @@ export type DemoId =
   | 'hand-reposition'
   | 'complete-sequence'
   | 'reanimated-hand-reposition'
-  | 'batak-hand-tuning';
+  | 'batak-hand-tuning'
+  | 'batak-trick-resize-tuning';
 
 export const DEMO_ORDER: DemoId[] = [
   'fan-layout',
@@ -21,6 +22,7 @@ export const DEMO_ORDER: DemoId[] = [
   'complete-sequence',
   'reanimated-hand-reposition',
   'batak-hand-tuning',
+  'batak-trick-resize-tuning',
 ];
 
 export const DEMO_LABELS: Record<DemoId, string> = {
@@ -39,6 +41,10 @@ export const DEMO_LABELS: Record<DemoId, string> = {
   // Demo08's proven rail/angle model, before those values get hardcoded into production — see
   // docs/superpowers/specs/2026-07-30-batak-hand-fan-demo08-migration-design.md.
   'batak-hand-tuning': 'Demo 9: Batak Hand Tuning',
+  // Tunes the real trick-center resize (scale + contentScale) against real PlayingCard art,
+  // before those values get hardcoded into production — see
+  // docs/superpowers/specs/2026-08-05-batak-trick-resize-design.md.
+  'batak-trick-resize-tuning': 'Demo 10: Batak Trick Resize',
 };
 
 // A single point in a card's animated life: position/rotation/scale, plus the
