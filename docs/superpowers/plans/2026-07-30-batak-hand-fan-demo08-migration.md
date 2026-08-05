@@ -638,7 +638,7 @@ git commit -m "feat(mobile): add BatakHandCard component"
 
 This is the largest task in the plan. Read the current (pre-rewrite) file in full before starting — `git show master:apps/mobile/src/games/batak/table/HumanHandFan.tsx` — since several existing behaviors (entrance stagger timing, bury-slot `enterFromOffset`, local-departure) must carry over exactly, just re-expressed on the new motion primitive instead of ported blindly.
 
-- [ ] **Step 1: Design the per-slot angle (replaces `slotTargetX`/`slotTargetY`/`fanRotationDeg`/`fanCurveY`)**
+- [x] **Step 1: Design the per-slot angle (replaces `slotTargetX`/`slotTargetY`/`fanRotationDeg`/`fanCurveY`)**
 
 Each row is its own independent rail (Task 2's `STANDARD_RAIL_CONFIG`/`COMPACT_RAIL_CONFIG`), with the bottom row's pivot offset down by `(CARD_DIMS.normal.height - ROW_OVERLAP_PX)` — same imbrication concept as before, just computed once as a Y offset added after `railPosition`'s own row-relative output, instead of a per-slot quadratic curve:
 
@@ -660,7 +660,9 @@ function slotPosition(slot: HandSlot, compact: boolean): { x: number; y: number;
 
 `handCardRotationDeg(indexInRow, rowCount)` (still exported, still used by `BatakTable.tsx` for `TravelCard`'s `originRotateDeg`) becomes a thin wrapper: compute the same `angles` array as `slotPosition` does (Standard config only — `BatakTable.tsx`'s existing call sites don't pass `compact`, matching today's behavior, since the played card's rotation at travel-origin time is read before this rewrite ever distinguishes the two modes at this call site; if that turns out wrong once wired up in Task 6, surface it rather than guessing) and index into it.
 
-- [ ] **Step 2: Entrance, local-departure, and bury-slot re-entry — same behavior, new primitive**
+- [x] **Step 2: Entrance, local-departure, and bury-slot re-entry — same behavior, new primitive**
+
+Implemented via a small local `entranceOpacity` shared value in `BatakHandCard.tsx`, folded into the SAME single `useAnimatedStyle` call that already reads `motion.shared.*` (not two `useAnimatedStyle`s combined via a style array as originally sketched above — RN flattens a style array's `transform` key by taking the last one, not merging entries, so two separate `useAnimatedStyle` results both setting `transform` would silently drop one of them; folding opacity into the same style object sidesteps that entirely). Entrance's rise+scale go through `motion.setTarget` on the real shared values (as planned); `useBatakCardMotion.setTarget` gained an optional `timing.delay` to express the per-card stagger without a second animation owner.
 
 All three become `setTarget` calls on the same per-card `useBatakCardMotion` instance (Task 3), never a second wrapping `Animated.View`/opacity layer around `BatakHandCard` — this is the exact bug class that broke the reverted attempt (entrance and position fighting as two separate animation owners on one card). Concretely:
 
@@ -668,7 +670,9 @@ All three become `setTarget` calls on the same per-card `useBatakCardMotion` ins
 - **Local departure**: when `departingCard?.cardId === slot.card.id`, call `motion.setTarget({ x: current.x - departureDeltaX, y: current.y - LOCAL_DEPARTURE_DISTANCE, timing: { duration: LOCAL_DEPARTURE_DURATION_MS, easing: LOCAL_DEPARTURE_EASING } })` where `current = motion.getValues()` — same vector-preserving logic as the original, just called through the new API.
 - **Bury-slot re-entry**: on mount, if `slot.enterFromOffset` is set, call `motion.setTarget({x: target.x + offset.x, y: target.y + offset.y})` with `timing: {duration: 0}` (instant jump) immediately followed by `motion.setTarget({x: target.x, y: target.y})` with the normal reposition timing — same two-step "jump then animate in" as the original.
 
-- [ ] **Step 3: `HumanHandFan` orchestration + motion registry**
+- [x] **Step 3: `HumanHandFan` orchestration + motion registry**
+
+Implemented with `restTarget`/`liftedTarget` (not a single `target`) passed into `BatakHandCard`, and TWO separate reflow/selection effects inside it (not one combined effect) — needed to preserve the pre-rewrite asymmetric timing (reflow always 320ms cubic; selecting snaps instantly, deselecting eases over 150ms, matching `SelectableCard`'s original `LIFT_ANIM_DURATION_MS` behavior) that a single merged effect can't distinguish between triggers for. `registerCardRef` was dropped entirely rather than kept as dead plumbing (confirmed via repo-wide grep it had no other consumer) — see Task 6's own note below, resolved early instead of deferred.
 
 ```tsx
 export function HumanHandFan({
@@ -723,21 +727,23 @@ Reflow (a slot's `target` changing because a sibling was added/removed) needs `B
 
 Selection lift (translating a selected card outward along its own rail angle by `SELECTED_LIFT_DISTANCE`) is also a `setTarget` call, fired from a `useEffect` keyed on `selected`, mirroring Demo08's own select/deselect effect — in production this is `railPosition(angleDeg, config.radius, selected ? SELECTED_LIFT_DISTANCE : 0)` (the `config`/`angleDeg` this slot already computed in Step 1), converted into an `{x, y}` `setTarget` call.
 
-- [ ] **Step 4: Delete everything old**
+- [x] **Step 4: Delete everything old**
 
 No `AnimatedFanCard`, no `EntranceCard` wrapper component (its behavior moved into `BatakHandCard` per Step 2), no `SelectableCard` import, no `fanCurveY`/`fanRotationDeg` import from `seating.ts` (grep Pişti usage first — leave those functions in `seating.ts` itself if Pişti still calls them, per the spec's §5).
 
-- [ ] **Step 5: Typecheck, run full suite**
+- [x] **Step 5: Typecheck, run full suite**
 
 ```bash
 cd apps/mobile && npx tsc --noEmit
 cd d:/CodeSpace/world-cards && npm test
 ```
 
-- [ ] **Step 6: Commit**
+Clean: `apps/mobile` typechecks with zero errors; 39/39 suites, 248/248 tests pass, including `PistiTable.test.tsx` explicitly re-run in isolation.
+
+- [x] **Step 6: Commit**
 
 ```bash
-git add apps/mobile/src/games/batak/table/HumanHandFan.tsx apps/mobile/src/games/batak/table/BatakHandCard.tsx
+git add apps/mobile/src/games/batak/table/HumanHandFan.tsx apps/mobile/src/games/batak/table/BatakHandCard.tsx apps/mobile/src/games/batak/table/useBatakCardMotion.ts
 git commit -m "feat(mobile): rewrite HumanHandFan on the Demo08 rail-fan pattern"
 ```
 
@@ -751,7 +757,7 @@ git commit -m "feat(mobile): rewrite HumanHandFan on the Demo08 rail-fan pattern
 **Interfaces:**
 - Consumes: `HumanHandFan`'s new `registerHandMotion` prop (Task 5), `useBatakCardMotion`'s return shape (Task 3).
 
-- [ ] **Step 1: Add a motion registry**
+- [x] **Step 1: Add a motion registry**
 
 ```tsx
 const handMotionRef = useRef(new Map<string, ReturnType<typeof useBatakCardMotion>>()).current;
@@ -763,7 +769,7 @@ const registerHandMotion = useCallback((cardId: string, motion: ReturnType<typeo
 
 Pass `registerHandMotion={registerHandMotion}` into the existing `<HumanHandFan ... />` call site (around line 562).
 
-- [ ] **Step 2: Replace `playWithMeasuredOrigin`**
+- [x] **Step 2: Replace `playWithMeasuredOrigin`**
 
 Delete the `slotTargetX` re-derivation and `measureInWindow`/`SELECTED_LIFT_DISTANCE` compensation entirely — read the tapped card's real current position directly:
 
@@ -795,16 +801,18 @@ const playWithMeasuredOrigin = useCallback(
 
 Note this drops the `compact` dependency `slotTargetX` needed (the motion object's `getValues()` already reflects wherever the card actually is, compact or not) and drops the `SELECTED_LIFT_DISTANCE` compensation (the card's real Y, lift included, is already what `getValues()` returns — no need to compensate for something you're now reading directly instead of inferring).
 
-`handCardRefs`/`registerHandCardRef` (the old Y-measurement ref map) may now be entirely unused by this function — check whether anything else in `BatakTable.tsx` still needs it before removing it; if not, remove it and `HumanHandFan`'s now-unnecessary-for-this-purpose `registerCardRef` prop plumbing... but **do not remove `registerCardRef`/`registerHandCardRef` itself** without checking every call site first (it may serve a second purpose elsewhere in the file — grep before deleting).
+Confirmed via repo-wide grep (`registerCardRef`/`handCardRefs`) that this ref map had no other consumer anywhere in `apps/mobile/src` — removed `handCardRefs`/`registerHandCardRef` and `HumanHandFan`'s `registerCardRef` prop entirely (done as part of Task 5's own rewrite, not deferred here, since both tasks landed in the same session).
 
-- [ ] **Step 3: Typecheck, run full suite**
+- [x] **Step 3: Typecheck, run full suite**
 
 ```bash
 cd apps/mobile && npx tsc --noEmit
 cd d:/CodeSpace/world-cards && npm test
 ```
 
-- [ ] **Step 4: Commit**
+Clean: zero typecheck errors, 39/39 suites, 248/248 tests pass.
+
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/mobile/src/games/batak/BatakTable.tsx
