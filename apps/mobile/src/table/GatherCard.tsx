@@ -5,6 +5,7 @@ import type { Card } from '@world-cards/engine';
 import { PlayingCard, CARD_DIMS } from '@world-cards/ui';
 import { useReducedMotion } from '../components/useReducedMotion';
 import { CARD_TRAVEL_DURATION_MS } from './travelAnimation';
+import { TRICK_CARD_SCALE, TRICK_CARD_CONTENT_SCALE } from '../games/batak/table/trickCardScale';
 
 export interface GatherCardProps {
   card: Card;
@@ -119,7 +120,11 @@ export function GatherCard({ card, destinationOffset, restRotateDeg = 0 }: Gathe
       backfaceVisibility: 'hidden' as const,
       opacity: interpolate(progress.value, [0, 0.5, 0.5001, 1], [1, 1, 0, 0]),
       transformOrigin,
-      transform: [{ perspective: 800 }, axis === 'X' ? { rotateX: rotateValue } : { rotateY: rotateValue }],
+      transform: [
+        { perspective: 800 },
+        axis === 'X' ? { rotateX: rotateValue } : { rotateY: rotateValue },
+        { scale: TRICK_CARD_SCALE },
+      ],
     };
   });
 
@@ -129,14 +134,18 @@ export function GatherCard({ card, destinationOffset, restRotateDeg = 0 }: Gathe
       backfaceVisibility: 'hidden' as const,
       opacity: interpolate(progress.value, [0, 0.4999, 0.5, 1], [0, 0, 1, 1]),
       transformOrigin,
-      transform: [{ perspective: 800 }, axis === 'X' ? { rotateX: rotateValue } : { rotateY: rotateValue }],
+      transform: [
+        { perspective: 800 },
+        axis === 'X' ? { rotateX: rotateValue } : { rotateY: rotateValue },
+        { scale: TRICK_CARD_SCALE },
+      ],
     };
   });
 
   return (
     <Animated.View style={[{ width: GATHER_CARD_WIDTH, height: GATHER_CARD_HEIGHT }, groupStyle]}>
       <Animated.View style={[StyleSheet.absoluteFill, frontStyle]}>
-        <PlayingCard card={card} size="normal" />
+        <PlayingCard card={card} size="normal" contentScale={TRICK_CARD_CONTENT_SCALE} />
       </Animated.View>
       <Animated.View style={[StyleSheet.absoluteFill, backStyle]}>
         <PlayingCard card={card} faceDown size="normal" />
