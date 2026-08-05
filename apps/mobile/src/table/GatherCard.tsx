@@ -5,7 +5,6 @@ import type { Card } from '@world-cards/engine';
 import { PlayingCard, CARD_DIMS } from '@world-cards/ui';
 import { useReducedMotion } from '../components/useReducedMotion';
 import { CARD_TRAVEL_DURATION_MS } from './travelAnimation';
-import { TRICK_CARD_SCALE, TRICK_CARD_CONTENT_SCALE } from '../games/batak/table/trickCardScale';
 
 export interface GatherCardProps {
   card: Card;
@@ -23,10 +22,26 @@ export interface GatherCardProps {
   // the flip's own rotateX/rotateY on a different axis (rotateZ), so it doesn't interfere with the
   // flip geometry at all. Defaults to 0 (no-op), matching every consumer before this prop existed.
   restRotateDeg?: number;
+  // Uniform scale for the whole card (body + face content), applied on the OUTER group layer —
+  // which uses the default center transform origin — deliberately not on the inner front/back flip
+  // layers, whose `transformOrigin` is an edge (see resolveFlipGeometry): scaling about an edge
+  // anchors the card to that edge instead of shrinking it in place, displacing it by
+  // ~(1 - scale)/2 × the card's dimension along the flip axis. Callers supply the real value; this
+  // component stays game-agnostic. Defaults to 1 (no-op), matching every consumer before this prop
+  // existed.
+  cardScale?: number;
+  // Forwarded to the face-up PlayingCard's `contentScale` — compensates the corner index and suit
+  // watermark, whose per-size-variant constants aren't a uniform scale of the card body, so that a
+  // card rendered at a reduced `cardScale` doesn't read with disproportionately tiny glyphs. Not
+  // applied to the face-down layer (a card back has no such content). Defaults to 1 (no-op),
+  // matching every consumer before this prop existed.
+  contentScale?: number;
 }
 
 // Matches TrickCenter's trick cards, which render at size="normal" (not "small") — otherwise the
-// card would visibly shrink right at the moment a completed trick starts gathering.
+// card would visibly shrink right at the moment a completed trick starts gathering. This is the
+// unscaled layout box; `cardScale` shrinks what's painted inside it via a centered transform, so
+// the box itself stays CARD_DIMS.normal regardless of the caller's scale.
 const GATHER_CARD_WIDTH = CARD_DIMS.normal.width;
 const GATHER_CARD_HEIGHT = CARD_DIMS.normal.height;
 
@@ -74,7 +89,18 @@ function resolveFlipGeometry(destinationOffset: { x: number; y: number }): FlipG
 // set). One instance per gathered card; each runs once on mount and is unmounted along with its
 // parent once BatakScreen's gather timer commits the move, so there's no reset/retrigger case to
 // handle (unlike TravelCard, which is reused for multiple plays over one mounted lifetime).
-export function GatherCard({ card, destinationOffset, restRotateDeg = 0 }: GatherCardProps) {
+//
+// Card size is entirely the caller's business (cardScale/contentScale, both no-op by default) —
+// this component holds no game-specific constants, so its two consumers can render at different
+// footprints: TrickCenter's trick gather passes Batak's shrunk trick-card scale, while
+// KittyExchangeCenter's bury flight takes the full-size defaults.
+export function GatherCard({
+  card,
+  destinationOffset,
+  restRotateDeg = 0,
+  cardScale = 1,
+  contentScale = 1,
+}: GatherCardProps) {
   const progress = useSharedValue(0);
   const reducedMotion = useReducedMotion();
   const { axis, sign, transformOrigin } = resolveFlipGeometry(destinationOffset);
@@ -100,6 +126,10 @@ export function GatherCard({ card, destinationOffset, restRotateDeg = 0 }: Gathe
       // restRotateDeg is a rotateZ (in-plane tilt); the flip below rotates the inner front/back
       // layers around X or Y instead, so the two never conflict.
       { rotate: `${restRotateDeg}deg` },
+      // Lives here, on the group, rather than on the front/back flip layers: this layer uses the
+      // default (center) transform origin, so the card shrinks in place instead of being anchored
+      // to the flip's edge origin — see cardScale's prop doc comment.
+      { scale: cardScale },
     ],
     // Fades out over the animation's last third so the card visually dissolves as it nears the
     // winner's side instead of appearing to stop abruptly — there's no literal pile graphic to
@@ -123,7 +153,6 @@ export function GatherCard({ card, destinationOffset, restRotateDeg = 0 }: Gathe
       transform: [
         { perspective: 800 },
         axis === 'X' ? { rotateX: rotateValue } : { rotateY: rotateValue },
-        { scale: TRICK_CARD_SCALE },
       ],
     };
   });
@@ -137,7 +166,6 @@ export function GatherCard({ card, destinationOffset, restRotateDeg = 0 }: Gathe
       transform: [
         { perspective: 800 },
         axis === 'X' ? { rotateX: rotateValue } : { rotateY: rotateValue },
-        { scale: TRICK_CARD_SCALE },
       ],
     };
   });
@@ -145,7 +173,7 @@ export function GatherCard({ card, destinationOffset, restRotateDeg = 0 }: Gathe
   return (
     <Animated.View style={[{ width: GATHER_CARD_WIDTH, height: GATHER_CARD_HEIGHT }, groupStyle]}>
       <Animated.View style={[StyleSheet.absoluteFill, frontStyle]}>
-        <PlayingCard card={card} size="normal" contentScale={TRICK_CARD_CONTENT_SCALE} />
+        <PlayingCard card={card} size="normal" contentScale={contentScale} />
       </Animated.View>
       <Animated.View style={[StyleSheet.absoluteFill, backStyle]}>
         <PlayingCard card={card} faceDown size="normal" />

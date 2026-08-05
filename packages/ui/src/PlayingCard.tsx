@@ -116,7 +116,7 @@ function CornerIndex({
   // last value, not merging entries, so a second style object setting `transform` on its own
   // would silently drop this rotate instead of combining with it.
   const transform = mirrored
-    ? [{ rotate: '180deg' }, { scale: contentScale }]
+    ? [{ rotate: "180deg" }, { scale: contentScale }]
     : [{ scale: contentScale }];
 
   return (

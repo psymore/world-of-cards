@@ -20,12 +20,11 @@ export type TrickPosition = "bottom" | SeatPosition;
 // Resting offset from dead-center for each seat's slot — small enough (vs. the ~165-195px
 // travel-origin offsets below) that adjacent slots' card rectangles overlap slightly at their
 // inner corners ("loose, corner-touching" per the brainstorming visual companion mockup, chosen
-// over a tighter ~40%-overlap alternative). First-pass values sized against the 'small' card's
-// CARD_DIMS.small footprint — confirm via screenshot in the final verification pass.
-// Base pixel values tuned by eye for the original full-size trick card; scaled by
-// TRICK_CARD_SCALE below as a first pass to preserve the same relative overlap at the new,
-// smaller trick-card footprint — re-tune BASE_TRICK_SLOT_OFFSETS directly if that proportional
-// scaling doesn't look right once checked live.
+// over a tighter ~40%-overlap alternative). Base pixel values were tuned by eye against the
+// original full-size trick card, then scaled by TRICK_CARD_SCALE below as a first pass to
+// preserve that same relative overlap at the new, smaller trick-card footprint — re-tune
+// BASE_TRICK_SLOT_OFFSETS directly if the proportional scaling doesn't look right once checked
+// live.
 const BASE_TRICK_SLOT_OFFSETS: Record<TrickPosition, { x: number; y: number }> = {
   top: { x: 0, y: -38 },
   bottom: { x: 0, y: 38 },
@@ -120,16 +119,15 @@ export function TrickCenter({
             isHumanPending ? (
               // The human's own played card: keeps its real fan-rotation angle fixed for the
               // whole flight (not straightened out along the way — see TravelCard's
-              // originRotateDeg doc comment), but travels at a constant "small" scale rather than
-              // easing down from real in-hand size. An earlier version rendered this at
-              // size="normal" and interpolated a scale down to match "small"'s footprint — but
-              // "small"'s internal proportions (CORNER_INDEX_WIDTH, WATERMARK_ICON_SIZE in
-              // packages/ui/src/PlayingCard.tsx) are independently tuned, not a uniform scale of
-              // "normal"'s, so even a perfectly smooth interpolation still landed on a slightly
-              // different shape than the real resting "small" card it handed off to — reading as
-              // an abrupt "settle" right as it arrived. Constant scale removes that mismatch
-              // entirely: this is visually identical to the resting card for the whole flight,
-              // just translating/rotating.
+              // originRotateDeg doc comment), and travels at a constant TRICK_CARD_SCALE — the
+              // card stays size="normal" throughout and is uniformly scaled, never switched to
+              // the real size="small" variant, whose internal proportions (CORNER_INDEX_WIDTH,
+              // WATERMARK_ICON_SIZE in packages/ui/src/PlayingCard.tsx) are independently tuned
+              // rather than a uniform scale of "normal"'s. TRICK_CARD_CONTENT_SCALE compensates
+              // the corner index/watermark so the shrunk card doesn't read with oversized glyphs.
+              // Net effect: visually identical to the resting card it hands off to for the whole
+              // flight, just translating/rotating. See the originScale/restScale props below for
+              // why no scale interpolation is needed here.
               <TravelCard
                 originOffset={
                   pendingPlay?.originOffset ?? revealOriginOffset("bottom")
@@ -226,6 +224,11 @@ export function TrickCenter({
                     card={card}
                     destinationOffset={gatherDestinationOffset!}
                     restRotateDeg={restingRotations?.[playerId] ?? 0}
+                    // Passed explicitly (GatherCard defaults both to 1) so the sweeping card keeps
+                    // the exact footprint of the resting card it replaces — GatherCard itself is
+                    // shared and game-agnostic, so it can't assume Batak's trick-card proportions.
+                    cardScale={TRICK_CARD_SCALE}
+                    contentScale={TRICK_CARD_CONTENT_SCALE}
                   />
                 </View>
               );
@@ -243,9 +246,12 @@ const styles = StyleSheet.create({
   // positioned trickSlot children can be offset from a shared center point — see
   // TRICK_SLOT_OFFSETS. Sized around CARD_DIMS.normal (trick cards render at size="normal" now,
   // not "small" — see isHumanPending's doc comment above) plus room for the cross-overlap
-  // offsets; TRICK_SLOT_OFFSETS itself is still tuned for the old, smaller card footprint and
-  // will read as much heavier overlap now — worth a visual pass to retune if that's not the look
-  // you want.
+  // offsets; TRICK_SLOT_OFFSETS is itself rescaled by TRICK_CARD_SCALE (see
+  // BASE_TRICK_SLOT_OFFSETS above), so the cross keeps the same relative overlap at the smaller
+  // trick-card footprint. These box dimensions were deliberately left unshrunk even though the
+  // painted cards are now smaller — harmless, since every slot is absolutely positioned and
+  // center-anchored — but worth an explicit look during on-device verification if the center
+  // panel reads as having too much reserved empty space around a now-smaller trick.
   trickCross: { width: 200, height: 220, alignSelf: "center" },
   trickSlot: {
     position: "absolute",
