@@ -44,6 +44,15 @@ export interface PlayingCardProps {
   // null explicitly suppresses the real courtCardArt lookup too (falls back to the plain suit
   // watermark); undefined (the default) leaves today's courtCardArt-or-watermark behavior as-is.
   overlayImage?: PlayingCardOverlayImage | null;
+  // Additional relative scale applied to just the corner-index pair and the center watermark
+  // icon, layered on top of whatever outer transform the caller applies (e.g. a caller's own
+  // wrapping `scale`). Compensates the fact that PlayingCard's "small" variant isn't a uniform
+  // scale of "normal" — CORNER_INDEX_WIDTH shrinks to ~68% while WATERMARK_ICON_SIZE shrinks to
+  // ~62%, versus the card body's own ~75%/76% — without ever switching size variants (which is
+  // what originally caused a landing-moment "pop" — see
+  // docs/superpowers/specs/2026-08-05-batak-trick-resize-design.md). Defaults to 1 (no-op), so
+  // every existing caller is byte-identical.
+  contentScale?: number;
 }
 
 const RED_SUITS: Suit[] = ["hearts", "diamonds"];
@@ -85,6 +94,7 @@ function CornerIndex({
   suitColor,
   isRed,
   mirrored,
+  contentScale,
 }: {
   rank: string;
   suit: Suit | null | undefined;
@@ -92,6 +102,7 @@ function CornerIndex({
   suitColor: string;
   isRed: boolean;
   mirrored?: boolean;
+  contentScale: number;
 }) {
   const containerStyle = mirrored
     ? isSmall
@@ -100,9 +111,16 @@ function CornerIndex({
     : isSmall
       ? styles.cornerSmall
       : styles.cornerNormal;
+  // Composed here (not split across two style objects in an array) because the mirrored variant
+  // already needs its own rotate — RN flattens a style array's `transform` key by taking the
+  // last value, not merging entries, so a second style object setting `transform` on its own
+  // would silently drop this rotate instead of combining with it.
+  const transform = mirrored
+    ? [{ rotate: '180deg' }, { scale: contentScale }]
+    : [{ scale: contentScale }];
 
   return (
-    <View style={containerStyle}>
+    <View style={[containerStyle, { transform }]}>
       <Text
         style={[
           isSmall ? styles.cornerRankSmall : styles.cornerRankNormal,
@@ -220,6 +238,7 @@ function CenterArt({
   overlayImage,
   courtArt,
   isFaceCard,
+  contentScale,
 }: {
   card: Card;
   suitColor: string;
@@ -227,18 +246,21 @@ function CenterArt({
   overlayImage: PlayingCardOverlayImage | null | undefined;
   courtArt: ImageSourcePropType | undefined;
   isFaceCard: boolean;
+  contentScale: number;
 }) {
   if (overlayImage !== undefined) {
     if (overlayImage == null) {
       return card.suit != null ? (
-        <SuitIcon
-          suit={card.suit}
-          size={
-            isSmall ? WATERMARK_ICON_SIZE.small : WATERMARK_ICON_SIZE.normal
-          }
-          color={suitColor}
-          opacity={1}
-        />
+        <View style={{ transform: [{ scale: contentScale }] }}>
+          <SuitIcon
+            suit={card.suit}
+            size={
+              isSmall ? WATERMARK_ICON_SIZE.small : WATERMARK_ICON_SIZE.normal
+            }
+            color={suitColor}
+            opacity={1}
+          />
+        </View>
       ) : null;
     }
     const baseSize = isSmall
@@ -297,12 +319,14 @@ function CenterArt({
   }
 
   return card.suit != null ? (
-    <SuitIcon
-      suit={card.suit}
-      size={isSmall ? WATERMARK_ICON_SIZE.small : WATERMARK_ICON_SIZE.normal}
-      color={suitColor}
-      opacity={1}
-    />
+    <View style={{ transform: [{ scale: contentScale }] }}>
+      <SuitIcon
+        suit={card.suit}
+        size={isSmall ? WATERMARK_ICON_SIZE.small : WATERMARK_ICON_SIZE.normal}
+        color={suitColor}
+        opacity={1}
+      />
+    </View>
   ) : null;
 }
 
@@ -315,6 +339,7 @@ function PlayingCardComponent({
   cardRadius = CARD_RADIUS,
   borders = DEFAULT_BORDERS,
   overlayImage,
+  contentScale = 1,
 }: PlayingCardProps) {
   const isSmall = size === "small";
   const dims = isSmall ? styles.small : styles.normal;
@@ -366,6 +391,7 @@ function PlayingCardComponent({
         isSmall={isSmall}
         suitColor={suitColor}
         isRed={isRed}
+        contentScale={contentScale}
       />
       <CornerIndex
         rank={card.rank}
@@ -374,6 +400,7 @@ function PlayingCardComponent({
         suitColor={suitColor}
         isRed={isRed}
         mirrored
+        contentScale={contentScale}
       />
       <View testID="playing-card-center-art" style={styles.centerArt}>
         <CenterArt
@@ -383,6 +410,7 @@ function PlayingCardComponent({
           overlayImage={overlayImage}
           courtArt={courtArt}
           isFaceCard={isFaceCard}
+          contentScale={contentScale}
         />
       </View>
       {courtArt != null && isFaceCard && <CourtCardFrame size={size} />}
@@ -446,7 +474,6 @@ const styles = StyleSheet.create({
     width: CORNER_INDEX_WIDTH.normal,
     alignItems: "center",
     gap: 2,
-    transform: [{ rotate: "180deg" }],
     zIndex: 1,
   },
   cornerSmallMirrored: {
@@ -456,7 +483,6 @@ const styles = StyleSheet.create({
     width: CORNER_INDEX_WIDTH.small,
     alignItems: "center",
     gap: 1,
-    transform: [{ rotate: "180deg" }],
     zIndex: 1,
   },
   cornerRankNormal: {
