@@ -13,6 +13,7 @@ import type { Seat, SeatPosition } from "../../../table/seating";
 import { centerPanelStyles } from "./centerPanelStyles";
 import { suitColor } from "./suitColor";
 import type { PendingBatakPlay, GatheringTrick } from "./types";
+import { TRICK_CARD_SCALE, TRICK_CARD_CONTENT_SCALE } from "./trickCardScale";
 
 export type TrickPosition = "bottom" | SeatPosition;
 
@@ -21,12 +22,22 @@ export type TrickPosition = "bottom" | SeatPosition;
 // inner corners ("loose, corner-touching" per the brainstorming visual companion mockup, chosen
 // over a tighter ~40%-overlap alternative). First-pass values sized against the 'small' card's
 // CARD_DIMS.small footprint — confirm via screenshot in the final verification pass.
-const TRICK_SLOT_OFFSETS: Record<TrickPosition, { x: number; y: number }> = {
+// Base pixel values tuned by eye for the original full-size trick card; scaled by
+// TRICK_CARD_SCALE below as a first pass to preserve the same relative overlap at the new,
+// smaller trick-card footprint — re-tune BASE_TRICK_SLOT_OFFSETS directly if that proportional
+// scaling doesn't look right once checked live.
+const BASE_TRICK_SLOT_OFFSETS: Record<TrickPosition, { x: number; y: number }> = {
   top: { x: 0, y: -38 },
   bottom: { x: 0, y: 38 },
   left: { x: -30, y: 0 },
   right: { x: 30, y: 0 },
 };
+const TRICK_SLOT_OFFSETS: Record<TrickPosition, { x: number; y: number }> = Object.fromEntries(
+  Object.entries(BASE_TRICK_SLOT_OFFSETS).map(([position, offset]) => [
+    position,
+    { x: offset.x * TRICK_CARD_SCALE, y: offset.y * TRICK_CARD_SCALE },
+  ]),
+) as Record<TrickPosition, { x: number; y: number }>;
 
 export function TrickCenter({
   state,
@@ -124,9 +135,14 @@ export function TrickCenter({
                   pendingPlay?.originOffset ?? revealOriginOffset("bottom")
                 }
                 originRotateDeg={pendingPlay?.originRotateDeg ?? 0}
+                // Held constant, not interpolated: BatakHandCard's own local-departure leg
+                // already did the shrinking (see trickCardScale.ts's LOCAL_DEPARTURE_SCALE doc
+                // comment) before this component ever mounts for a human play.
+                originScale={TRICK_CARD_SCALE}
+                restScale={TRICK_CARD_SCALE}
                 durationMs={pendingPlay?.travelDurationMs}
                 resetKey={card.id}>
-                <PlayingCard card={card} size="normal" />
+                <PlayingCard card={card} size="normal" contentScale={TRICK_CARD_CONTENT_SCALE} />
               </TravelCard>
             ) : (
               // An AI's played card: no rendered per-card hand visual exists to depart from (see
@@ -139,8 +155,12 @@ export function TrickCenter({
                     resolveRevealOrigin(playerId!, humanPlayerId, seats),
                   )
                 }
+                // No local-departure leg exists for AI plays (no rendered opponent-hand visual
+                // to depart from) — TravelCard does the whole shrink itself over the flight.
+                originScale={1}
+                restScale={TRICK_CARD_SCALE}
                 resetKey={card.id}>
-                <PlayingCard card={card} size="normal" />
+                <PlayingCard card={card} size="normal" contentScale={TRICK_CARD_CONTENT_SCALE} />
               </TravelCard>
             )
           ) : (
@@ -150,9 +170,13 @@ export function TrickCenter({
             <PlayingCard
               card={card}
               size="normal"
+              contentScale={TRICK_CARD_CONTENT_SCALE}
               style={{
+                // Both entries live in ONE transform array (not two style objects each setting
+                // `transform`) — see this plan's Global Constraints note on why that matters.
                 transform: [
                   { rotate: `${restingRotations?.[playerId!] ?? 0}deg` },
+                  { scale: TRICK_CARD_SCALE },
                 ],
               }}
             />
