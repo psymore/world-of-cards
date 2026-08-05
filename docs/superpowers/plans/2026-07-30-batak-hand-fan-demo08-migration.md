@@ -831,7 +831,7 @@ git commit -m "feat(mobile): read hand-card position directly for play-travel or
 
 These exact diffs were already written and verified working in the reverted attempt (root-caused correctly: a plain `Pressable` ancestor racing against `BatakHandCard`'s `GestureDetector` descendants is an unsupported combination). Re-apply them verbatim:
 
-- [ ] **Step 1: `DeselectableSurface.tsx`**
+- [x] **Step 1: `DeselectableSurface.tsx`**
 
 ```tsx
 import React from 'react';
@@ -870,7 +870,7 @@ export function DeselectableSurface({ onDeselect, style, children }: Deselectabl
 }
 ```
 
-- [ ] **Step 2: `apps/mobile/__mocks__/react-native-reanimated.js`**
+- [x] **Step 2: `apps/mobile/__mocks__/react-native-reanimated.js`**
 
 Add, right after the existing `useAnimatedReaction` stub:
 
@@ -885,7 +885,7 @@ function useEvent(_handler, _eventNames, _rebuild) {
 
 And add `useEvent,` to the `module.exports` object, alongside the existing `useAnimatedReaction,` line.
 
-- [ ] **Step 3: Run the full suite, confirm `PistiTable.test.tsx` specifically passes**
+- [x] **Step 3: Run the full suite, confirm `PistiTable.test.tsx` specifically passes**
 
 ```bash
 cd d:/CodeSpace/world-cards && npx jest apps/mobile/src/games/pisti/PistiTable.test.tsx
@@ -894,7 +894,7 @@ npm test
 
 Expected: both green (this exact combination was verified working before being stashed).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/mobile/src/components/DeselectableSurface.tsx apps/mobile/__mocks__/react-native-reanimated.js
@@ -908,11 +908,11 @@ git commit -m "fix(mobile): make DeselectableSurface gesture-handler-aware"
 **Files:**
 - Create: `docs/animation/audits/BatakHandFan-Demo08Migration-Audit.md`
 
-- [ ] **Step 1: Confirm Quick vs. full Audit template with the user**
+- [x] **Step 1: Confirm Quick vs. full Audit template with the user**
 
 Per standing project convention (`[[feedback_ask_audit_template_choice]]`), do not self-select. This spec's own §6 already states the expectation (full template, new mechanism) — confirm it explicitly before writing the audit, don't just assume the spec settled it silently.
 
-- [ ] **Step 2: Complete the audit**
+- [x] **Step 2: Complete the audit**
 
 Follow `docs/animation/audits/AuditTemplate.md`'s structure exactly, covering: Current/Proposed Ownership (position/rotation/scale/gesture, now owned by `useBatakCardMotion`+`BatakHandCard` instead of split across `SelectableCard`+`AnimatedFanCard`), Layer Responsibilities against Constitution §4, Boundary Violations (should be none — verify, don't assume), Risks (rapid card-play/interruption mid-reflow, reduced motion, the `getValues()` staleness tradeoff from Task 3's own doc comment).
 
@@ -920,7 +920,7 @@ Follow `docs/animation/audits/AuditTemplate.md`'s structure exactly, covering: C
 
 Play a real hand on your phone: select→play (two-tap), rapid re-taps, a full trick, gömmeli's compact mode if reachable, reduced-motion OS setting on. Confirm cards respond to a single tap reliably (the original bug this whole thread started from) and the fan looks right at multiple hand sizes.
 
-- [ ] **Step 4: Commit the audit**
+- [x] **Step 4: Commit the audit**
 
 ```bash
 git add docs/animation/audits/BatakHandFan-Demo08Migration-Audit.md
