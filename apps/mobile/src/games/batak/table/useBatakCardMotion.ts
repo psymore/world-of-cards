@@ -1,12 +1,15 @@
 import { useRef } from 'react';
-import { Easing, useSharedValue, withTiming } from 'react-native-reanimated';
+import { Easing, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 
 export interface BatakCardTarget {
   x?: number;
   y?: number;
   angleDeg?: number;
   scale?: number;
-  timing?: { duration: number; easing?: (t: number) => number };
+  // delay: fires the withTiming itself after this many ms (used by HumanHandFan's per-card
+  // staggered deal entrance) — distinct from duration, which is how long the timing itself takes
+  // once it starts.
+  timing?: { duration: number; easing?: (t: number) => number; delay?: number };
 }
 
 const DEFAULT_DURATION_MS = 320;
@@ -28,20 +31,25 @@ export function useBatakCardMotion(initial: { x: number; y: number; angleDeg: nu
   function setTarget(target: BatakCardTarget) {
     const duration = target.timing?.duration ?? DEFAULT_DURATION_MS;
     const easing = target.timing?.easing ?? DEFAULT_EASING;
+    const delay = target.timing?.delay;
+    const animate = (toValue: number) => {
+      const timing = withTiming(toValue, { duration, easing });
+      return delay ? withDelay(delay, timing) : timing;
+    };
     if (target.x !== undefined) {
-      translateX.value = withTiming(target.x, { duration, easing });
+      translateX.value = animate(target.x);
       lastValues.current.x = target.x;
     }
     if (target.y !== undefined) {
-      translateY.value = withTiming(target.y, { duration, easing });
+      translateY.value = animate(target.y);
       lastValues.current.y = target.y;
     }
     if (target.angleDeg !== undefined) {
-      rotate.value = withTiming(target.angleDeg, { duration, easing });
+      rotate.value = animate(target.angleDeg);
       lastValues.current.angleDeg = target.angleDeg;
     }
     if (target.scale !== undefined) {
-      scale.value = withTiming(target.scale, { duration, easing });
+      scale.value = animate(target.scale);
       lastValues.current.scale = target.scale;
     }
   }

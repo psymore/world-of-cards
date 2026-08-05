@@ -1,79 +1,34 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import { StyleSheet, View } from "react-native";
-import Animated, {
-  Easing,
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withTiming,
-} from "react-native-reanimated";
 import type { Card, Suit } from "@world-cards/engine";
 import { compareRanks } from "@world-cards/engine/games/batak";
 import { CARD_DIMS } from "@world-cards/ui";
-import { SelectableCard } from "../../../components/SelectableCard";
-import { useReducedMotion } from "../../../components/useReducedMotion";
-import { fanCurveY, fanRotationDeg } from "../../../table/seating";
+import { BatakHandCard } from "./BatakHandCard";
+import type { useBatakCardMotion } from "./useBatakCardMotion";
+import {
+  STANDARD_RAIL_CONFIG,
+  COMPACT_RAIL_CONFIG,
+  railAngleStepDeg,
+  railAngles,
+  railPosition,
+} from "./batakRailFan";
 
-const HUMAN_CARD_WIDTH = CARD_DIMS.normal.width;
 const HUMAN_CARD_HEIGHT = CARD_DIMS.normal.height;
-// A flatter arc than the opponents' default fan (half the rotation-per-card and curve
-// multiplier) — first-pass values, tune during the manual visual verification pass if needed.
-const HUMAN_HAND_DEGREES_PER_STEP = 4;
-const HUMAN_HAND_CURVE_MULTIPLIER = 1.5;
-// The bottom hand row overlaps the top row instead of sitting below it with a gap, so the two
-// rows read as one imbricated fan rather than two stacked blocks.
-const HAND_ROW_OVERLAP_FRACTION = 0.25;
-// Exported: BatakTable's own HandFrame-positioning math needs to know how far the two rows
-// overlap to compute where the fan's top-row peak sits.
-export const HAND_ROW_OVERLAP_PX = Math.round(
-  HUMAN_CARD_HEIGHT * HAND_ROW_OVERLAP_FRACTION,
-);
-// Total footprint of the two-row fan (top row's full height, plus the bottom row's additional
-// visible height once the overlap above is applied) — given explicitly to styles.handFan since
-// its children are now absolutely positioned (see AnimatedFanCard) and can no longer contribute
-// to an auto-computed parent height the way normal-flow children would.
-const HAND_FAN_HEIGHT =
-  HUMAN_CARD_HEIGHT + (HUMAN_CARD_HEIGHT - HAND_ROW_OVERLAP_PX);
 
-// Fixed per-card horizontal spacing (step between adjacent card slots) in the human's own hand —
-// deliberately NOT recomputed from the current row length (that previously made the fan spread
-// apart as cards were played, since fewer cards meant less overlap was needed to fit the same
-// target width). The top row is spaced slightly wider apart (less overlap) than the bottom row
-// for visual balance, mirroring HAND_ROW_OVERLAP_FRACTION's own intent for the vertical axis.
-const HUMAN_HAND_BOTTOM_ROW_OVERLAP_FRACTION = 0.5;
-const HUMAN_HAND_TOP_ROW_OVERLAP_FRACTION = 0.4;
-const HUMAN_HAND_BOTTOM_ROW_STEP = Math.round(
-  HUMAN_CARD_WIDTH * (1 - HUMAN_HAND_BOTTOM_ROW_OVERLAP_FRACTION),
-);
-const HUMAN_HAND_TOP_ROW_STEP = Math.round(
-  HUMAN_CARD_WIDTH * (1 - HUMAN_HAND_TOP_ROW_OVERLAP_FRACTION),
-);
-// Batak gömmeli's hand runs materially larger than Standard Batak's fixed 13-card hand (16 cards
-// steady-state, up to 20 mid-kitty-exchange while choosing what to bury) — the two fractions
-// above were tuned for Standard's max row of 7 and visibly overflow gömmeli's max row of 10.
-// Gömmeli-only overrides, applied via HumanHandFan's `compact` prop (set by BatakTable based on
-// opponentPlayerIds.length === 2); Standard Batak's own look, and Pişti's separate hand UI, are
-// completely untouched. First-pass values — tune further once checked live.
-const GOMELI_HAND_BOTTOM_ROW_OVERLAP_FRACTION = 0.55;
-const GOMELI_HAND_TOP_ROW_OVERLAP_FRACTION = 0.58;
-const GOMELI_HAND_BOTTOM_ROW_STEP = Math.round(
-  HUMAN_CARD_WIDTH * (1 - GOMELI_HAND_BOTTOM_ROW_OVERLAP_FRACTION),
-);
-const GOMELI_HAND_TOP_ROW_STEP = Math.round(
-  HUMAN_CARD_WIDTH * (1 - GOMELI_HAND_TOP_ROW_OVERLAP_FRACTION),
-);
-// Shared timing for every hand-card reposition (a card played, remaining cards sliding/rising to
-// close the gap) — see AnimatedFanCard. An ease-in-ease-out curve reads as a natural reflow
-// rather than either a sudden snap (no easing) or a bouncy entrance (an "out" curve alone).
-// Reanimated's own Easing (worklet-compatible, evaluated on the UI thread) — this file's shared
-// values are driven by withTiming, not RN's classic Animated.timing, per ADR-002/ADR-003
-// (docs/animation/ADR/). SelectableCard's own rotateEasing prop still accepts this: both RN's and
-// Reanimated's Easing functions are plain (t: number) => number curves, so passing this into
-// SelectableCard's still-Animated-based Animated.timing call (unmigrated, see ADR-003) works
-// identically to before.
-const HAND_CARD_REPOSITION_DURATION_MS = 320;
-const HAND_CARD_REPOSITION_EASING = Easing.inOut(Easing.cubic);
+// The bottom hand row overlaps the top row instead of sitting below it with a gap, so the two
+// rows read as one imbricated fan rather than two stacked blocks. Tuned live against real
+// PlayingCards and Batak's real two-row hand — see Task 1 of
+// docs/superpowers/plans/2026-07-30-batak-hand-fan-demo08-migration.md (Demo09BatakHandTuning).
+// Same value for both Standard and compact/gömmeli modes (batakRailFan.ts's radius/spacing/arc
+// tuning differs per mode instead). Exported: BatakTable's own HandFrame-positioning math needs to
+// know how far the two rows overlap to compute where the fan's top-row peak sits.
+export const HAND_ROW_OVERLAP_PX = 40;
+
+// Total footprint of the two-row fan (top row's full height, plus the bottom row's additional
+// visible height once the overlap above is applied) — given explicitly to styles.handFan since its
+// children are absolutely positioned (see BatakHandCard) and can't contribute to an auto-computed
+// parent height the way normal-flow children would.
+const HAND_FAN_HEIGHT = HUMAN_CARD_HEIGHT + (HUMAN_CARD_HEIGHT - HAND_ROW_OVERLAP_PX);
 
 // The played card's brief "lift-off" leg before it hands off to the elevated trick-center travel
 // animation (BatakScreen.tsx/TrickCenter.tsx) — see
@@ -81,42 +36,30 @@ const HAND_CARD_REPOSITION_EASING = Easing.inOut(Easing.cubic);
 // full card height guarantees it fully clears the row's own vertical band (same-row neighbors
 // paint over it purely by later render-order, regardless of vertical position), so by the time
 // TrickCenter's globally-elevated TravelCard takes over, there's no longer any hand content left
-// to visually "pop" in front of. Purely local and vertical — rotation/curve are untouched, so the
-// card's angle at handoff still matches what TravelCard's own originRotateDeg expects.
+// to visually "pop" in front of.
 export const LOCAL_DEPARTURE_DISTANCE = HUMAN_CARD_HEIGHT;
 export const LOCAL_DEPARTURE_DURATION_MS = 200;
-// Easing.in, not Easing.out: this leg hands off directly into TrickCenter's own TravelCard flight,
-// which uses CARD_TRAVEL_EASING (Easing.out(cubic) — fast start, decelerating to a stop by
-// design). An ease-out *local* leg would also decelerate to a dead stop right at that handoff,
-// then TravelCard would immediately burst back up to full speed — a visible "stops, then lurches
-// forward again" hitch. Easing.in ends this leg at max velocity instead, matching TravelCard's own
-// max-velocity start, so the two legs read as one continuous accelerate-then-decelerate motion
-// rather than two animations bolted together. Also fixes a smaller issue for free: the previous
-// ease-out start snapped to full speed the instant of the tap; ease-in lifts off gently instead.
-const LOCAL_DEPARTURE_EASING = Easing.in(Easing.linear);
 
-// 2.5x SelectableCard's own default (16px) lift — Batak-only override, see
-// docs/superpowers/specs/2026-07-17-batak-deal-selection-and-trick-motion-polish-design.md
-// section C. Selection no longer forces the card to the front via zIndex; this larger lift is
-// what makes a selected card read as prominent instead.
-// Exported: BatakTable's playWithMeasuredOrigin needs this exact value to compensate a measured
-// card position for its selection lift — see SelectableCard's DEFAULT_LIFT_DISTANCE doc comment
-// for why the lift can't just be measured off the transformed node directly.
+// How far a selected card is pushed outward along its own rail angle (railPosition's extraRadius —
+// never sideways along the rail). 2.5x SelectableCard's own pre-migration default (16px) — Batak-
+// only override, see docs/superpowers/specs/2026-07-17-batak-deal-selection-and-trick-motion-
+// polish-design.md section C. No BatakTable compensation is needed for this anymore: the played
+// card's travel-origin now reads the motion registry's real committed position directly (which
+// already includes the lift), rather than measuring an unlifted node and subtracting this
+// constant back out.
 export const SELECTED_LIFT_DISTANCE = 40;
-// Shrinks only the currently-selected card's touchable width — see SelectableCard's hitSlop doc
-// comment. Deliberately conservative (not the full ~25px rotation-widened estimate) so the
-// selected card stays comfortably tappable for the second tap that plays it.
-const SELECTED_CARD_HIT_SLOP = { left: -20, right: -20 };
+
 const HAND_SUIT_ORDER = ["hearts", "spades", "diamonds", "clubs"] as const;
 
 // Exported so BatakTable can compute a card's real fan angle at the moment it's tapped (for the
-// played-card travel animation's origin rotation) without duplicating
-// HUMAN_HAND_DEGREES_PER_STEP or reimplementing the fan formula.
-export function handCardRotationDeg(
-  indexInRow: number,
-  rowCount: number,
-): number {
-  return fanRotationDeg(indexInRow, rowCount, HUMAN_HAND_DEGREES_PER_STEP);
+// played-card travel animation's origin rotation) without duplicating batakRailFan.ts's formula.
+// Always the Standard config, matching pre-rewrite behavior — BatakTable's existing call site
+// doesn't pass `compact` (see docs/superpowers/plans/2026-07-30-batak-hand-fan-demo08-migration.md
+// Task 5 Step 1).
+export function handCardRotationDeg(indexInRow: number, rowCount: number): number {
+  const angleStepDeg = railAngleStepDeg(STANDARD_RAIL_CONFIG, rowCount);
+  const angles = railAngles(rowCount, angleStepDeg, STANDARD_RAIL_CONFIG.maxRotationDeg);
+  return angles[indexInRow] ?? 0;
 }
 
 export function sortHandForDisplay(cards: Card[]): Card[] {
@@ -131,267 +74,41 @@ export function sortHandForDisplay(cards: Card[]): Card[] {
 
 // One human-hand card's slot: which row it's in, its index within that row, and how many cards
 // currently share that row (rowCount, not the initial deal size — the fan recenters as the row
-// shrinks, matching the pre-existing recentering behavior, just now animated instead of snapped).
+// shrinks).
 export interface HandSlot {
   card: Card;
   row: "top" | "bottom";
   indexInRow: number;
   rowCount: number;
   // Non-null only for a card returning to the hand from a Batak gömmeli bury slot — makes its
-  // very first render (in this component instance's lifetime — it was unmounted while placed in
-  // a slot, so this genuinely is a fresh mount) animate in from this offset using the exact same
-  // reposition timing/easing every other hand reflow already uses, instead of the initial-deal
-  // behavior of snapping straight to its slot with no animation.
+  // very first render (in this component instance's lifetime) animate in from this offset using
+  // the same reposition timing/easing every other hand reflow already uses.
   enterFromOffset?: { x: number; y: number } | null;
 }
 
-function slotStep(row: "top" | "bottom", compact: boolean): number {
-  if (compact)
-    return row === "top"
-      ? GOMELI_HAND_TOP_ROW_STEP
-      : GOMELI_HAND_BOTTOM_ROW_STEP;
-  return row === "top" ? HUMAN_HAND_TOP_ROW_STEP : HUMAN_HAND_BOTTOM_ROW_STEP;
+// Each row is its own independent rail (batakRailFan.ts's STANDARD_RAIL_CONFIG/
+// COMPACT_RAIL_CONFIG), with the bottom row's pivot offset down by the imbrication amount above.
+// extraRadius (0 for resting, SELECTED_LIFT_DISTANCE for the selection lift) pushes the card
+// straight out along its own angle — see railPosition's own doc comment.
+function slotPosition(
+  slot: HandSlot,
+  compact: boolean,
+  extraRadius: number,
+): { x: number; y: number; angleDeg: number } {
+  const config = compact ? COMPACT_RAIL_CONFIG : STANDARD_RAIL_CONFIG;
+  const angleStepDeg = railAngleStepDeg(config, slot.rowCount);
+  const angles = railAngles(slot.rowCount, angleStepDeg, config.maxRotationDeg);
+  const angleDeg = angles[slot.indexInRow] ?? 0;
+  const pos = railPosition(angleDeg, config.radius, extraRadius);
+  const rowYOffset = slot.row === "top" ? 0 : HUMAN_CARD_HEIGHT - HAND_ROW_OVERLAP_PX;
+  return { x: pos.x, y: pos.y + rowYOffset, angleDeg };
 }
 
-// Horizontal offset from the row's own center — negative/positive symmetric around 0, so the row
-// stays centered under styles.fanCardSlot's left:'50%' anchor regardless of rowCount. Exported:
-// BatakTable's playWithMeasuredOrigin computes a played card's travel-origin X analytically from
-// this instead of measuring the card's own (transform-nested) node — see its call site's doc
-// comment for why.
-export function slotTargetX(slot: HandSlot, compact: boolean): number {
-  const mid = (slot.rowCount - 1) / 2;
-  return (slot.indexInRow - mid) * slotStep(slot.row, compact);
-}
-
-// Vertical offset from the fan's own top edge — the bottom row overlaps up into the top row by
-// HAND_ROW_OVERLAP_PX, matching the pre-existing two-row imbrication.
-function slotTargetY(slot: HandSlot): number {
-  return slot.row === "top" ? 0 : HUMAN_CARD_HEIGHT - HAND_ROW_OVERLAP_PX;
-}
-
-// A single human-hand card, absolutely positioned within the shared fan container and animated
-// (via its own persistent Reanimated shared-value pair) whenever its target slot changes — e.g. a
-// card played elsewhere in the hand shifts every card after it to a new index, and shrinking a row
-// can even move a card from the top row to the bottom row (or vice versa). Because every card in
-// both rows now lives under one shared parent (HumanHandFan) instead of two separate row
-// containers, that row-crossing case animates smoothly too, rather than unmounting from one row's
-// tree and remounting in the other's.
-interface AnimatedFanCardProps {
-  slot: HandSlot;
-  interactive: boolean;
-  selected: boolean;
-  selectCard: (cardId: string) => void;
-  playEntrance: boolean;
-  registerCardRef: (cardId: string, node: View | null) => void;
-  compact: boolean;
-  // True only for the card the human just confirmed playing, for its brief local-departure leg
-  // (see LOCAL_DEPARTURE_DISTANCE above) — every other card's slot/reposition behavior is
-  // unaffected.
-  isDeparting: boolean;
-  // The horizontal component of that same departure leg (see BatakScreen's canLocalDepart) — the
-  // leg moves along the real straight-line vector toward the trick center, not straight up, so
-  // this card's `x` animates in sync with its `y`. Only meaningful while isDeparting is true.
-  departureDeltaX: number;
-}
-
-function AnimatedFanCardComponent({
-  slot,
-  interactive,
-  selected,
-  selectCard,
-  playEntrance,
-  registerCardRef,
-  compact,
-  isDeparting,
-  departureDeltaX,
-}: AnimatedFanCardProps) {
-  const { card } = slot;
-  const targetX = slotTargetX(slot, compact);
-  const targetY = slotTargetY(slot);
-  const x = useSharedValue(targetX);
-  const y = useSharedValue(targetY);
-  const mounted = useRef(false);
-  const reducedMotion = useReducedMotion();
-  const departed = useRef(false);
-
-  // Fires once, the instant this specific card starts its local-departure leg — layers an
-  // additional move (both axes, along the real vector toward the trick center — see
-  // departureDeltaX's doc comment) on top of whatever slot position x/y already hold (their own
-  // reposition effect below is untouched and never fires again for this card, since it's about to
-  // unmount). Skipped under reduced motion: BatakScreen's own reducedMotion check already skips
-  // the whole local-departure pre-stage in that case, so isDeparting never becomes true here, but
-  // the guard is kept for defense in depth (matches every other animation in this file).
-  useEffect(() => {
-    if (!isDeparting || departed.current || reducedMotion) return;
-    departed.current = true;
-    x.value = withTiming(targetX - departureDeltaX, {
-      duration: LOCAL_DEPARTURE_DURATION_MS,
-      easing: LOCAL_DEPARTURE_EASING,
-    });
-    y.value = withTiming(targetY - LOCAL_DEPARTURE_DISTANCE, {
-      duration: LOCAL_DEPARTURE_DURATION_MS,
-      easing: LOCAL_DEPARTURE_EASING,
-    });
-  }, [isDeparting, reducedMotion, targetX, targetY, departureDeltaX, x, y]);
-
-  useEffect(() => {
-    if (!mounted.current) {
-      mounted.current = true;
-      if (slot.enterFromOffset && !reducedMotion) {
-        // A card returning from a bury slot: start offset from its true target and animate in,
-        // reusing the exact same reposition timing/easing as an ordinary reflow.
-        x.value = targetX + slot.enterFromOffset.x;
-        y.value = targetY + slot.enterFromOffset.y;
-        x.value = withTiming(targetX, {
-          duration: HAND_CARD_REPOSITION_DURATION_MS,
-          easing: HAND_CARD_REPOSITION_EASING,
-        });
-        y.value = withTiming(targetY, {
-          duration: HAND_CARD_REPOSITION_DURATION_MS,
-          easing: HAND_CARD_REPOSITION_EASING,
-        });
-      }
-      // Plain first render for a genuinely new card (the initial deal, or reducedMotion): jump
-      // straight to its slot — EntranceCard supplies the deal's own fade/scale/rise flourish.
-      return;
-    }
-    if (reducedMotion) {
-      x.value = targetX;
-      y.value = targetY;
-      return;
-    }
-    x.value = withTiming(targetX, {
-      duration: HAND_CARD_REPOSITION_DURATION_MS,
-      easing: HAND_CARD_REPOSITION_EASING,
-    });
-    y.value = withTiming(targetY, {
-      duration: HAND_CARD_REPOSITION_DURATION_MS,
-      easing: HAND_CARD_REPOSITION_EASING,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [targetX, targetY, reducedMotion, x, y]);
-
-  const positionStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value }, { translateY: y.value }],
-  }));
-
-  return (
-    <Animated.View style={[styles.fanCardSlot, positionStyle]}>
-      <View ref={node => registerCardRef(card.id, node)}>
-        <EntranceCard index={slot.indexInRow} playEntrance={playEntrance}>
-          <SelectableCard
-            card={card}
-            size="normal"
-            selected={selected}
-            disabled={!interactive}
-            onPress={() => selectCard(card.id)}
-            rotateDeg={fanRotationDeg(
-              slot.indexInRow,
-              slot.rowCount,
-              HUMAN_HAND_DEGREES_PER_STEP,
-            )}
-            // A play shrinks the row, recomputing every remaining card's rotateDeg above (it
-            // depends on indexInRow/rowCount) — ease that change in step with this same card's
-            // x/y reflow (below) instead of snapping the angle in one frame while position glides.
-            rotateAnimationDurationMs={HAND_CARD_REPOSITION_DURATION_MS}
-            rotateEasing={HAND_CARD_REPOSITION_EASING}
-            curveOffsetY={fanCurveY(
-              slot.indexInRow,
-              slot.rowCount,
-              1,
-              HUMAN_HAND_CURVE_MULTIPLIER,
-            )}
-            liftDistance={SELECTED_LIFT_DISTANCE}
-            // Kept even without front-stacking zIndex: it independently shrinks the selected
-            // card's own touch bounds, which is what actually prevents a stray tap from landing
-            // on it instead of an exposed neighbor — orthogonal to stacking order.
-            hitSlop={selected ? SELECTED_CARD_HIT_SLOP : undefined}
-          />
-        </EntranceCard>
-      </View>
-    </Animated.View>
-  );
-}
-
-// Batak is strictly turn-based: only one player's action is ever in flight, and while this
-// specific card's `selected`/`interactive` props are unchanged, no engine state that
-// `selectCard`/`registerCardRef` close over can have changed in a way that affects THIS card's
-// behavior either (the human's own turn, and any card sitting selected during it, is
-// uninterrupted the whole time). So it's safe to skip re-rendering — and therefore keep a
-// technically-stale `selectCard`/`registerCardRef` closure — whenever slot/interactive/selected/
-// compact/playEntrance are all unchanged; those closures behave identically for this card either
-// way. Deliberately NOT comparing selectCard/registerCardRef by reference: BatakTable recreates
-// selectCard's underlying dependency chain on most renders, so comparing it would defeat the memo
-// on nearly every re-render, including the "an AI played elsewhere and nothing about this card
-// changed" case this exists to fix — see
-// docs/superpowers/specs/2026-07-21-batak-card-play-animation-smoothness-design.md.
-function areFanCardPropsEqual(
-  prev: AnimatedFanCardProps,
-  next: AnimatedFanCardProps,
-): boolean {
-  return (
-    prev.slot.card.id === next.slot.card.id &&
-    prev.slot.row === next.slot.row &&
-    prev.slot.indexInRow === next.slot.indexInRow &&
-    prev.slot.rowCount === next.slot.rowCount &&
-    prev.slot.enterFromOffset?.x === next.slot.enterFromOffset?.x &&
-    prev.slot.enterFromOffset?.y === next.slot.enterFromOffset?.y &&
-    prev.interactive === next.interactive &&
-    prev.selected === next.selected &&
-    prev.compact === next.compact &&
-    prev.playEntrance === next.playEntrance &&
-    prev.isDeparting === next.isDeparting &&
-    prev.departureDeltaX === next.departureDeltaX
-  );
-}
-
-const AnimatedFanCard = React.memo(
-  AnimatedFanCardComponent,
-  areFanCardPropsEqual,
-);
-
-// Plays a one-shot fade+scale+rise entrance the first time `playEntrance` becomes true (the
-// moment the deal sequence reaches 'revealing'), then stays static — re-renders after that
-// (card removed by a play, selection state changing) must not replay it, hence the `played` ref.
-function EntranceCard({
-  index,
-  playEntrance,
-  children,
-}: {
-  index: number;
-  playEntrance: boolean;
-  children: React.ReactNode;
-}) {
-  const progress = useSharedValue(playEntrance ? 1 : 0);
-  const played = useRef(playEntrance);
-  const reducedMotion = useReducedMotion();
-
-  useEffect(() => {
-    if (playEntrance && !played.current) {
-      played.current = true;
-      if (reducedMotion) {
-        progress.value = 1;
-        return;
-      }
-      progress.value = withDelay(index * 40, withTiming(1, { duration: 350 }));
-    }
-  }, [playEntrance, index, progress, reducedMotion]);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: progress.value,
-    transform: [
-      { scale: interpolate(progress.value, [0, 1], [0.4, 1]) },
-      { translateY: interpolate(progress.value, [0, 1], [-40, 0]) },
-    ],
-  }));
-
-  return <Animated.View style={style}>{children}</Animated.View>;
-}
-
-// Renders every human-hand card (both rows) under one shared parent — see AnimatedFanCard's doc
-// comment for why that matters for the top/bottom row-crossing case. Render order (top row's
-// slots first) preserves the pre-existing "bottom row paints over the top row where they overlap"
-// stacking, since later JSX siblings paint on top with no zIndex needed.
+// Renders every human-hand card (both rows) under one shared parent — a lifted bottom-row card
+// still paints over the top row purely by render order (top row's slots render first), no zIndex
+// needed. Layout/orchestration only: each BatakHandCard owns its own motion (position/rotation/
+// scale/opacity) and gesture entirely — this component computes targets, it doesn't animate
+// anything itself.
 export function HumanHandFan({
   slots,
   legalCardIds,
@@ -399,9 +116,9 @@ export function HumanHandFan({
   selectedCardId,
   selectCard,
   playEntrance,
-  registerCardRef,
   compact = false,
   departingCard = null,
+  registerHandMotion,
 }: {
   slots: HandSlot[];
   legalCardIds: Set<string>;
@@ -409,51 +126,49 @@ export function HumanHandFan({
   selectedCardId: string | null;
   selectCard: (cardId: string) => void;
   playEntrance: boolean;
-  registerCardRef: (cardId: string, node: View | null) => void;
-  // Tighter horizontal card spacing for Batak gömmeli's larger hand — see the
-  // GOMELI_HAND_*_OVERLAP_FRACTION constants above. Defaults to false (Standard Batak's and
-  // Pişti's existing spacing, byte-identical to before this prop existed).
+  // Tighter horizontal card spacing for Batak gömmeli's larger hand — see batakRailFan.ts's
+  // COMPACT_RAIL_CONFIG. Defaults to false (Standard Batak's spacing).
   compact?: boolean;
   // The card currently running its local-departure leg (BatakScreen.tsx) and the horizontal
-  // component of that leg's motion, or null the rest of the time — see LOCAL_DEPARTURE_DISTANCE
-  // above and departureDeltaX's own doc comment.
+  // component of that leg's motion, or null the rest of the time.
   departingCard?: { cardId: string; deltaX: number } | null;
+  // Hands the caller (BatakTable) each card's live motion controller as it mounts/unmounts —
+  // replaces the old handCardRefs-based measureInWindow approach entirely.
+  registerHandMotion: (cardId: string, motion: ReturnType<typeof useBatakCardMotion> | null) => void;
 }) {
   return (
     <View style={styles.handFan} testID="human-hand">
-      {slots.map(slot => (
-        <AnimatedFanCard
-          key={slot.card.id}
-          slot={slot}
-          interactive={isHumanInteractive && legalCardIds.has(slot.card.id)}
-          selected={selectedCardId === slot.card.id}
-          selectCard={selectCard}
-          playEntrance={playEntrance}
-          registerCardRef={registerCardRef}
-          compact={compact}
-          isDeparting={departingCard?.cardId === slot.card.id}
-          departureDeltaX={
-            departingCard?.cardId === slot.card.id ? departingCard.deltaX : 0
-          }
-        />
-      ))}
+      {slots.map((slot) => {
+        const restTarget = slotPosition(slot, compact, 0);
+        const liftedTarget = slotPosition(slot, compact, SELECTED_LIFT_DISTANCE);
+        const isDeparting = departingCard?.cardId === slot.card.id;
+        return (
+          <BatakHandCard
+            key={slot.card.id}
+            cardId={slot.card.id}
+            card={slot.card}
+            restTarget={restTarget}
+            liftedTarget={liftedTarget}
+            enterFromOffset={slot.enterFromOffset}
+            interactive={isHumanInteractive && legalCardIds.has(slot.card.id)}
+            selected={selectedCardId === slot.card.id}
+            playEntrance={playEntrance}
+            entranceIndex={slot.indexInRow}
+            isDeparting={isDeparting}
+            departureDeltaX={isDeparting && departingCard ? departingCard.deltaX : 0}
+            localDepartureDistance={LOCAL_DEPARTURE_DISTANCE}
+            localDepartureDurationMs={LOCAL_DEPARTURE_DURATION_MS}
+            onPress={() => selectCard(slot.card.id)}
+            registerMotion={registerHandMotion}
+          />
+        );
+      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Fixed height since every card inside is now absolutely positioned (see AnimatedFanCard) and
-  // can no longer contribute to an auto-computed height the way normal-flow children would.
+  // Fixed height since every card inside is absolutely positioned (see BatakHandCard) and can't
+  // contribute to an auto-computed height the way normal-flow children would.
   handFan: { height: HAND_FAN_HEIGHT },
-  // Each human-hand card's positioning anchor: centered horizontally (left:50% + a negative
-  // marginLeft of half the card's own width), with AnimatedFanCard supplying the actual per-card
-  // translateX/Y offset from that center point. No zIndex — natural render order (HumanHandFan
-  // renders the top row's slots before the bottom row's) already makes a lifted bottom-row card
-  // paint over the top row on its own, with no per-card override needed.
-  fanCardSlot: {
-    position: "absolute",
-    left: "50%",
-    top: 0,
-    marginLeft: -HUMAN_CARD_WIDTH / 2,
-  },
 });
