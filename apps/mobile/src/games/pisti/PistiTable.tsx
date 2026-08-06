@@ -408,6 +408,7 @@ export function PistiTable({
 
       <HandFrame bottomOffset={handFrameBottomOffset} height={handFrameHeight} />
       <View style={[styles.handArea, isHumanInteractive && styles.activeArea]}>
+        <PlayerBadge name={playerNames[humanPlayerId] ?? 'You'} statusText={capturedStatusText(capturedHuman)} active={isHumanTurn} isHuman />
         <PistiHandFan
           slots={
             dealPhase === 'revealing'
@@ -421,7 +422,6 @@ export function PistiTable({
           handFanRef={handFanRef}
           onHandFanLayout={handleHandFanLayout}
         />
-        <PlayerBadge name={playerNames[humanPlayerId] ?? 'You'} statusText={capturedStatusText(capturedHuman)} active={isHumanTurn} isHuman />
       </View>
       {dealPhase !== 'revealing' && <DealFlightOverlay seats={dealSeats} />}
     </DeselectableSurface>
