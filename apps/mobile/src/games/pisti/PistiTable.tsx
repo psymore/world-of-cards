@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Easing,
   LayoutChangeEvent,
   StyleSheet,
   Text,
@@ -22,7 +21,6 @@ import {
   HAND_FRAME_BOTTOM_OVERSHOOT,
   WOOD_TRIM_COLOR,
 } from '@world-cards/ui';
-import { SelectableCard, DEFAULT_LIFT_DISTANCE } from '../../components/SelectableCard';
 import { DeselectableSurface } from '../../components/DeselectableSurface';
 import { useCardSelection } from '../../components/useCardSelection';
 import { useReducedMotion } from '../../components/useReducedMotion';
@@ -39,6 +37,8 @@ import { CARD_TRAVEL_DURATION_MS, CARD_TRAVEL_EASING } from '../../table/travelA
 import { DealFlightOverlay } from '../../table/DealFlightOverlay';
 import type { DealFlightSeat } from '../../table/DealFlightOverlay';
 import type { DealPhase } from '../../hooks/useDealSequence';
+import { PistiHandFan, pistiCardRotationDeg } from './table/PistiHandFan';
+import { useCardMotion } from '../../table/useCardMotion';
 
 export interface PistiRevealCard {
   card: Card;
@@ -95,70 +95,6 @@ const HAND_AREA_TOP_INSET = (HAND_AREA_HEIGHT - HAND_CONTENT_HEIGHT) / 2;
 // top edge.
 const HAND_ROW_PEAK_DISTANCE_FROM_BOTTOM =
   CONTAINER_BOTTOM_PADDING + HAND_AREA_HEIGHT - HAND_AREA_TOP_INSET - HAND_BADGE_HEIGHT;
-
-// The human hand row used to be plain flex children (`handRow`'s old flexDirection/gap), which
-// reflow instantly (no animation) whenever a card is removed — playing a card snapped the
-// remaining hand straight to its new layout. Each card now gets its own absolutely-positioned
-// slot (centered around the row's midpoint, same spacing the old `gap: 8` produced) driven by an
-// Animated translateX that eases to a new target whenever its index/count within the hand changes
-// — mirrors Batak's AnimatedFanCard reflow (HumanHandFan.tsx), just single-row/no-curve since
-// Pişti's hand never exceeds 4 cards and doesn't fan.
-const HAND_CARD_GAP = 8; // matches the pre-existing handRow gap
-const HAND_CARD_STEP = CARD_DIMS.normal.width + HAND_CARD_GAP;
-const HAND_CARD_REPOSITION_DURATION_MS = 220;
-const HAND_CARD_REPOSITION_EASING = Easing.inOut(Easing.ease);
-
-// Horizontal offset from the row's own center — negative/positive symmetric around 0, matching
-// styles.handCardSlot's `left: '50%'` anchor regardless of hand size.
-function handCardSlotX(index: number, count: number): number {
-  return (index - (count - 1) / 2) * HAND_CARD_STEP;
-}
-
-function AnimatedHandCard({
-  card,
-  index,
-  count,
-  selected,
-  disabled,
-  onPress,
-}: {
-  card: Card;
-  index: number;
-  count: number;
-  selected: boolean;
-  disabled: boolean;
-  onPress: () => void;
-}) {
-  const targetX = handCardSlotX(index, count);
-  const x = useRef(new Animated.Value(targetX)).current;
-  const mounted = useRef(false);
-  const reducedMotion = useReducedMotion();
-
-  useEffect(() => {
-    if (!mounted.current) {
-      // First render (initial deal, or a stock-redeal adding a fresh card): jump straight to its
-      // slot — there's no prior position to reflow from.
-      mounted.current = true;
-      return;
-    }
-    if (reducedMotion) {
-      x.setValue(targetX);
-      return;
-    }
-    Animated.timing(x, {
-      toValue: targetX,
-      duration: HAND_CARD_REPOSITION_DURATION_MS,
-      easing: HAND_CARD_REPOSITION_EASING,
-      useNativeDriver: true,
-    }).start();
-  }, [targetX, reducedMotion, x]);
-
-  return (
-    <Animated.View style={[styles.handCardSlot, { transform: [{ translateX: x }] }]}>
-      <SelectableCard card={card} selected={selected} disabled={disabled} onPress={onPress} />
-    </Animated.View>
-  );
-}
 
 function RevealCard({
   revealCard,
@@ -354,48 +290,53 @@ export function PistiTable({
     });
   }
 
-  // The hand row's own on-screen center — measured once (re-measured on every layout pass, same
-  // as destCenter above) directly off the row container, which carries no transform of its own
-  // (only its individual cards do, via AnimatedHandCard's translateX). Deliberately NOT measuring
-  // an individual card and adding handCardSlotX's offset to it: whether measureInWindow on a node
-  // reflects an *ancestor's* transform (as opposed to a descendant's, which every RN platform
-  // agrees never affects it) is platform-dependent — if the runtime already includes it, adding
-  // the offset again double-counts it, pushing the card further off-center than it should go
-  // (worse the further from center the card sits — exactly the "jumps left/right" symptom this
-  // replaced). Measuring the untransformed row itself and adding the known, deterministic
-  // handCardSlotX offset sidesteps that ambiguity entirely, the same way the Y-lift correction
-  // below avoids depending on whether a *descendant* transform is reflected.
-  const handRowRef = useRef<View>(null);
-  const [handRowCenter, setHandRowCenter] = useState<{ x: number; y: number } | null>(null);
-  function handleHandRowLayout() {
-    handRowRef.current?.measureInWindow((x, y, width, height) => {
-      setHandRowCenter({ x: x + width / 2, y: y + height / 2 });
+  const handFanRef = useRef<View>(null);
+  const [handFanOrigin, setHandFanOrigin] = useState<{ x: number; y: number } | null>(null);
+  function handleHandFanLayout() {
+    handFanRef.current?.measureInWindow((x, y, width) => {
+      setHandFanOrigin({ x: x + width / 2, y });
     });
   }
 
-  // Replaces a direct onPlayCard(cardId) call: computes the tapped card's real on-screen position
-  // relative to the pile's, so the reveal travels from where the card actually was. Purely
-  // arithmetic (no per-card measurement, no async callback) — every card in the row shares the
-  // same measured row center and only differs by its own deterministic handCardSlotX offset.
-  // Falls back to a plain onPlayCard(cardId) call (no origin — RevealCard then uses the fixed
-  // 'bottom' offset, same as today) whenever either measurement isn't ready, which is always the
-  // case in this project's Jest/RNTL tests (host refs never resolve there — no createNodeMock
-  // configured) and is a defensive path on a real device too.
+  const handMotionRef = useRef(new Map<string, ReturnType<typeof useCardMotion>>()).current;
+  const registerHandMotion = useCallback(
+    (cardId: string, motion: ReturnType<typeof useCardMotion> | null) => {
+      if (motion) handMotionRef.set(cardId, motion);
+      else handMotionRef.delete(cardId);
+    },
+    [handMotionRef],
+  );
+
+  // Replaces a direct onPlayCard(cardId) call: reads the tapped card's real, currently-committed
+  // motion (position it's actually rendered at, lift included) directly from its own useCardMotion
+  // controller, converted into a delta from the pile's measured center — no DOM re-derivation, no
+  // staleness risk (mirrors BatakTable's playWithMeasuredOrigin, post-fix — see
+  // docs/superpowers/specs/2026-08-06-pisti-hand-fan-gesture-migration-design.md §3). Falls back to
+  // a plain onPlayCard(cardId) call (no origin — the pile-landing flight then uses the fixed
+  // 'bottom' offset, same as today) whenever any measurement isn't ready, which is always the case
+  // in this project's Jest/RNTL tests (host refs never resolve there) and is a defensive path on a
+  // real device too.
   function playWithMeasuredOrigin(cardId: string) {
-    if (!handRowCenter || !destCenter) {
+    const index = humanHand.findIndex((c) => c.id === cardId);
+    if (!handFanOrigin || !destCenter || index < 0) {
       onPlayCard(cardId);
       return;
     }
-    const index = humanHand.findIndex((c) => c.id === cardId);
-    const rowOffsetX = index >= 0 ? handCardSlotX(index, humanHand.length) : 0;
-    onPlayCard(cardId, {
-      x: handRowCenter.x + rowOffsetX - destCenter.x,
-      // This card is necessarily selected (playWithMeasuredOrigin only ever fires as the
-      // confirming second tap on an already-selected card), so it's currently lifted by exactly
-      // DEFAULT_LIFT_DISTANCE — see that constant's doc for why this can't just be measured off
-      // the transformed node directly.
-      y: handRowCenter.y - DEFAULT_LIFT_DISTANCE - destCenter.y,
-    });
+    const originRotateDeg = pistiCardRotationDeg(index, humanHand.length);
+    const motion = handMotionRef.get(cardId);
+    if (!motion) {
+      onPlayCard(cardId);
+      return;
+    }
+    const values = motion.getValues();
+    onPlayCard(
+      cardId,
+      {
+        x: handFanOrigin.x + values.x - destCenter.x,
+        y: handFanOrigin.y + values.y - destCenter.y,
+      },
+      originRotateDeg,
+    );
   }
 
   // Deal order: human first, then opponents in existing turn order. Card counts come from the
@@ -506,23 +447,19 @@ export function PistiTable({
 
       <HandFrame bottomOffset={handFrameBottomOffset} height={handFrameHeight} />
       <View style={[styles.handArea, isHumanInteractive && styles.activeArea]}>
-        <View style={styles.handRow} testID="human-hand" ref={handRowRef} onLayout={handleHandRowLayout}>
-          {dealPhase === 'revealing' &&
-            humanHand.map((card, index) => (
-              // Off-turn "not tappable" styling comes from SelectableCard's own disabled scrim
-              // now (a dark overlay keeping the card art fully visible), replacing the old
-              // 0.5-opacity wrapper — keeping both would double-dim the hand.
-              <AnimatedHandCard
-                key={card.id}
-                card={card}
-                index={index}
-                count={humanHand.length}
-                selected={selectedCardId === card.id}
-                disabled={!isHumanInteractive}
-                onPress={() => selectCard(card.id)}
-              />
-            ))}
-        </View>
+        <PistiHandFan
+          slots={
+            dealPhase === 'revealing'
+              ? humanHand.map((card, index) => ({ card, index, count: humanHand.length }))
+              : []
+          }
+          isHumanInteractive={isHumanInteractive}
+          selectedCardId={selectedCardId}
+          selectCard={selectCard}
+          registerHandMotion={registerHandMotion}
+          handFanRef={handFanRef}
+          onHandFanLayout={handleHandFanLayout}
+        />
         <PlayerBadge name={playerNames[humanPlayerId] ?? 'You'} statusText={capturedStatusText(capturedHuman)} active={isHumanTurn} isHuman />
       </View>
       {dealPhase !== 'revealing' && <DealFlightOverlay seats={dealSeats} />}
@@ -564,17 +501,4 @@ const styles = StyleSheet.create({
   pileCount: { marginTop: 8, fontSize: 13, color: '#f5f0e6' },
   bannerArea: { minHeight: 24, alignItems: 'center', justifyContent: 'center' },
   banner: { fontSize: 16, fontWeight: '700', color: WOOD_TRIM_COLOR },
-  // Fixed height since every card inside is now absolutely positioned (see AnimatedHandCard) and
-  // can no longer contribute to an auto-computed height the way normal-flow flex children would.
-  handRow: { height: HUMAN_CARD_HEIGHT },
-  // Each hand card's positioning anchor: centered horizontally (left: '50%' + a negative
-  // marginLeft of half the card's own width), with AnimatedHandCard supplying the actual per-card
-  // translateX offset from that center point via handCardSlotX — mirrors Batak's
-  // HumanHandFan.fanCardSlot convention.
-  handCardSlot: {
-    position: 'absolute',
-    left: '50%',
-    top: 0,
-    marginLeft: -CARD_DIMS.normal.width / 2,
-  },
 });
