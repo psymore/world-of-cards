@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, LayoutChangeEvent, Modal, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Animated, Easing, LayoutChangeEvent, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from './useReducedMotion';
 
 export interface CenteredDecisionModalProps {
@@ -22,12 +22,24 @@ export interface CenteredDecisionModalProps {
 const ENTRANCE_DURATION_MS = 220;
 const ENTRANCE_SCALE_FROM = 0.85;
 
-// A centered, transparent-backdrop modal for a single in-the-moment decision (e.g. Batak's bid
+// A centered, transparent-backdrop overlay for a single in-the-moment decision (e.g. Batak's bid
 // or trump-suit choice) — fades and scales its content in when it becomes visible. Deliberately
-// has no dim backdrop: the underlying table stays fully visible, but RN's Modal still intercepts
-// all touches to it while open, so it reads as non-interactive without a visible scrim. RN's
-// built-in Modal animationType only supports 'fade'/'slide' (no scale), so the entrance is
-// hand-rolled here instead of using that prop.
+// has no dim backdrop: the underlying table stays fully visible, but this backdrop still
+// intercepts every touch within its own bounds while visible, so the table reads as
+// non-interactive without a visible scrim.
+//
+// A plain absolutely-positioned View, not RN's native `Modal` component (an earlier version used
+// Modal, with a hand-rolled scale+fade entrance since Modal's own animationType only supports
+// 'fade'/'slide'). Modal spawns a separate, full-screen native window above EVERYTHING else in
+// the app, including this component's own ancestors — which meant it also intercepted taps on
+// GameScreenLayout's header (the Exit/Settings buttons), a screen region this component was never
+// meant to cover. This component is only ever rendered nested inside BatakTable's own content
+// area (below the header, its only consumer — see BatakTable.tsx), so a plain absolutely-
+// positioned View naturally stays scoped to that area instead — no header coverage, no
+// pointerEvents workaround needed. One measurable side effect: `avoidBottomHeight`'s clearance
+// math below still uses the full window height (not this backdrop's own, slightly smaller,
+// below-header height) as its reference, so `effectiveRaise` is very slightly more generous than
+// strictly necessary — errs toward extra clearance, never toward new overlap.
 export function CenteredDecisionModal({
   visible,
   children,
@@ -67,30 +79,38 @@ export function CenteredDecisionModal({
     setContentHeight(e.nativeEvent.layout.height);
   }
 
+  if (!visible) return null;
+
   return (
-    <Modal transparent animationType="none" visible={visible}>
-      <View style={styles.backdrop}>
-        <Animated.View
-          onLayout={handleContentLayout}
-          style={{
-            opacity: progress,
-            transform: [
-              {
-                scale: progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [ENTRANCE_SCALE_FROM, 1],
-                }),
-              },
-              { translateY: -effectiveRaise },
-            ],
-          }}>
-          {children}
-        </Animated.View>
-      </View>
-    </Modal>
+    <View style={styles.backdrop}>
+      <Animated.View
+        onLayout={handleContentLayout}
+        style={{
+          opacity: progress,
+          transform: [
+            {
+              scale: progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [ENTRANCE_SCALE_FROM, 1],
+              }),
+            },
+            { translateY: -effectiveRaise },
+          ],
+        }}>
+        {children}
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
