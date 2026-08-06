@@ -379,19 +379,23 @@ export function BatakTable({
     [handMotionRef],
   );
 
-  // The hand fan's own horizontal center, measured once (re-measured on layout, same as
-  // destCenter) off handArea — a plain, never-transformed wrapper `View` — rather than off any
-  // individual card. See playWithMeasuredOrigin's doc comment for why.
-  const handAreaRef = useRef<View>(null);
-  const [handAreaCenterX, setHandAreaCenterX] = useState<number | null>(null);
-  function handleHandAreaLayout() {
-    handAreaRef.current?.measureInWindow((x, _y, width) => {
-      setHandAreaCenterX(x + width / 2);
+  // HumanHandFan's own root container, measured directly (re-measured on layout, same as
+  // destCenter) — this is the exact anchor every hand card's translateX/translateY (read via
+  // getValues() below) is relative to, since each BatakHandCard is `position:'absolute',
+  // left:'50%', top:0` inside HumanHandFan's own View, not inside handArea. Measuring handArea
+  // instead (as an earlier version of this code did, using only its X and assuming handFan's own
+  // center coincided with it) silently dropped the Y axis' equivalent term entirely — see
+  // playWithMeasuredOrigin's own doc comment below for the bug that caused.
+  const handFanRef = useRef<View>(null);
+  const [handFanOrigin, setHandFanOrigin] = useState<{ x: number; y: number } | null>(null);
+  function handleHandFanLayout() {
+    handFanRef.current?.measureInWindow((x, y, width) => {
+      setHandFanOrigin({ x: x + width / 2, y });
     });
   }
   const compact = opponentPlayerIds.length === 2;
 
-  // Mirrors handSlots/destCenter/handAreaCenterX into refs, read only inside
+  // Mirrors handSlots/destCenter/handFanOrigin into refs, read only inside
   // playWithMeasuredOrigin (an event handler, never during render) — lets that callback stay
   // referentially stable (see its own useCallback below) without ever reading stale data, using
   // the same "keep a ref in sync during render" pattern this file already uses for handLayerRef
@@ -400,8 +404,8 @@ export function BatakTable({
   handSlotsRef.current = handSlots;
   const destCenterRef = useRef(destCenter);
   destCenterRef.current = destCenter;
-  const handAreaCenterXRef = useRef(handAreaCenterX);
-  handAreaCenterXRef.current = handAreaCenterX;
+  const handFanOriginRef = useRef(handFanOrigin);
+  handFanOriginRef.current = handFanOrigin;
 
   // Replaces a direct onPlayCard(cardId) call: computes the tapped card's real travel-origin
   // offset relative to the trick slot's measured center, and the card's real fan-rotation angle,
@@ -409,21 +413,27 @@ export function BatakTable({
   // fixed per-seat offset. Falls back to a plain onPlayCard(cardId) call (no origin — TravelCard
   // then uses the fixed 'bottom' offset, same as today) whenever a needed measurement isn't ready.
   //
-  // Both x and y now read the tapped card's real committed position directly from its own
-  // useBatakCardMotion controller (getValues()) — no DOM measurement, no duplicated slot-position
-  // math, no staleness risk. This card is necessarily selected/lifted at this point
-  // (playWithMeasuredOrigin only ever fires as the confirming second tap on an already-selected
-  // card — see useCardSelection's own doc comment for why selection isn't cleared first), so
-  // getValues() already reflects the selection lift; no separate SELECTED_LIFT_DISTANCE
-  // compensation is needed the way the old measureInWindow-based approach required.
+  // Both x and y read the tapped card's real committed position from its own useBatakCardMotion
+  // controller (getValues()) — but that position is relative to HumanHandFan's own container
+  // (handFanOrigin), not the screen, so it must be converted to absolute space (by adding
+  // handFanOrigin) before subtracting the trick slot's own absolute center (dest) to get a
+  // correct relative offset. A prior version of this code did that conversion for x
+  // (handCenterX + values.x) but not for y (just values.y - dest.y, with nothing added first) —
+  // silently mixing a container-relative value with absolute coordinates. Since handFanOrigin.y
+  // is a screen/device-geometry-dependent value (how far down the hand sits, affected by status
+  // bar height, screen height, safe-area insets), the missing term made the computed origin wrong
+  // by a device-dependent amount — small enough to go unnoticed in some environments, large
+  // enough elsewhere to make the played card appear to fly in from near the top of the screen
+  // instead of from the hand. Fixed by measuring handFanOrigin directly off HumanHandFan's own
+  // root View (both x and y) instead of off handArea's ancestor View (x only).
   const playWithMeasuredOrigin = useCallback(
     (cardId: string) => {
       const slot = handSlotsRef.current.find((s) => s.card.id === cardId);
       const originRotateDeg = slot ? handCardRotationDeg(slot.indexInRow, slot.rowCount) : undefined;
       const motion = handMotionRef.get(cardId);
       const dest = destCenterRef.current;
-      const handCenterX = handAreaCenterXRef.current;
-      if (!motion || !dest || !slot || handCenterX == null) {
+      const handFanOrigin = handFanOriginRef.current;
+      if (!motion || !dest || !slot || handFanOrigin == null) {
         onPlayCard(cardId, undefined, originRotateDeg);
         return;
       }
@@ -431,8 +441,8 @@ export function BatakTable({
       onPlayCard(
         cardId,
         {
-          x: handCenterX + values.x - dest.x,
-          y: values.y - dest.y,
+          x: handFanOrigin.x + values.x - dest.x,
+          y: handFanOrigin.y + values.y - dest.y,
         },
         originRotateDeg
       );
@@ -545,7 +555,7 @@ export function BatakTable({
       </View>
 
       <HandFrame bottomOffset={handFrameBottomOffset} height={handFrameHeight} />
-      <View ref={handAreaRef} onLayout={handleHandAreaLayout} style={styles.handArea}>
+      <View style={styles.handArea}>
         <PlayerBadge
           name={playerNames[humanPlayerId] ?? 'You'}
           statusText={statusTextFor(state, humanPlayerId)}
@@ -562,6 +572,8 @@ export function BatakTable({
           registerHandMotion={registerHandMotion}
           compact={compact}
           departingCard={localDeparture ?? null}
+          handFanRef={handFanRef}
+          onHandFanLayout={handleHandFanLayout}
         />
       </View>
       {dealPhase !== 'revealing' && <DealFlightOverlay seats={dealSeats} />}

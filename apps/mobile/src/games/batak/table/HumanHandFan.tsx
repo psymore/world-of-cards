@@ -119,6 +119,8 @@ export function HumanHandFan({
   compact = false,
   departingCard = null,
   registerHandMotion,
+  handFanRef,
+  onHandFanLayout,
 }: {
   slots: HandSlot[];
   legalCardIds: Set<string>;
@@ -135,9 +137,17 @@ export function HumanHandFan({
   // Hands the caller (BatakTable) each card's live motion controller as it mounts/unmounts —
   // replaces the old handCardRefs-based measureInWindow approach entirely.
   registerHandMotion: (cardId: string, motion: ReturnType<typeof useBatakCardMotion> | null) => void;
+  // Exposes this component's own root View so BatakTable can measure its real absolute window
+  // position — every card's motion (translateX/translateY, read via getValues() at tap time) is
+  // relative to THIS container's own top/center, not the screen, so playWithMeasuredOrigin needs
+  // this exact anchor (not an ancestor's) to convert a card's position into absolute/dest-relative
+  // space correctly. See BatakTable.tsx's playWithMeasuredOrigin doc comment for the bug this
+  // fixes.
+  handFanRef: React.RefObject<View | null>;
+  onHandFanLayout: () => void;
 }) {
   return (
-    <View style={styles.handFan} testID="human-hand">
+    <View style={styles.handFan} ref={handFanRef} onLayout={onHandFanLayout} testID="human-hand">
       {slots.map((slot) => {
         const restTarget = slotPosition(slot, compact, 0);
         const liftedTarget = slotPosition(slot, compact, SELECTED_LIFT_DISTANCE);
