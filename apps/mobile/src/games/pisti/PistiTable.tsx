@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated,
   LayoutChangeEvent,
   StyleSheet,
   Text,
@@ -23,7 +22,6 @@ import {
 } from '@world-cards/ui';
 import { DeselectableSurface } from '../../components/DeselectableSurface';
 import { useCardSelection } from '../../components/useCardSelection';
-import { useReducedMotion } from '../../components/useReducedMotion';
 import { PlayerBadge } from '../../table/PlayerBadge';
 import { OpponentSeatGroup, seatLayoutStyles } from '../../table/OpponentSeatGroup';
 import {
@@ -32,8 +30,8 @@ import {
   resolveRevealOrigin,
   revealOriginOffset,
 } from './pistiSeating';
-import type { RevealOrigin, Seat } from './pistiSeating';
-import { CARD_TRAVEL_DURATION_MS, CARD_TRAVEL_EASING } from '../../table/travelAnimation';
+import type { Seat } from './pistiSeating';
+import { TravelCard } from '../../table/TravelCard';
 import { DealFlightOverlay } from '../../table/DealFlightOverlay';
 import type { DealFlightSeat } from '../../table/DealFlightOverlay';
 import type { DealPhase } from '../../hooks/useDealSequence';
@@ -44,6 +42,10 @@ export interface PistiRevealCard {
   card: Card;
   playerId: string;
   originOffset?: { x: number; y: number };
+  // The human's real fan-rotation angle at the moment this card was played, held fixed for the
+  // whole flight and kept once landed (see pileRestingRotations below) — undefined/0 for AI plays
+  // (no rendered AI hand card to derive an angle from, so they always land flat).
+  originRotateDeg?: number;
 }
 
 export interface PistiTableProps {
@@ -53,10 +55,15 @@ export interface PistiTableProps {
   // them left/top/right around the human (4-player table).
   opponentPlayerIds: string[];
   playerNames: Record<string, string>;
-  onPlayCard: (cardId: string, originOffset?: { x: number; y: number }) => void;
+  onPlayCard: (cardId: string, originOffset?: { x: number; y: number }, originRotateDeg?: number) => void;
   bannerText?: string | null;
   revealCard?: PistiRevealCard | null;
   dealPhase: DealPhase;
+  // Each already-landed pile card's angle, keyed by card id — kept once a human-played card lands
+  // (see PistiScreen.tsx), so the pile reads as a natural, slightly messy stack instead of every
+  // card snapping flat the instant it's buried. Defaults to {} (today's flat-everywhere look) so
+  // callers that don't pass it (tests) are unaffected.
+  pileRestingRotations?: Record<string, number>;
 }
 
 // How many of the most recent pile cards to render stacked, plus one extra slot reserved
@@ -95,77 +102,6 @@ const HAND_AREA_TOP_INSET = (HAND_AREA_HEIGHT - HAND_CONTENT_HEIGHT) / 2;
 // top edge.
 const HAND_ROW_PEAK_DISTANCE_FROM_BOTTOM =
   CONTAINER_BOTTOM_PADDING + HAND_AREA_HEIGHT - HAND_AREA_TOP_INSET - HAND_BADGE_HEIGHT;
-
-function RevealCard({
-  revealCard,
-  label,
-  originDirection,
-  destinationOffset,
-}: {
-  revealCard: PistiRevealCard;
-  label: string;
-  originDirection: RevealOrigin;
-  // The pile slot this card will actually rest at once it commits (see revealDestinationOffset
-  // where this is computed) — the flight must end exactly here, not a fixed "reserved slot", or
-  // the swap from this animated card to the real static one snaps by the difference.
-  destinationOffset: { x: number; y: number };
-}) {
-  const anim = useRef(new Animated.Value(0)).current;
-  const reducedMotion = useReducedMotion();
-
-  useEffect(() => {
-    // With reduce-motion on, the card appears already at rest instead of traveling in — an
-    // instant transition rather than the full directional-travel effect.
-    if (reducedMotion) {
-      anim.setValue(1);
-      return;
-    }
-    anim.setValue(0);
-    Animated.timing(anim, {
-      toValue: 1,
-      duration: CARD_TRAVEL_DURATION_MS,
-      easing: CARD_TRAVEL_EASING,
-      useNativeDriver: true,
-    }).start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [revealCard.card.id, reducedMotion]);
-
-  const offset = destinationOffset;
-  const origin = revealCard.originOffset ?? revealOriginOffset(originDirection);
-
-  return (
-    <>
-      <Text style={styles.revealLabel}>{label}</Text>
-      <Animated.View
-        style={[
-          styles.pileCardSlot,
-          {
-            zIndex: MAX_STACKED_PILE_CARDS + 1,
-            // Fully opaque/full-size for the entire flight (no fade-in or scale-up) so the card
-            // reads as physically traveling along the path, not materializing at the end of it —
-            // see docs/superpowers/specs/2026-07-18-card-travel-full-visibility-design.md.
-            transform: [
-              {
-                translateX: anim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [offset.x + origin.x, offset.x],
-                }),
-              },
-              {
-                translateY: anim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [offset.y + origin.y, offset.y],
-                }),
-              },
-            ],
-          },
-        ]}
-      >
-        <PlayingCard card={revealCard.card} highlighted />
-      </Animated.View>
-    </>
-  );
-}
 
 // Pişti's badge shows a captured-card count (🂠 N) rather than Batak's bid/tricks text — each
 // game formats its own statusText string, the shared PlayerBadge just lays it out.
@@ -239,11 +175,12 @@ export function PistiTable({
   bannerText,
   revealCard,
   dealPhase,
+  pileRestingRotations = {},
 }: PistiTableProps) {
   const isHumanTurn = state.players[state.currentPlayerIndex] === humanPlayerId;
   // While the human's own play is revealing (traveling to the pile), the engine state hasn't
   // committed the move yet, so `isHumanTurn` alone would still say it's their turn. Hide the
-  // in-flight card from the hand row (it's already rendered by RevealCard at the pile) and treat
+  // in-flight card from the hand row (it's already rendered via TravelCard at the pile) and treat
   // the hand as non-interactive until the move actually commits.
   const isHumanRevealing = revealCard != null && revealCard.playerId === humanPlayerId;
   const isHumanInteractive = isHumanTurn && !isHumanRevealing;
@@ -403,7 +340,11 @@ export function PistiTable({
                     styles.pileCardSlot,
                     {
                       zIndex: i,
-                      transform: [{ translateX: PILE_CARD_OFFSETS[i].x }, { translateY: PILE_CARD_OFFSETS[i].y }],
+                      transform: [
+                        { translateX: PILE_CARD_OFFSETS[i].x },
+                        { translateY: PILE_CARD_OFFSETS[i].y },
+                        { rotate: `${pileRestingRotations[card.id] ?? 0}deg` },
+                      ],
                     },
                   ]}
                 >
@@ -411,16 +352,36 @@ export function PistiTable({
                 </View>
               ))}
               {revealCard && (
-                <RevealCard
-                  revealCard={revealCard}
-                  destinationOffset={revealDestinationOffset}
-                  label={
-                    revealCard.playerId === humanPlayerId
+                <>
+                  <Text style={styles.revealLabel}>
+                    {revealCard.playerId === humanPlayerId
                       ? 'You played'
-                      : `${playerNames[revealCard.playerId] ?? revealCard.playerId} played`
-                  }
-                  originDirection={resolveRevealOrigin(revealCard.playerId, humanPlayerId, seats)}
-                />
+                      : `${playerNames[revealCard.playerId] ?? revealCard.playerId} played`}
+                  </Text>
+                  <View
+                    style={[
+                      styles.pileCardSlot,
+                      {
+                        zIndex: MAX_STACKED_PILE_CARDS + 1,
+                        transform: [
+                          { translateX: revealDestinationOffset.x },
+                          { translateY: revealDestinationOffset.y },
+                        ],
+                      },
+                    ]}
+                  >
+                    <TravelCard
+                      originOffset={
+                        revealCard.originOffset ??
+                        revealOriginOffset(resolveRevealOrigin(revealCard.playerId, humanPlayerId, seats))
+                      }
+                      originRotateDeg={revealCard.originRotateDeg ?? 0}
+                      resetKey={revealCard.card.id}
+                    >
+                      <PlayingCard card={revealCard.card} highlighted />
+                    </TravelCard>
+                  </View>
+                </>
               )}
             </View>
             <Text style={styles.pileCount}>{`${pile.length} card${pile.length === 1 ? '' : 's'}`}</Text>

@@ -124,6 +124,7 @@ interface RevealedMove {
   card: Card;
   playerId: PlayerId;
   originOffset?: { x: number; y: number };
+  originRotateDeg?: number;
 }
 
 function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgain, onBackHome }: ActiveGameProps) {
@@ -131,6 +132,13 @@ function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgai
   const performMove = useSessionStore((s) => s.performMove);
   const [bannerText, setBannerText] = useState<string | null>(null);
   const [revealedMove, setRevealedMove] = useState<RevealedMove | null>(null);
+  // Each landed human-played card's angle, keyed by card id, kept for the rest of the hand so the
+  // pile reads as a natural stack rather than every card snapping flat once buried — see
+  // docs/superpowers/specs/2026-08-06-pisti-hand-fan-gesture-migration-design.md §4. Never pruned:
+  // holds at most one entry per card played this hand (≤52), and a new hand/session gets a fresh
+  // ActiveGame mount — unlike Batak's per-trick restingRotations, this isn't reused across many
+  // plays of the same slot.
+  const [pileRestingRotations, setPileRestingRotations] = useState<Record<string, number>>({});
   // Bumped whenever a stock redeal is detected (see applyMove below) to replay the same
   // fly-out-from-center deal flourish the initial deal gets, instead of the new hands just
   // silently appearing — Pişti-specific (Batak has no mid-hand redeal), so useDealSequence's
@@ -186,13 +194,19 @@ function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgai
 
   // Shared by both AI and human plays: show the chosen card traveling to the pile before actually
   // committing the move to engine state (see REVEAL_DELAY_MS above for why the pause exists).
-  function revealThenCommit(move: PistiMove, playerId: PlayerId, originOffset?: { x: number; y: number }) {
+  function revealThenCommit(
+    move: PistiMove,
+    playerId: PlayerId,
+    originOffset?: { x: number; y: number },
+    originRotateDeg?: number,
+  ) {
     const playedCard = state.table.zones[`hand-${playerId}`].cards.find((c) => c.id === move.cardId);
     if (!playedCard) {
       applyMove(move, playerId);
       return;
     }
-    setRevealedMove({ move, card: playedCard, playerId, originOffset });
+    setRevealedMove({ move, card: playedCard, playerId, originOffset, originRotateDeg });
+    setPileRestingRotations((prev) => ({ ...prev, [playedCard.id]: originRotateDeg ?? 0 }));
     revealTimeoutRef.current = setTimeout(() => {
       applyMove(move, playerId);
       setRevealedMove(null);
@@ -208,8 +222,8 @@ function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgai
     onMove: revealThenCommit,
   });
 
-  function handlePlayCard(cardId: string, originOffset?: { x: number; y: number }) {
-    revealThenCommit({ type: 'play', cardId }, HUMAN_ID, originOffset);
+  function handlePlayCard(cardId: string, originOffset?: { x: number; y: number }, originRotateDeg?: number) {
+    revealThenCommit({ type: 'play', cardId }, HUMAN_ID, originOffset, originRotateDeg);
   }
 
   const gameOver = pistiDescriptor.ruleEngine.gameOver(state);
@@ -225,9 +239,15 @@ function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgai
         bannerText={bannerText}
         revealCard={
           revealedMove
-            ? { card: revealedMove.card, playerId: revealedMove.playerId, originOffset: revealedMove.originOffset }
+            ? {
+                card: revealedMove.card,
+                playerId: revealedMove.playerId,
+                originOffset: revealedMove.originOffset,
+                originRotateDeg: revealedMove.originRotateDeg,
+              }
             : null
         }
+        pileRestingRotations={pileRestingRotations}
         dealPhase={dealPhase}
       />
       {gameOver && (
