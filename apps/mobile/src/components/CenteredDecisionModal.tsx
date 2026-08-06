@@ -112,5 +112,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    // Must outrank every sibling this can render alongside in BatakTable — highest of which is
+    // seatLayoutStyles.middleRow's zIndex: 10 (OpponentSeatGroup.tsx). Under the old native Modal
+    // this never mattered (Modal always painted above the whole app via its own OS window); as a
+    // plain View it needs to win the same in-tree stacking contest as everything else, or its
+    // content both renders behind and loses touches to whatever's on top of it.
+    zIndex: 20,
   },
 });
