@@ -144,8 +144,7 @@ export function TrickCenter({
               </TravelCard>
             ) : (
               // An AI's played card: no rendered per-card hand visual exists to depart from (see
-              // the 2026-07-18 turn-indicator-simplification pass), so this stays translate-only,
-              // unchanged from before.
+              // the 2026-07-18 turn-indicator-simplification pass), so this stays translate-only.
               <TravelCard
                 originOffset={
                   pendingPlay?.originOffset ??
@@ -153,9 +152,11 @@ export function TrickCenter({
                     resolveRevealOrigin(playerId!, humanPlayerId, seats),
                   )
                 }
-                // No local-departure leg exists for AI plays (no rendered opponent-hand visual
-                // to depart from) — TravelCard does the whole shrink itself over the flight.
-                originScale={1}
+                // Held constant at TRICK_CARD_SCALE for the whole flight — no resize-in-flight.
+                // AI plays have no local-departure leg to pre-shrink during (unlike the human
+                // branch above), so this arrives at the trick already at its resting size instead
+                // of visibly shrinking from full size mid-flight.
+                originScale={TRICK_CARD_SCALE}
                 restScale={TRICK_CARD_SCALE}
                 resetKey={card.id}>
                 <PlayingCard card={card} size="normal" contentScale={TRICK_CARD_CONTENT_SCALE} />
