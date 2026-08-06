@@ -118,14 +118,27 @@ export function SelectableCard({
   // The lift/rotate/scale transform above is purely visual: React Native's touch responder
   // system hit-tests against the Pressable's untransformed layout box, not its transformed
   // on-screen position (a native-driven `transform`, in particular, never participates in hit
-  // testing). Once selected, the card visually sits `liftDistance` px higher than that box —
-  // without compensation, the box (and therefore the only place a tap actually registers) stays
-  // behind at the pre-lift position, so a tap on the card's new, visible location falls through
-  // to whatever's behind it (in Batak, the table's own tap-to-deselect surface) instead of
-  // playing the card. Extending the box upward by liftDistance while selected covers the visible
-  // card again; the caller's own hitSlop (e.g. Batak's horizontal shrink, to keep a selected card
-  // from stealing a tap meant for an exposed neighbor) is preserved by spreading it last.
-  const effectiveHitSlop = selected ? { top: liftDistance, ...hitSlop } : hitSlop;
+  // testing). Once selected, the card visually sits `liftDistance` px higher than that box.
+  //
+  // This used to be compensated with a selected-only `hitSlop` (RN core Pressable's own prop,
+  // widening the box virtually). That broke once every table's root became a
+  // react-native-gesture-handler GestureDetector/Gesture.Tap() (DeselectableSurface, c20a92b):
+  // RNGH's native recognizer hit-tests against a descendant's real laid-out frame, and has no idea
+  // RN core `hitSlop` exists — a tap landing only in the hitSlop-only region got claimed by
+  // DeselectableSurface (silently deselecting) instead of by this card's own Pressable. Swapping to
+  // react-native-gesture-handler's own Pressable doesn't fix this either: that turns this card into
+  // a second, sibling RNGH gesture racing DeselectableSurface's ancestor Gesture.Tap(), and RNGH
+  // doesn't guarantee a descendant wins that race the way it does for a classic RN Touchable (see
+  // NativeViewGestureHandler's compatibility wrapping, which only classic Touchables get).
+  //
+  // Fixed instead by making the Pressable's REAL box permanently `liftDistance` px taller at the
+  // top — covering both the resting and lifted position at all times — rather than trying to widen
+  // it only while selected. `marginTop: -liftDistance` on the Pressable shifts its real box upward
+  // by that amount; the inner View's matching `marginTop: liftDistance` shifts its *content* back
+  // down by the same amount, so nothing visually moves. Using a real margin (not `hitSlop`) means
+  // any touch system — RNGH included — sees the same box a plain visual inspection would suggest.
+  const touchTargetHeightExpansion = { marginTop: -liftDistance };
+  const contentOffset = { marginTop: liftDistance };
 
   return (
     <Animated.View
@@ -143,21 +156,27 @@ export function SelectableCard({
         ],
       }}
     >
-      <Pressable disabled={disabled} onPress={onPress} hitSlop={effectiveHitSlop}>
-        <PlayingCard {...cardProps} highlighted={selected} />
-        {disabled && dimUnplayableCards && (
-          // Dark scrim marking the card as "not currently tappable" while keeping its art fully
-          // visible underneath (richer than dimming the whole card via opacity). A plain local
-          // View rather than @world-cards/ui's AbsoluteOverlay: the scrim needs the card's
-          // rounded corners on the colored layer itself, which AbsoluteOverlay (a transparent
-          // square fill wrapper) would only add as a second nested view. style.pointerEvents
-          // (not the deprecated prop form) guarantees it never swallows touches, even though the
-          // Pressable above is disabled anyway whenever the scrim shows.
-          <View
-            testID="selectable-card-disabled-scrim"
-            style={[styles.disabledScrim, { borderRadius: cardProps.cardRadius ?? DEFAULT_CARD_RADIUS }]}
-          />
-        )}
+      <Pressable disabled={disabled} onPress={onPress} hitSlop={hitSlop} style={touchTargetHeightExpansion}>
+        <View style={contentOffset}>
+          <PlayingCard {...cardProps} highlighted={selected} />
+          {disabled && dimUnplayableCards && (
+            // Dark scrim marking the card as "not currently tappable" while keeping its art fully
+            // visible underneath (richer than dimming the whole card via opacity). A plain local
+            // View rather than @world-cards/ui's AbsoluteOverlay: the scrim needs the card's
+            // rounded corners on the colored layer itself, which AbsoluteOverlay (a transparent
+            // square fill wrapper) would only add as a second nested view. style.pointerEvents
+            // (not the deprecated prop form) guarantees it never swallows touches, even though the
+            // Pressable above is disabled anyway whenever the scrim shows. Nested inside the same
+            // marginTop-offset View as PlayingCard (not a sibling of it inside the Pressable
+            // directly) so its `top: 0` absolute positioning is relative to THIS view's own
+            // (un-padded) box and stays aligned with the card art above — an absolutely positioned
+            // child ignores its containing block's own margin/padding otherwise.
+            <View
+              testID="selectable-card-disabled-scrim"
+              style={[styles.disabledScrim, { borderRadius: cardProps.cardRadius ?? DEFAULT_CARD_RADIUS }]}
+            />
+          )}
+        </View>
       </Pressable>
     </Animated.View>
   );

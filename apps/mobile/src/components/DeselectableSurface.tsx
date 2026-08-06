@@ -28,7 +28,14 @@ export function DeselectableSurface({ onDeselect, style, children }: Deselectabl
 
   return (
     <GestureDetector gesture={tap}>
-      <View style={style}>{children}</View>
+      {/* collapsable={false}: this View has no rendering-relevant properties of its own (flex/
+          padding only, no backgroundColor/border), so Android's view-flattening optimizer is free
+          to drop it from the real native tree — but GestureDetector attaches its native recognizer
+          to this exact View instance, so if Android removes it, gesture recognition on the whole
+          table becomes undefined. Required per RNGH's own GestureDetector docs. */}
+      <View style={style} collapsable={false}>
+        {children}
+      </View>
     </GestureDetector>
   );
 }
