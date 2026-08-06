@@ -149,7 +149,12 @@ function OpponentSeat({ seat, state, playerNames, revealCard, dealPhase, sideSta
   );
 
   return (
-    <View style={[styles.opponentArea, isSide && seatLayoutStyles.opponentAreaSide, isCurrentTurn && styles.activeArea]}>
+    <View
+      style={[
+        styles.opponentArea,
+        isSide ? seatLayoutStyles.opponentAreaSide : styles.opponentAreaTop,
+        isCurrentTurn && styles.activeArea,
+      ]}>
       <PlayerBadge
         name={playerNames[playerId] ?? playerId}
         statusText={capturedStatusText(capturedCount)}
@@ -431,6 +436,14 @@ export function PistiTable({
 const styles = StyleSheet.create({
   container: { flex: 1, paddingVertical: 12 },
   opponentArea: { minHeight: 135, justifyContent: 'center', alignItems: 'center', borderRadius: 12, paddingVertical: 4 },
+  // Top opponent only: a fixed (not minHeight-floored) height and a top-anchored badge, so neither
+  // the box nor the badge moves when the face-down row empties out at the end of a hand — with
+  // justifyContent: 'center' (opponentArea's own default), a taller badge+row block (cards present)
+  // vs. a shorter one (row collapsed to 0 height, no cards) recenter to different positions, which
+  // read as the badge (and everything visually anchored near it, including the trick pile just
+  // below) jumping at that exact moment. Height is derived, not guessed: badge height + one row of
+  // face-down cards + the area's own paddingVertical (4 top + 4 bottom).
+  opponentAreaTop: { height: HAND_BADGE_HEIGHT + SMALL_CARD_HEIGHT + 8, justifyContent: 'flex-start' },
   handArea: { minHeight: 177, justifyContent: 'center', borderRadius: 12, paddingVertical: 4 },
   activeArea: { backgroundColor: 'rgba(244, 197, 66, 0.14)' },
   opponentRow: { flexDirection: 'row', justifyContent: 'center' },

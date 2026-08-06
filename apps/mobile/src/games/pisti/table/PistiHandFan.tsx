@@ -14,6 +14,9 @@ const PISTI_CARD_HEIGHT = CARD_DIMS.normal.height;
 // rounded up for margin. A starting point — adjust live once running, per the design spec.
 const FAN_CURVE_MARGIN_PX = 24;
 const PISTI_HAND_FAN_HEIGHT = PISTI_CARD_HEIGHT + FAN_CURVE_MARGIN_PX;
+// Nudges the whole fan down from handArea's centered position, opening up a clearer gap below the
+// "You" badge above it. A starting point — adjust live once running, per the design spec.
+const HAND_FAN_TOP_MARGIN = 16;
 
 // One human-hand card's slot: its index within the row and how many cards currently share the
 // row (count, not the initial deal size — the fan recenters as the row shrinks).
@@ -89,5 +92,5 @@ export function PistiHandFan({
 const styles = StyleSheet.create({
   // Fixed height since every card inside is absolutely positioned (see PistiHandCard) and can't
   // contribute to an auto-computed parent height the way normal-flow children would.
-  handFan: { height: PISTI_HAND_FAN_HEIGHT },
+  handFan: { height: PISTI_HAND_FAN_HEIGHT, marginTop: HAND_FAN_TOP_MARGIN },
 });
