@@ -23,14 +23,6 @@ export interface PistiHandSlot {
   count: number;
 }
 
-function slotPosition(slot: PistiHandSlot, extraRadius: number): { x: number; y: number; angleDeg: number } {
-  const angleStepDeg = railAngleStepDeg(PISTI_RAIL_CONFIG, slot.count);
-  const angles = railAngles(slot.count, angleStepDeg, PISTI_RAIL_CONFIG.maxRotationDeg);
-  const angleDeg = angles[slot.index] ?? 0;
-  const pos = railPosition(angleDeg, PISTI_RAIL_CONFIG.radius, extraRadius);
-  return { x: pos.x, y: pos.y, angleDeg };
-}
-
 // Exported so PistiTable can compute a card's real fan angle at the moment it's tapped (for the
 // played-card travel animation's origin rotation) without duplicating pistiRailFan.ts's formula —
 // mirrors Batak's HumanHandFan.handCardRotationDeg.
@@ -38,6 +30,12 @@ export function pistiCardRotationDeg(index: number, count: number): number {
   const angleStepDeg = railAngleStepDeg(PISTI_RAIL_CONFIG, count);
   const angles = railAngles(count, angleStepDeg, PISTI_RAIL_CONFIG.maxRotationDeg);
   return angles[index] ?? 0;
+}
+
+function slotPosition(slot: PistiHandSlot, extraRadius: number): { x: number; y: number; angleDeg: number } {
+  const angleDeg = pistiCardRotationDeg(slot.index, slot.count);
+  const pos = railPosition(angleDeg, PISTI_RAIL_CONFIG.radius, extraRadius);
+  return { x: pos.x, y: pos.y, angleDeg };
 }
 
 // Renders every human-hand card under one shared parent. Layout/orchestration only: each
