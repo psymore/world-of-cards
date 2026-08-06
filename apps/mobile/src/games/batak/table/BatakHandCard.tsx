@@ -4,7 +4,7 @@ import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withDelay,
 import type { Card } from '@world-cards/engine';
 import { PlayingCard, CARD_DIMS } from '@world-cards/ui';
 import { useReducedMotion } from '../../../components/useReducedMotion';
-import { useBatakCardMotion } from './useBatakCardMotion';
+import { useCardMotion } from '../../../table/useCardMotion';
 import { LOCAL_DEPARTURE_SCALE } from './trickCardScale';
 
 const CARD_WIDTH = CARD_DIMS.normal.width;
@@ -30,7 +30,7 @@ const SELECTED_SCALE = 1.05;
 // animates the SAME translateY/scale shared values position/reflow already own, rather than a
 // second wrapping Animated.View layering its own transform on top — that second-owner-per-card
 // shape is exactly what broke the reverted migration attempt (see the design spec's Context
-// section). Opacity has no home on useBatakCardMotion (a position/rotation/scale primitive), so it
+// section). Opacity has no home on useCardMotion (a position/rotation/scale primitive), so it
 // alone gets a small local shared value here, folded into the SAME useAnimatedStyle call below —
 // not a second Animated.View, not even a second useAnimatedStyle merged via a style array (RN
 // flattens a style array's `transform` key by simply taking the last one, not merging entries, so
@@ -77,7 +77,7 @@ export interface BatakHandCardProps {
   // Hands the parent this card's own motion controller (setTarget/getValues) once, on mount —
   // HumanHandFan uses this to retarget the card on every reflow, and BatakTable's
   // playWithMeasuredOrigin uses it to read the card's real current position at tap time.
-  registerMotion: (cardId: string, motion: ReturnType<typeof useBatakCardMotion> | null) => void;
+  registerMotion: (cardId: string, motion: ReturnType<typeof useCardMotion> | null) => void;
 }
 
 function BatakHandCardComponent({
@@ -99,7 +99,7 @@ function BatakHandCardComponent({
 }: BatakHandCardProps) {
   const reducedMotion = useReducedMotion();
 
-  // Computed once, at construction, for useBatakCardMotion's own initial shared-value state —
+  // Computed once, at construction, for useCardMotion's own initial shared-value state —
   // subsequent changes to these props reach the card only through the effects below, never by
   // re-deriving this again (the fixed-box/shared-value model — see
   // Demo08ReanimatedHandReposition.tsx's own file-level comment).
@@ -111,7 +111,7 @@ function BatakHandCardComponent({
     angleDeg: restTarget.angleDeg,
     scale: isFreshDealEntrance ? ENTRANCE_SCALE_FROM : selected ? SELECTED_SCALE : 1,
   };
-  const motion = useBatakCardMotion(initial);
+  const motion = useCardMotion(initial);
   const entranceOpacity = useSharedValue(isFreshDealEntrance ? 0 : 1);
 
   useEffect(() => {

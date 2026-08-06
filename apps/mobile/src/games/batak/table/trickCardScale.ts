@@ -20,6 +20,6 @@ export const LOCAL_DEPARTURE_SCALE = TRICK_CARD_SCALE;
 // contentScale={TRICK_CARD_CONTENT_SCALE}. The card body's own scale is continuous across that
 // handoff; the glyphs are not. Accepted for now, not fixed: pushing contentScale down into
 // BatakHandCard would just relocate the jump to departure-start (where the eye is already on the
-// card, arguably worse), and making it genuinely continuous means extending useBatakCardMotion
+// card, arguably worse), and making it genuinely continuous means extending useCardMotion
 // with a fifth shared value carried across the component boundary. Flagged for the on-device pass
 // in docs/animation/audits/BatakTrickResize-Audit.md — fix only if it actually reads as a pop.

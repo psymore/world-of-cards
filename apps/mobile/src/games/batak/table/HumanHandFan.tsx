@@ -4,14 +4,9 @@ import type { Card, Suit } from "@world-cards/engine";
 import { compareRanks } from "@world-cards/engine/games/batak";
 import { CARD_DIMS } from "@world-cards/ui";
 import { BatakHandCard } from "./BatakHandCard";
-import type { useBatakCardMotion } from "./useBatakCardMotion";
-import {
-  STANDARD_RAIL_CONFIG,
-  COMPACT_RAIL_CONFIG,
-  railAngleStepDeg,
-  railAngles,
-  railPosition,
-} from "./batakRailFan";
+import type { useCardMotion } from "../../../table/useCardMotion";
+import { STANDARD_RAIL_CONFIG, COMPACT_RAIL_CONFIG } from "./batakRailFan";
+import { railAngleStepDeg, railAngles, railPosition } from "../../../table/railFan";
 
 const HUMAN_CARD_HEIGHT = CARD_DIMS.normal.height;
 
@@ -136,7 +131,7 @@ export function HumanHandFan({
   departingCard?: { cardId: string; deltaX: number } | null;
   // Hands the caller (BatakTable) each card's live motion controller as it mounts/unmounts —
   // replaces the old handCardRefs-based measureInWindow approach entirely.
-  registerHandMotion: (cardId: string, motion: ReturnType<typeof useBatakCardMotion> | null) => void;
+  registerHandMotion: (cardId: string, motion: ReturnType<typeof useCardMotion> | null) => void;
   // Exposes this component's own root View so BatakTable can measure its real absolute window
   // position — every card's motion (translateX/translateY, read via getValues() at tap time) is
   // relative to THIS container's own top/center, not the screen, so playWithMeasuredOrigin needs

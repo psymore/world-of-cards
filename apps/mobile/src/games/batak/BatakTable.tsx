@@ -33,7 +33,7 @@ import {
   handCardRotationDeg,
 } from './table/HumanHandFan';
 import type { HandSlot } from './table/HumanHandFan';
-import type { useBatakCardMotion } from './table/useBatakCardMotion';
+import type { useCardMotion } from '../../table/useCardMotion';
 import type { PendingBatakPlay, GatheringTrick } from './table/types';
 import { KittyPile, kittyPileCards } from './table/KittyPile';
 import { useBurySlots } from './table/useBurySlots';
@@ -367,9 +367,9 @@ export function BatakTable({
   // HumanHandFan's registerHandMotion prop). Replaces the old handCardRefs measureInWindow-based
   // ref map entirely: playWithMeasuredOrigin (below) now reads a card's real committed position
   // directly instead of measuring a transform-affected DOM node.
-  const handMotionRef = useRef(new Map<string, ReturnType<typeof useBatakCardMotion>>()).current;
+  const handMotionRef = useRef(new Map<string, ReturnType<typeof useCardMotion>>()).current;
   const registerHandMotion = useCallback(
-    (cardId: string, motion: ReturnType<typeof useBatakCardMotion> | null) => {
+    (cardId: string, motion: ReturnType<typeof useCardMotion> | null) => {
       if (motion) {
         handMotionRef.set(cardId, motion);
       } else {
@@ -413,7 +413,7 @@ export function BatakTable({
   // fixed per-seat offset. Falls back to a plain onPlayCard(cardId) call (no origin — TravelCard
   // then uses the fixed 'bottom' offset, same as today) whenever a needed measurement isn't ready.
   //
-  // Both x and y read the tapped card's real committed position from its own useBatakCardMotion
+  // Both x and y read the tapped card's real committed position from its own useCardMotion
   // controller (getValues()) — but that position is relative to HumanHandFan's own container
   // (handFanOrigin), not the screen, so it must be converted to absolute space (by adding
   // handFanOrigin) before subtracting the trick slot's own absolute center (dest) to get a
