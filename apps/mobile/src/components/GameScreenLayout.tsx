@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
-import { HeaderWoodFrame, SettingsIcon } from '@world-cards/ui';
+import { Alert, LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
+import { HeaderWoodFrame, PressableFeedback, SettingsIcon } from '@world-cards/ui';
 
 export interface GameScreenLayoutProps {
   title: string;
@@ -11,6 +11,10 @@ export interface GameScreenLayoutProps {
   // When provided, renders a small gear button in the header. Omitted by call sites that don't
   // have a settings surface yet (e.g. Pişti today) — the header is visually unchanged for them.
   onSettingsPress?: () => void;
+  // Extra header buttons rendered just before the settings button (e.g. Batak's __DEV__-only
+  // tuning-panel icon). Generic React content so this layout stays game-agnostic — a caller with
+  // nothing to add simply omits it, unchanged from today.
+  extraHeaderActions?: React.ReactNode;
 }
 
 export function GameScreenLayout({
@@ -20,6 +24,7 @@ export function GameScreenLayout({
   backgroundColor,
   titleColor,
   onSettingsPress,
+  extraHeaderActions,
 }: GameScreenLayoutProps) {
   function handleExitPress() {
     Alert.alert('Discard this game?', 'Your progress in this hand will be lost.', [
@@ -46,14 +51,15 @@ export function GameScreenLayout({
       <View style={styles.header} onLayout={handleHeaderLayout}>
         <Text style={[styles.title, titleColor ? { color: titleColor } : null]}>{title}</Text>
         <View style={styles.headerActions}>
+          {extraHeaderActions}
           {onSettingsPress && (
-            <Pressable onPress={onSettingsPress} accessibilityRole="button" testID="game-settings-button">
+            <PressableFeedback onPress={onSettingsPress} accessibilityRole="button" testID="game-settings-button">
               <SettingsIcon />
-            </Pressable>
+            </PressableFeedback>
           )}
-          <Pressable onPress={handleExitPress} accessibilityRole="button">
+          <PressableFeedback onPress={handleExitPress} accessibilityRole="button">
             <Text style={styles.exit}>Exit</Text>
-          </Pressable>
+          </PressableFeedback>
         </View>
       </View>
       <View style={styles.content}>{children}</View>
@@ -76,6 +82,6 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 16, fontWeight: 'bold' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  exit: { fontSize: 14, color: '#c0392b' },
+  exit: { fontSize: 21, color: '#c0392b' },
   content: { flex: 1 },
 });
