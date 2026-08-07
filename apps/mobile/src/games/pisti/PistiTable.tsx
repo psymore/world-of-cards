@@ -11,6 +11,7 @@ import type { PistiState } from '@world-cards/engine/games/pisti';
 import {
   PlayingCard,
   TableFelt,
+  GeminiTableBackground,
   HandFrame,
   HAND_FRAME_PEAK_FRACTION,
   CARD_DIMS,
@@ -20,6 +21,7 @@ import {
   HAND_FRAME_BOTTOM_OVERSHOOT,
   WOOD_TRIM_COLOR,
 } from '@world-cards/ui';
+import { useDevTuningStore } from '../../state/devTuningStore';
 import { DeselectableSurface } from '../../components/DeselectableSurface';
 import { useCardSelection } from '../../components/useCardSelection';
 import { PlayerBadge } from '../../table/PlayerBadge';
@@ -153,7 +155,6 @@ function OpponentSeat({ seat, state, playerNames, revealCard, dealPhase, sideSta
       style={[
         styles.opponentArea,
         isSide ? seatLayoutStyles.opponentAreaSide : styles.opponentAreaTop,
-        isCurrentTurn && styles.activeArea,
       ]}>
       <PlayerBadge
         name={playerNames[playerId] ?? playerId}
@@ -182,6 +183,10 @@ export function PistiTable({
   dealPhase,
   pileRestingRotations = {},
 }: PistiTableProps) {
+  // Unconditional — required by React's Rules of Hooks even though its *use* below is
+  // __DEV__-gated. Shares Batak's devTuningStore.tableBackground field (one shared dev-tuning
+  // background choice, not per-game) — see BatakTable.tsx's identical read.
+  const devTableBackground = useDevTuningStore((s) => s.tableBackground);
   const isHumanTurn = state.players[state.currentPlayerIndex] === humanPlayerId;
   // While the human's own play is revealing (traveling to the pile), the engine state hasn't
   // committed the move yet, so `isHumanTurn` alone would still say it's their turn. Hide the
@@ -303,7 +308,7 @@ export function PistiTable({
 
   return (
     <DeselectableSurface style={styles.container} onDeselect={clearSelection}>
-      <TableFelt />
+      {__DEV__ && devTableBackground === 'gemini' ? <GeminiTableBackground /> : <TableFelt />}
       <OpponentSeatGroup
         position="top"
         seats={seats}
@@ -412,7 +417,7 @@ export function PistiTable({
       <View style={styles.bannerArea}>{bannerText ? <Text style={styles.banner}>{bannerText}</Text> : null}</View>
 
       <HandFrame bottomOffset={handFrameBottomOffset} height={handFrameHeight} />
-      <View style={[styles.handArea, isHumanInteractive && styles.activeArea]}>
+      <View style={styles.handArea}>
         <PlayerBadge name={playerNames[humanPlayerId] ?? 'You'} statusText={capturedStatusText(capturedHuman)} active={isHumanTurn} isHuman />
         <PistiHandFan
           slots={
@@ -445,7 +450,6 @@ const styles = StyleSheet.create({
   // face-down cards + the area's own paddingVertical (4 top + 4 bottom).
   opponentAreaTop: { height: HAND_BADGE_HEIGHT + SMALL_CARD_HEIGHT + 8, justifyContent: 'flex-start' },
   handArea: { minHeight: 177, justifyContent: 'center', borderRadius: 12, paddingVertical: 4 },
-  activeArea: { backgroundColor: 'rgba(244, 197, 66, 0.14)' },
   opponentRow: { flexDirection: 'row', justifyContent: 'center' },
   opponentColumn: { flexDirection: 'column', alignItems: 'center' },
   // Same cross-subtree reasoning as seatLayoutStyles.middleRow's own zIndex, one level down:

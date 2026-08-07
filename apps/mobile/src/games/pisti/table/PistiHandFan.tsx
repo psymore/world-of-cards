@@ -3,9 +3,11 @@ import { StyleSheet, View } from 'react-native';
 import type { Card } from '@world-cards/engine';
 import { CARD_DIMS } from '@world-cards/ui';
 import { railAngleStepDeg, railAngles, railPosition } from '../../../table/railFan';
+import type { RailAngleConfig } from '../../../table/railFan';
 import { useCardMotion } from '../../../table/useCardMotion';
 import { PISTI_RAIL_CONFIG, PISTI_SELECTED_LIFT_DISTANCE } from './pistiRailFan';
 import { PistiHandCard } from './PistiHandCard';
+import { useDevTuningStore } from '../../../state/devTuningStore';
 
 const PISTI_CARD_HEIGHT = CARD_DIMS.normal.height;
 // Extra vertical room the arc-fan's curve needs below center (railPosition's y grows away from 0
@@ -35,9 +37,19 @@ export function pistiCardRotationDeg(index: number, count: number): number {
   return angles[index] ?? 0;
 }
 
-function slotPosition(slot: PistiHandSlot, extraRadius: number): { x: number; y: number; angleDeg: number } {
-  const angleDeg = pistiCardRotationDeg(slot.index, slot.count);
-  const pos = railPosition(angleDeg, PISTI_RAIL_CONFIG.radius, extraRadius);
+// Takes a resolved config rather than reaching for PISTI_RAIL_CONFIG itself (unlike
+// pistiCardRotationDeg above, which stays on the static config — it's used elsewhere for the
+// played-card travel-origin rotation estimate, out of scope for dev-tuning) — this is what lets
+// PistiHandFan's __DEV__-only overlap/spacing/arcDegrees overrides (below) actually take effect.
+function slotPosition(
+  slot: PistiHandSlot,
+  config: RailAngleConfig,
+  extraRadius: number,
+): { x: number; y: number; angleDeg: number } {
+  const angleStepDeg = railAngleStepDeg(config, slot.count);
+  const angles = railAngles(slot.count, angleStepDeg, config.maxRotationDeg);
+  const angleDeg = angles[slot.index] ?? 0;
+  const pos = railPosition(angleDeg, config.radius, extraRadius);
   return { x: pos.x, y: pos.y, angleDeg };
 }
 
@@ -66,11 +78,33 @@ export function PistiHandFan({
   handFanRef: React.RefObject<View | null>;
   onHandFanLayout: () => void;
 }) {
+  // Read as three separate scalars, unconditionally — never an object literal (zustand 5's
+  // useStore has no shallow-equality shim; a selector returning a fresh object every call never
+  // structurally equals its previous snapshot and re-renders forever). Matches every other
+  // zustand call site in this codebase, including Batak's own dev-tuning reads.
+  const devOverlap = useDevTuningStore((s) => s.pistiOverlap);
+  const devSpacingPx = useDevTuningStore((s) => s.pistiSpacingPx);
+  const devArcDegrees = useDevTuningStore((s) => s.pistiArcDegrees);
+
+  // Pişti's hand is one row (no Standard/Compact, no top/bottom split), so unlike Batak's
+  // per-row configForRow, this resolves once for the whole fan. __DEV__-gated overrides (only
+  // applied once the panel's control has actually been touched, i.e. non-null) are
+  // dead-code-eliminated from a release build.
+  const config: RailAngleConfig =
+    __DEV__
+      ? {
+          ...PISTI_RAIL_CONFIG,
+          ...(devOverlap != null ? { overlap: devOverlap } : {}),
+          ...(devSpacingPx != null ? { spacingPx: devSpacingPx } : {}),
+          ...(devArcDegrees != null ? { arcDegrees: devArcDegrees } : {}),
+        }
+      : PISTI_RAIL_CONFIG;
+
   return (
     <View style={styles.handFan} ref={handFanRef} onLayout={onHandFanLayout} testID="human-hand">
       {slots.map((slot) => {
-        const restTarget = slotPosition(slot, 0);
-        const liftedTarget = slotPosition(slot, PISTI_SELECTED_LIFT_DISTANCE);
+        const restTarget = slotPosition(slot, config, 0);
+        const liftedTarget = slotPosition(slot, config, PISTI_SELECTED_LIFT_DISTANCE);
         return (
           <PistiHandCard
             key={slot.card.id}

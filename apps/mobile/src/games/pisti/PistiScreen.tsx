@@ -1,12 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { StyleSheet, Text } from 'react-native';
 import { createRng, RNG, Difficulty, PlayerId, Card } from '@world-cards/engine';
 import { pistiDescriptor, PistiState, PistiMove } from '@world-cards/engine/games/pisti';
+import { PressableFeedback } from '@world-cards/ui';
 import { createGameSessionStore } from '../../state/createGameSessionStore';
 import { useSettingsStore } from '../../state/settingsStore';
 import { GameScreenLayout } from '../../components/GameScreenLayout';
 import { GameResultModal } from '../../components/GameResultModal';
 import { PistiSetupView, PistiPlayerCount, PistiFourPlayerMode } from './PistiSetupView';
 import { PistiTable } from './PistiTable';
+import { PistiDevTuningModal } from './PistiDevTuningModal';
 import { useAITurn } from '../../hooks/useAITurn';
 import { useDealSequence } from '../../hooks/useDealSequence';
 import { CARD_TRAVEL_DURATION_MS } from '../../table/travelAnimation';
@@ -132,6 +135,7 @@ function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgai
   const performMove = useSessionStore((s) => s.performMove);
   const [bannerText, setBannerText] = useState<string | null>(null);
   const [revealedMove, setRevealedMove] = useState<RevealedMove | null>(null);
+  const [devTuningVisible, setDevTuningVisible] = useState(false);
   // Each landed human-played card's angle, keyed by card id, kept for the rest of the hand so the
   // pile reads as a natural stack rather than every card snapping flat once buried — see
   // docs/superpowers/specs/2026-08-06-pisti-hand-fan-gesture-migration-design.md §4. Never pruned:
@@ -229,7 +233,21 @@ function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgai
   const gameOver = pistiDescriptor.ruleEngine.gameOver(state);
 
   return (
-    <GameScreenLayout title="Pişti" onExit={onBackHome} backgroundColor="#0b6623" titleColor="#f4c542">
+    <GameScreenLayout
+      title="Pişti"
+      onExit={onBackHome}
+      backgroundColor="#0b6623"
+      titleColor="#f4c542"
+      extraHeaderActions={
+        __DEV__ ? (
+          <PressableFeedback
+            onPress={() => setDevTuningVisible(true)}
+            accessibilityRole="button"
+            testID="pisti-dev-tuning-button">
+            <Text style={styles.devIcon}>{'\u{1F39B}\u{FE0F}'}</Text>
+          </PressableFeedback>
+        ) : undefined
+      }>
       <PistiTable
         state={state}
         humanPlayerId={HUMAN_ID}
@@ -261,6 +279,18 @@ function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgai
           onBackHome={onBackHome}
         />
       )}
+      {__DEV__ && (
+        <PistiDevTuningModal
+          visible={devTuningVisible}
+          onClose={() => setDevTuningVisible(false)}
+        />
+      )}
     </GameScreenLayout>
   );
 }
+
+const styles = StyleSheet.create({
+  // Matches SettingsIcon's enlarged 27px default (see packages/ui/src/SettingsIcon.tsx) and
+  // Batak's own devIcon style (BatakScreen.tsx) so both header icons read as the same size.
+  devIcon: { fontSize: 27 },
+});
