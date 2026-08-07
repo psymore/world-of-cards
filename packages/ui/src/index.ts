@@ -3,6 +3,7 @@ export type { PlayingCardProps, PlayingCardSize, PlayingCardBorderSpec, PlayingC
 export { SuitIcon } from './SuitIcon';
 export type { SuitIconProps } from './SuitIcon';
 export { TableFelt } from './TableFelt';
+export { GeminiTableBackground } from './GeminiTableBackground';
 export { TableWoodCorners } from './TableWoodCorners';
 export type { TableWoodCornersProps, Corner } from './TableWoodCorners';
 export { TableEdgeRails } from './TableEdgeRails';
