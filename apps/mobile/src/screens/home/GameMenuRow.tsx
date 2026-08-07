@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, StyleSheet, Text, View } from 'react-native';
+import { PressableFeedback } from '@world-cards/ui';
 import type { GameCategory } from '@world-cards/engine';
 import { MiniCardFan } from './MiniCardFan';
 import { accentColorForCategory, categoryLabel, playerRangeLabel } from './gameDisplay';
@@ -48,13 +49,17 @@ export const GameMenuRow = React.memo(function GameMenuRow({
         opacity: progress,
         transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }],
       }}>
-      <Pressable onPress={onPress} testID={testID} style={[styles.row, { borderLeftColor: accent }]}>
+      <PressableFeedback
+        onPress={onPress}
+        testID={testID}
+        style={[styles.row, { borderLeftColor: accent }]}
+        overlayBorderRadius={12}>
         <MiniCardFan />
         <View style={styles.textBlock}>
           <Text style={styles.name}>{displayName}</Text>
           <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
-      </Pressable>
+      </PressableFeedback>
     </Animated.View>
   );
 });

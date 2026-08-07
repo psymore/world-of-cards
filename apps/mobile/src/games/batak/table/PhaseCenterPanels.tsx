@@ -1,8 +1,8 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { Suit } from '@world-cards/engine';
 import type { BatakState, BatakMove } from '@world-cards/engine/games/batak';
-import { SuitIcon } from '@world-cards/ui';
+import { PressableFeedback, SuitIcon } from '@world-cards/ui';
 import { centerPanelStyles } from './centerPanelStyles';
 import { DecisionPanel } from './DecisionPanel';
 import { suitColor } from './suitColor';
@@ -59,13 +59,14 @@ export function TrumpSuitPicker({
       </Text>
       <View style={centerPanelStyles.suitRow}>
         {SUITS.map((suit) => (
-          <Pressable
+          <PressableFeedback
             key={suit}
             onPress={() => onMove({ type: 'selectTrump', suit })}
             style={centerPanelStyles.suitButton}
+            overlayBorderRadius={22}
             accessibilityRole="button">
             <SuitIcon suit={suit} size={28} color={suitColor(suit)} />
-          </Pressable>
+          </PressableFeedback>
         ))}
       </View>
     </DecisionPanel>
