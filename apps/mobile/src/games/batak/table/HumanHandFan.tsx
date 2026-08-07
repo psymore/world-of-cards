@@ -7,6 +7,8 @@ import { BatakHandCard } from "./BatakHandCard";
 import type { useCardMotion } from "../../../table/useCardMotion";
 import { STANDARD_RAIL_CONFIG, COMPACT_RAIL_CONFIG } from "./batakRailFan";
 import { railAngleStepDeg, railAngles, railPosition } from "../../../table/railFan";
+import type { RailAngleConfig } from "../../../table/railFan";
+import { useDevTuningStore } from "../../../state/devTuningStore";
 
 const HUMAN_CARD_HEIGHT = CARD_DIMS.normal.height;
 
@@ -87,10 +89,9 @@ export interface HandSlot {
 // straight out along its own angle — see railPosition's own doc comment.
 function slotPosition(
   slot: HandSlot,
-  compact: boolean,
+  config: RailAngleConfig,
   extraRadius: number,
 ): { x: number; y: number; angleDeg: number } {
-  const config = compact ? COMPACT_RAIL_CONFIG : STANDARD_RAIL_CONFIG;
   const angleStepDeg = railAngleStepDeg(config, slot.rowCount);
   const angles = railAngles(slot.rowCount, angleStepDeg, config.maxRotationDeg);
   const angleDeg = angles[slot.indexInRow] ?? 0;
@@ -141,11 +142,24 @@ export function HumanHandFan({
   handFanRef: React.RefObject<View | null>;
   onHandFanLayout: () => void;
 }) {
+  const devTop = useDevTuningStore((s) => ({ overlap: s.topOverlap, spacingPx: s.topSpacingPx }));
+  const devBottom = useDevTuningStore((s) => ({ overlap: s.bottomOverlap, spacingPx: s.bottomSpacingPx }));
+
+  // Resolves each row's real rail config, applying the dev-only per-row overlap/spacing overrides
+  // only in __DEV__ (dead-code-eliminated from a release build, per this file's own production-
+  // safety requirement) — arcDegrees/maxRotationDeg/radius always stay shared across both rows.
+  function configForRow(row: "top" | "bottom"): RailAngleConfig {
+    const baseConfig = compact ? COMPACT_RAIL_CONFIG : STANDARD_RAIL_CONFIG;
+    if (!__DEV__) return baseConfig;
+    return { ...baseConfig, ...(row === "top" ? devTop : devBottom) };
+  }
+
   return (
     <View style={styles.handFan} ref={handFanRef} onLayout={onHandFanLayout} testID="human-hand">
       {slots.map((slot) => {
-        const restTarget = slotPosition(slot, compact, 0);
-        const liftedTarget = slotPosition(slot, compact, SELECTED_LIFT_DISTANCE);
+        const rowConfig = configForRow(slot.row);
+        const restTarget = slotPosition(slot, rowConfig, 0);
+        const liftedTarget = slotPosition(slot, rowConfig, SELECTED_LIFT_DISTANCE);
         const isDeparting = departingCard?.cardId === slot.card.id;
         return (
           <BatakHandCard
