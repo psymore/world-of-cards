@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { PressableFeedback } from '@world-cards/ui';
+import { PressableFeedback, TableFelt } from '@world-cards/ui';
 import type { Difficulty } from '@world-cards/engine';
 import { useSettingsStore } from '../../state/settingsStore';
 
@@ -40,6 +40,7 @@ export function PistiSetupView({ defaultDifficulty, onStart, onBack }: PistiSetu
 
   return (
     <View style={styles.container}>
+      <TableFelt />
       <View style={styles.header}>
         <Text style={styles.pageTitle}>Pişti</Text>
         <PressableFeedback onPress={onBack} accessibilityRole="button" hitSlop={8}>
@@ -96,7 +97,7 @@ export function PistiSetupView({ defaultDifficulty, onStart, onBack }: PistiSetu
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 48, paddingHorizontal: 16, backgroundColor: '#12121f' },
+  container: { flex: 1, paddingTop: 48, paddingHorizontal: 16, backgroundColor: '#0a2e1f' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -114,23 +115,23 @@ const styles = StyleSheet.create({
   backLink: { fontSize: 15, fontWeight: '600', color: '#cbb98a' },
   title: { fontSize: 18, fontWeight: '600', marginBottom: 16, textAlign: 'center', color: '#f5f0e6' },
   option: {
-    backgroundColor: '#1e1e33',
+    backgroundColor: 'rgba(255,255,255,0.09)',
     borderWidth: 1,
-    borderColor: 'rgba(244, 197, 66, 0.35)',
+    borderColor: 'rgba(255,255,255,0.22)',
     borderRadius: 8,
     paddingVertical: 12,
     marginBottom: 12,
     alignItems: 'center',
   },
-  optionDefault: { borderColor: '#f4c542', backgroundColor: 'rgba(244, 197, 66, 0.14)' },
+  optionDefault: { borderColor: '#f4c542', backgroundColor: 'rgba(244, 197, 66, 0.2)' },
   optionText: { fontSize: 18, color: '#eee' },
   defaultBadge: { fontSize: 12, color: '#f4c542', marginTop: 2 },
   playerCountRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
   playerCountOption: {
     flex: 1,
-    backgroundColor: '#1e1e33',
+    backgroundColor: 'rgba(255,255,255,0.09)',
     borderWidth: 1,
-    borderColor: 'rgba(244, 197, 66, 0.35)',
+    borderColor: 'rgba(255,255,255,0.22)',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
