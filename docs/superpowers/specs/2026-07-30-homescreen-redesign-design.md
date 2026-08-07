@@ -1,7 +1,7 @@
 # HomeScreen Redesign — Design Spec
 
 **Status:** Approved (visual direction locked as v1.0.0 via the brainstorming visual companion, 2026-07-30)
-**Sub-project 2 of 4** in the "UI review pass" decomposed 2026-07-30: (1) gear-icon investigation — closed, Expo Go dev-menu quirk, no code change; (2) **this spec**; (3) illustrated court-card art (deferred, one card sourced early as a dependency of this spec — see below); (4) cross-table visual consistency pass (not started; will also pick up the "only Batak has a settings icon" asymmetry noted during (1)).
+**Sub-project 2 of 4** in the "UI review pass" decomposed 2026-07-30: (1) gear-icon investigation — closed, Expo Go dev-menu quirk, no code change; (2) **this spec**; (3) illustrated court-card art (deferred, one card sourced early as a dependency of this spec — see below); (4) cross-table visual consistency pass — resolved 2026-08-07 by unifying Home's background with the setup screens, see `docs/superpowers/specs/2026-08-07-home-setup-emerald-felt-design.md` (the "only Batak has a settings icon" asymmetry noted during (1) remains open, not part of that resolution).
 
 ## Context
 

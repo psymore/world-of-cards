@@ -29,3 +29,9 @@
 **Decision:** the staggered mount-entrance animation went through `docs/animation/`'s full `AuditTemplate.md`, not the lighter `QuickAuditTemplate.md`.
 
 **Why:** per the standing guardrail (`docs/governance/guardrails.md` §5), the user was asked explicitly rather than letting the implementer self-select — chosen because this introduces a new animation mechanism, not a tuning pass on an already-shipped one. Engine choice was plain `Animated`, per `docs/animation/ADR/ADR-003-scope-reanimated-migration-to-evidenced-need.md` (no evidenced reflow/gesture need on this screen).
+
+## Home + Setup screens unified under one emerald-felt identity, superseding the marquee decision
+
+**Decision:** the 2026-07-30 decision giving HomeScreen its own distinct purple-marquee identity (separate from the in-game felt/wood table) is superseded. As of 2026-08-07, Home and the Pişti/Batak setup screens share the same `TableFelt` background the in-game tables already use, and the setup screens' option boxes were restyled from opaque navy to translucent glass to sit correctly on felt. Full reasoning and the concept-exploration process: `docs/superpowers/specs/2026-08-07-home-setup-emerald-felt-design.md`.
+
+**Why:** confirmed with the user via the brainstorming visual companion, choosing "unify" over "keep Home's marquee, reskin Setup only" when shown both side by side. The setup screens had no background identity at all (flat `#12121f`, a gap left open by the 2026-07-30 spec's sub-project 4). Giving Setup its own separate look would have produced three competing identities (Home / Setup / Table) instead of resolving to one — unifying reads as "already at the table" from app open, not "menu, then setup, then table." No new image assets were generated or sourced for this: the existing `TableFelt` component's photo texture already matched the desired mood.
