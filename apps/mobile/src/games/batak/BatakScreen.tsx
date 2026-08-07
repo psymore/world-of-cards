@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
+import { StyleSheet, Text } from "react-native";
+import { PressableFeedback } from "@world-cards/ui";
 import type { Difficulty, PlayerId, RNG } from "@world-cards/engine";
 import { createRng } from "@world-cards/engine";
 import {
@@ -22,6 +24,7 @@ import {
   LOCAL_DEPARTURE_DURATION_MS,
 } from "./table/HumanHandFan";
 import { BatakSettingsModal } from "./BatakSettingsModal";
+import { BatakDevTuningModal } from "./BatakDevTuningModal";
 import type { BatakVariant } from "./batakVariant";
 
 const HUMAN_ID: PlayerId = "human";
@@ -182,6 +185,7 @@ function ActiveGame({
   );
   const [pendingBury, setPendingBury] = useState<PendingBury | null>(null);
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [devTuningVisible, setDevTuningVisible] = useState(false);
   const pendingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localDepartureTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -417,7 +421,17 @@ function ActiveGame({
       onExit={onBackHome}
       backgroundColor="#0b6623"
       titleColor="#f4c542"
-      onSettingsPress={() => setSettingsVisible(true)}>
+      onSettingsPress={() => setSettingsVisible(true)}
+      extraHeaderActions={
+        __DEV__ ? (
+          <PressableFeedback
+            onPress={() => setDevTuningVisible(true)}
+            accessibilityRole="button"
+            testID="batak-dev-tuning-button">
+            <Text style={styles.devIcon}>{'\u{1F39B}\u{FE0F}'}</Text>
+          </PressableFeedback>
+        ) : undefined
+      }>
       <BatakTable
         state={state}
         humanPlayerId={HUMAN_ID}
@@ -448,6 +462,18 @@ function ActiveGame({
         visible={settingsVisible}
         onClose={() => setSettingsVisible(false)}
       />
+      {__DEV__ && (
+        <BatakDevTuningModal
+          visible={devTuningVisible}
+          onClose={() => setDevTuningVisible(false)}
+        />
+      )}
     </GameScreenLayout>
   );
 }
+
+const styles = StyleSheet.create({
+  // Matches SettingsIcon's enlarged 27px default (see packages/ui/src/SettingsIcon.tsx) so both
+  // header icons read as the same visual size.
+  devIcon: { fontSize: 27 },
+});
