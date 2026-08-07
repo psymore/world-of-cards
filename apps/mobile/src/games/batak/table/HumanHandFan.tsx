@@ -5,7 +5,14 @@ import { compareRanks } from "@world-cards/engine/games/batak";
 import { CARD_DIMS } from "@world-cards/ui";
 import { BatakHandCard } from "./BatakHandCard";
 import type { useCardMotion } from "../../../table/useCardMotion";
-import { STANDARD_RAIL_CONFIG, COMPACT_RAIL_CONFIG } from "./batakRailFan";
+import {
+  STANDARD_RAIL_CONFIG,
+  COMPACT_RAIL_CONFIG,
+  STANDARD_TOP_OVERLAP,
+  STANDARD_BOTTOM_OVERLAP,
+  COMPACT_TOP_OVERLAP,
+  COMPACT_BOTTOM_OVERLAP,
+} from "./batakRailFan";
 import { railAngleStepDeg, railAngles, railPosition } from "../../../table/railFan";
 import type { RailAngleConfig } from "../../../table/railFan";
 import { useDevTuningStore } from "../../../state/devTuningStore";
@@ -150,22 +157,30 @@ export function HumanHandFan({
   const devTopSpacingPx = useDevTuningStore((s) => s.topSpacingPx);
   const devBottomOverlap = useDevTuningStore((s) => s.bottomOverlap);
   const devBottomSpacingPx = useDevTuningStore((s) => s.bottomSpacingPx);
+  const devArcDegrees = useDevTuningStore((s) => s.arcDegrees);
 
-  // Resolves each row's real rail config, applying the dev-only per-row overlap/spacing overrides
-  // only in __DEV__ (dead-code-eliminated from a release build, per this file's own production-
-  // safety requirement) — arcDegrees/maxRotationDeg/radius always stay shared across both rows.
-  // Each override is applied only when non-null (i.e. once the panel's control has actually been
-  // touched) — otherwise baseConfig (Standard or Compact, whichever is really live for this hand)
-  // passes through untouched.
+  // Resolves each row's real rail config. The per-row overlap baseline (STANDARD_TOP_OVERLAP /
+  // STANDARD_BOTTOM_OVERLAP / COMPACT_TOP_OVERLAP / COMPACT_BOTTOM_OVERLAP, batakRailFan.ts)
+  // always applies first, in every build — it's a real production default, not a dev-only value —
+  // then the dev panel's overlap/spacing (per-row) and arcDegrees (shared) overrides layer on top
+  // only in __DEV__ (dead-code-eliminated from a release build, per this file's own
+  // production-safety requirement). maxRotationDeg/radius always stay shared across both rows and
+  // are never overridable from the panel.
+  // Each dev override is applied only when non-null (i.e. once the panel's control has actually
+  // been touched) — otherwise the per-row production baseline passes through untouched.
   function configForRow(row: "top" | "bottom"): RailAngleConfig {
     const baseConfig = compact ? COMPACT_RAIL_CONFIG : STANDARD_RAIL_CONFIG;
-    if (!__DEV__) return baseConfig;
+    const baseOverlap = compact
+      ? (row === "top" ? COMPACT_TOP_OVERLAP : COMPACT_BOTTOM_OVERLAP)
+      : (row === "top" ? STANDARD_TOP_OVERLAP : STANDARD_BOTTOM_OVERLAP);
+    if (!__DEV__) return { ...baseConfig, overlap: baseOverlap };
     const overlap = row === "top" ? devTopOverlap : devBottomOverlap;
     const spacingPx = row === "top" ? devTopSpacingPx : devBottomSpacingPx;
     return {
       ...baseConfig,
-      ...(overlap != null ? { overlap } : {}),
+      overlap: overlap ?? baseOverlap,
       ...(spacingPx != null ? { spacingPx } : {}),
+      ...(devArcDegrees != null ? { arcDegrees: devArcDegrees } : {}),
     };
   }
 

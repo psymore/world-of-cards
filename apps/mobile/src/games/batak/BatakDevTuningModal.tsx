@@ -1,9 +1,10 @@
 // apps/mobile/src/games/batak/BatakDevTuningModal.tsx
-import React, { useState } from 'react';
-import { Modal, StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { StyleSheet, Text } from 'react-native';
 import { CARD_DIMS, PressableFeedback } from '@world-cards/ui';
 import { useDevTuningStore } from '../../state/devTuningStore';
-import { STANDARD_RAIL_CONFIG } from './table/batakRailFan';
+import { STANDARD_RAIL_CONFIG, STANDARD_TOP_OVERLAP, STANDARD_BOTTOM_OVERLAP } from './table/batakRailFan';
+import { CollapsibleSection, DevTuningModalShell, StepperRow } from '../../components/devTuning/DevTuningControls';
 
 export interface BatakDevTuningModalProps {
   visible: boolean;
@@ -14,74 +15,19 @@ const OVERLAP_STEP = 0.01;
 const OVERLAP_MIN = 0;
 const OVERLAP_MAX = 0.9;
 const SPACING_STEP = 2;
-// Same bounds the playground's FanConfigControls already uses for its own spacing slider.
 const SPACING_MIN = CARD_DIMS.normal.width * 0.2;
-const SPACING_MAX = CARD_DIMS.normal.width;
+// Raised well past CARD_DIMS.normal.width (94) — the playground's own FanConfigControls slider
+// caps there, but this panel is for live-tuning against the real hand, where spacing well beyond
+// one card width is a legitimate value to try.
+const SPACING_MAX = 200;
+const ARC_STEP = 5;
+const ARC_MIN = 0;
+// railAngleStepDeg caps each card's angle step at arcDegrees / (rowCount - 1) — 180 is already
+// well past where that cap stops binding for any real hand size, so this is a practical ceiling,
+// not an arbitrary one.
+const ARC_MAX = 180;
 
-const STEPPER_BUTTON_RADIUS = 16;
 const SWITCH_BUTTON_RADIUS = 8;
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
-function roundTo2(value: number): number {
-  return Math.round(value * 100) / 100;
-}
-
-function StepperRow({
-  label,
-  value,
-  step,
-  min,
-  max,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  step: number;
-  min: number;
-  max: number;
-  onChange: (next: number) => void;
-}) {
-  return (
-    <View style={styles.stepperRow}>
-      <Text style={styles.stepperLabel}>{label}</Text>
-      <View style={styles.stepperControls}>
-        <PressableFeedback
-          onPress={() => onChange(clamp(roundTo2(value - step), min, max))}
-          accessibilityRole="button"
-          style={styles.stepperButton}
-          overlayBorderRadius={STEPPER_BUTTON_RADIUS}>
-          <Text style={styles.stepperButtonText}>{'−'}</Text>
-        </PressableFeedback>
-        <Text style={styles.stepperValue}>{value.toFixed(2)}</Text>
-        <PressableFeedback
-          onPress={() => onChange(clamp(roundTo2(value + step), min, max))}
-          accessibilityRole="button"
-          style={styles.stepperButton}
-          overlayBorderRadius={STEPPER_BUTTON_RADIUS}>
-          <Text style={styles.stepperButtonText}>+</Text>
-        </PressableFeedback>
-      </View>
-    </View>
-  );
-}
-
-function CollapsibleSection({ title, children }: { title: string; children: React.ReactNode }) {
-  const [isOpen, setIsOpen] = useState(true);
-  return (
-    <View style={styles.section}>
-      <PressableFeedback
-        onPress={() => setIsOpen((o) => !o)}
-        accessibilityRole="button"
-        style={styles.sectionToggle}>
-        <Text style={styles.sectionToggleText}>{(isOpen ? '▾ ' : '▸ ') + title}</Text>
-      </PressableFeedback>
-      {isOpen && <View style={styles.sectionContent}>{children}</View>}
-    </View>
-  );
-}
 
 export function BatakDevTuningModal({ visible, onClose }: BatakDevTuningModalProps) {
   const tableBackground = useDevTuningStore((s) => s.tableBackground);
@@ -94,93 +40,77 @@ export function BatakDevTuningModal({ visible, onClose }: BatakDevTuningModalPro
   const setTopSpacingPx = useDevTuningStore((s) => s.setTopSpacingPx);
   const bottomSpacingPx = useDevTuningStore((s) => s.bottomSpacingPx);
   const setBottomSpacingPx = useDevTuningStore((s) => s.setBottomSpacingPx);
+  const arcDegrees = useDevTuningStore((s) => s.arcDegrees);
+  const setArcDegrees = useDevTuningStore((s) => s.setArcDegrees);
 
   return (
-    <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.card}>
-          <Text style={styles.heading}>Dev Tuning</Text>
+    <DevTuningModalShell visible={visible} onClose={onClose} title="Dev Tuning">
+      <CollapsibleSection title="Table Background">
+        <PressableFeedback
+          onPress={() => setTableBackground(tableBackground === 'felt' ? 'gemini' : 'felt')}
+          accessibilityRole="button"
+          style={styles.switchButton}
+          overlayBorderRadius={SWITCH_BUTTON_RADIUS}
+          testID="dev-tuning-background-switch">
+          <Text style={styles.switchButtonText}>
+            {tableBackground === 'felt' ? 'Switch to Gemini table' : 'Switch to felt table'}
+          </Text>
+        </PressableFeedback>
+      </CollapsibleSection>
 
-          <CollapsibleSection title="Table Background">
-            <PressableFeedback
-              onPress={() => setTableBackground(tableBackground === 'felt' ? 'gemini' : 'felt')}
-              accessibilityRole="button"
-              style={styles.switchButton}
-              overlayBorderRadius={SWITCH_BUTTON_RADIUS}
-              testID="dev-tuning-background-switch">
-              <Text style={styles.switchButtonText}>
-                {tableBackground === 'felt' ? 'Switch to Gemini table' : 'Switch to felt table'}
-              </Text>
-            </PressableFeedback>
-          </CollapsibleSection>
-
-          <CollapsibleSection title="Hand Fan">
-            <StepperRow
-              label="Top overlap"
-              value={topOverlap ?? STANDARD_RAIL_CONFIG.overlap}
-              step={OVERLAP_STEP}
-              min={OVERLAP_MIN}
-              max={OVERLAP_MAX}
-              onChange={setTopOverlap}
-            />
-            <StepperRow
-              label="Bottom overlap"
-              value={bottomOverlap ?? STANDARD_RAIL_CONFIG.overlap}
-              step={OVERLAP_STEP}
-              min={OVERLAP_MIN}
-              max={OVERLAP_MAX}
-              onChange={setBottomOverlap}
-            />
-            <StepperRow
-              label="Top spacing (px)"
-              value={topSpacingPx ?? STANDARD_RAIL_CONFIG.spacingPx}
-              step={SPACING_STEP}
-              min={SPACING_MIN}
-              max={SPACING_MAX}
-              onChange={setTopSpacingPx}
-            />
-            <StepperRow
-              label="Bottom spacing (px)"
-              value={bottomSpacingPx ?? STANDARD_RAIL_CONFIG.spacingPx}
-              step={SPACING_STEP}
-              min={SPACING_MIN}
-              max={SPACING_MAX}
-              onChange={setBottomSpacingPx}
-            />
-          </CollapsibleSection>
-
-          <PressableFeedback onPress={onClose} accessibilityRole="button" style={styles.closeButton}>
-            <Text style={styles.closeText}>Done</Text>
-          </PressableFeedback>
-        </View>
-      </View>
-    </Modal>
+      <CollapsibleSection title="Hand Fan">
+        <StepperRow
+          label="Top overlap"
+          value={topOverlap ?? STANDARD_TOP_OVERLAP}
+          step={OVERLAP_STEP}
+          min={OVERLAP_MIN}
+          max={OVERLAP_MAX}
+          onChange={setTopOverlap}
+        />
+        <StepperRow
+          label="Bottom overlap"
+          value={bottomOverlap ?? STANDARD_BOTTOM_OVERLAP}
+          step={OVERLAP_STEP}
+          min={OVERLAP_MIN}
+          max={OVERLAP_MAX}
+          onChange={setBottomOverlap}
+        />
+        <StepperRow
+          label="Top spacing (px)"
+          value={topSpacingPx ?? STANDARD_RAIL_CONFIG.spacingPx}
+          step={SPACING_STEP}
+          min={SPACING_MIN}
+          max={SPACING_MAX}
+          onChange={setTopSpacingPx}
+        />
+        <StepperRow
+          label="Bottom spacing (px)"
+          value={bottomSpacingPx ?? STANDARD_RAIL_CONFIG.spacingPx}
+          step={SPACING_STEP}
+          min={SPACING_MIN}
+          max={SPACING_MAX}
+          onChange={setBottomSpacingPx}
+        />
+        {/* Shared across both rows, not per-row — matches how STANDARD_RAIL_CONFIG/
+            COMPACT_RAIL_CONFIG already treat arcDegrees as one value for the whole hand. This
+            is also the actual ceiling on how far Overlap/Spacing can visibly spread a row:
+            railAngleStepDeg() caps each card's angle step at arcDegrees / (rowCount - 1), so
+            once that cap is what's binding, moving Overlap or Spacing further does nothing
+            until this is raised too. */}
+        <StepperRow
+          label="Arc degrees"
+          value={arcDegrees ?? STANDARD_RAIL_CONFIG.arcDegrees}
+          step={ARC_STEP}
+          min={ARC_MIN}
+          max={ARC_MAX}
+          onChange={setArcDegrees}
+        />
+      </CollapsibleSection>
+    </DevTuningModalShell>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 24, minWidth: 300, maxHeight: '80%' },
-  heading: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
-  section: { marginBottom: 12 },
-  sectionToggle: { paddingVertical: 6 },
-  sectionToggleText: { fontSize: 15, fontWeight: '600' },
-  sectionContent: { paddingTop: 8, gap: 10 },
   switchButton: { backgroundColor: '#2f5fa8', borderRadius: SWITCH_BUTTON_RADIUS, paddingVertical: 10, alignItems: 'center' },
   switchButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  stepperRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  stepperLabel: { fontSize: 14, flexShrink: 1 },
-  stepperControls: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  stepperButton: {
-    width: 32,
-    height: 32,
-    borderRadius: STEPPER_BUTTON_RADIUS,
-    backgroundColor: '#eee',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepperButtonText: { fontSize: 18, fontWeight: '700' },
-  stepperValue: { fontSize: 14, minWidth: 44, textAlign: 'center' },
-  closeButton: { marginTop: 20, alignSelf: 'center' },
-  closeText: { fontSize: 16, color: '#2f5fa8', fontWeight: '600' },
 });

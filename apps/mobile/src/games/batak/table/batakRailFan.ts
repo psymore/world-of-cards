@@ -9,6 +9,11 @@ import type { RailAngleConfig } from '../../../table/railFan';
 // always entirely one mode for its whole lifetime, so radius is still fixed for the duration of
 // any single reflow, which is the actual invariant that matters (a reflow interpolates one card's
 // angle along one fixed circle; it never needs to blend between two different circles mid-reflow).
+// `overlap` on these two configs is a row-agnostic fallback only — used by handCardRotationDeg
+// (the played-card travel-origin rotation estimate, which doesn't distinguish top/bottom row) and
+// as this file's own single-value default. The real per-row baseline HumanHandFan.tsx's
+// configForRow actually renders is STANDARD_TOP_OVERLAP/STANDARD_BOTTOM_OVERLAP and
+// COMPACT_TOP_OVERLAP/COMPACT_BOTTOM_OVERLAP below — keep both in sync if retuning by feel again.
 export const STANDARD_RAIL_CONFIG: RailAngleConfig = {
   radius: 320,
   overlap: 0.62,
@@ -24,3 +29,13 @@ export const COMPACT_RAIL_CONFIG: RailAngleConfig = {
   maxRotationDeg: 45,
   spacingPx: 120,
 };
+
+// Per-row overlap baseline — top and bottom rows read one of these instead of
+// STANDARD_RAIL_CONFIG.overlap/COMPACT_RAIL_CONFIG.overlap directly, so the two rows can (and now
+// do) genuinely differ. Requested directly by the user (2026-08-07): gömmeli's compact hand reads
+// denser/more overlapped than Standard's on both rows equally; Standard's own two rows read
+// slightly different from each other (bottom a touch tighter than top).
+export const STANDARD_TOP_OVERLAP = 0.6;
+export const STANDARD_BOTTOM_OVERLAP = 0.66;
+export const COMPACT_TOP_OVERLAP = 0.7;
+export const COMPACT_BOTTOM_OVERLAP = 0.7;
