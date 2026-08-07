@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { PressableFeedback } from '@world-cards/ui';
 import type { Difficulty } from '@world-cards/engine';
 import { useSettingsStore } from '../../state/settingsStore';
 import type { BatakVariant } from './batakVariant';
@@ -33,34 +34,36 @@ export function BatakSetupView({ defaultDifficulty, onStart, onBack }: BatakSetu
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.pageTitle}>Batak</Text>
-        <Pressable onPress={onBack} accessibilityRole="button" hitSlop={8}>
+        <PressableFeedback onPress={onBack} accessibilityRole="button" hitSlop={8}>
           <Text style={styles.backLink}>‹ Home</Text>
-        </Pressable>
+        </PressableFeedback>
       </View>
 
       <Text style={styles.title}>Choose a variant</Text>
       {VARIANTS.map(({ value, label, description }) => (
-        <Pressable
+        <PressableFeedback
           key={value}
           onPress={() => setVariant(value)}
           style={[styles.option, value === variant && styles.optionDefault]}
+          overlayBorderRadius={8}
           testID={`batak-variant-${value}`}
         >
           <Text style={styles.optionText}>{label}</Text>
           <Text style={styles.variantDescription}>{description}</Text>
-        </Pressable>
+        </PressableFeedback>
       ))}
 
       <Text style={styles.title}>Choose a difficulty</Text>
       {DIFFICULTIES.map(({ value, label }) => (
-        <Pressable
+        <PressableFeedback
           key={value}
           onPress={() => handlePress(value)}
           style={[styles.option, value === defaultDifficulty && styles.optionDefault]}
+          overlayBorderRadius={8}
         >
           <Text style={styles.optionText}>{label}</Text>
           {value === defaultDifficulty && <Text style={styles.defaultBadge}>Last played</Text>}
-        </Pressable>
+        </PressableFeedback>
       ))}
     </View>
   );

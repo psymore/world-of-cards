@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { PressableFeedback } from '@world-cards/ui';
 import type { Difficulty } from '@world-cards/engine';
 import { useSettingsStore } from '../../state/settingsStore';
 
@@ -41,21 +42,22 @@ export function PistiSetupView({ defaultDifficulty, onStart, onBack }: PistiSetu
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.pageTitle}>Pişti</Text>
-        <Pressable onPress={onBack} accessibilityRole="button" hitSlop={8}>
+        <PressableFeedback onPress={onBack} accessibilityRole="button" hitSlop={8}>
           <Text style={styles.backLink}>‹ Home</Text>
-        </Pressable>
+        </PressableFeedback>
       </View>
 
       <Text style={styles.title}>Table size</Text>
       <View style={styles.playerCountRow}>
         {PLAYER_COUNTS.map(({ value, label }) => (
-          <Pressable
+          <PressableFeedback
             key={value}
             onPress={() => setPlayerCount(value)}
             style={[styles.playerCountOption, value === playerCount && styles.optionDefault]}
+            overlayBorderRadius={8}
           >
             <Text style={styles.optionText}>{label}</Text>
-          </Pressable>
+          </PressableFeedback>
         ))}
       </View>
 
@@ -64,13 +66,14 @@ export function PistiSetupView({ defaultDifficulty, onStart, onBack }: PistiSetu
           <Text style={styles.title}>4-player mode</Text>
           <View style={styles.playerCountRow}>
             {FOUR_PLAYER_MODES.map(({ value, label }) => (
-              <Pressable
+              <PressableFeedback
                 key={value}
                 onPress={() => setFourPlayerMode(value)}
                 style={[styles.playerCountOption, value === fourPlayerMode && styles.optionDefault]}
+                overlayBorderRadius={8}
               >
                 <Text style={styles.optionText}>{label}</Text>
-              </Pressable>
+              </PressableFeedback>
             ))}
           </View>
         </>
@@ -78,14 +81,15 @@ export function PistiSetupView({ defaultDifficulty, onStart, onBack }: PistiSetu
 
       <Text style={styles.title}>Choose a difficulty</Text>
       {DIFFICULTIES.map(({ value, label }) => (
-        <Pressable
+        <PressableFeedback
           key={value}
           onPress={() => handlePress(value)}
           style={[styles.option, value === defaultDifficulty && styles.optionDefault]}
+          overlayBorderRadius={8}
         >
           <Text style={styles.optionText}>{label}</Text>
           {value === defaultDifficulty && <Text style={styles.defaultBadge}>Last played</Text>}
-        </Pressable>
+        </PressableFeedback>
       ))}
     </View>
   );
