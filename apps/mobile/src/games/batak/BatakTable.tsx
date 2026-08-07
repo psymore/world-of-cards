@@ -557,7 +557,12 @@ export function BatakTable({
         />
       </View>
 
-      <HandFrame bottomOffset={handFrameBottomOffset} height={handFrameHeight} />
+      {/* Suppressed on the Gemini table background — its own art doesn't want the wooden arch
+          layered on top. Only relevant in __DEV__ (see devTableBackground above); in a release
+          build this is always true. */}
+      {!(__DEV__ && devTableBackground === 'gemini') && (
+        <HandFrame bottomOffset={handFrameBottomOffset} height={handFrameHeight} />
+      )}
       <View style={styles.handArea}>
         <PlayerBadge
           name={playerNames[humanPlayerId] ?? 'You'}
@@ -605,7 +610,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 4,
   },
-  pile: { alignItems: 'center', justifyContent: 'center', minHeight: 56 },
+  // Only used by KittyExchangeStagedPile's 'revealing'/'collecting' stages (the 4 kitty cards
+  // once they've flipped face-up) — KittyPile.tsx's own face-down stack has its own, separate
+  // `pile` style and stays column-stacked/overlapping on purpose. flexDirection: 'row' here so
+  // the 4 revealed cards sit side by side instead of View's column default stacking them top to
+  // bottom.
+  pile: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 56 },
   // 300 hugs the playing-phase content at 'normal' card size (two 120px rows + 6px fan gap +
   // 4px area gap + badge ≈ 296). BidControls now renders in a CenteredDecisionModal rather than
   // here, so this height applies uniformly across every phase.
