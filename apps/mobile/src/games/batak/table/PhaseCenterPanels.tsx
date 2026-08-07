@@ -7,7 +7,7 @@ import { centerPanelStyles } from './centerPanelStyles';
 import { DecisionPanel } from './DecisionPanel';
 import { suitColor } from './suitColor';
 
-const SUITS: Suit[] = ['spades', 'hearts', 'diamonds', 'clubs'];
+const SUITS: Suit[] = ['hearts', 'spades', 'diamonds', 'clubs'];
 
 export function BiddingCenter({
   state,
