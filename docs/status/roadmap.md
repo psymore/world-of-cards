@@ -26,7 +26,7 @@ Pişti → Batak → Pis Yedili → Klondike Solitaire → Spider Solitaire → 
 5. **Human hand's card-travel-origin gap** — not yet decided/spec'd. See `docs/domains/games/batak/known-issues.md`.
 6. **Batak "eşli" (partnered) variant** — not started at any layer.
 7. **Illustrated court-card art** — a UI-review sub-project, not started. A reference image already sits in the repo (`docs/references/card-art/this what I want to achive.png`).
-8. **Cross-table visual consistency pass** — a UI-review sub-project, not started; owns the "only Batak has a settings/gear icon" asymmetry (see `docs/domains/ui-visual-system/known-issues.md`).
+8. **Cross-table visual consistency pass** — partially resolved 2026-08-07 (Home + both setup screens now share one emerald-felt identity with the in-game tables; see `docs/superpowers/specs/2026-08-07-home-setup-emerald-felt-design.md`). The "only Batak has a settings/gear icon" asymmetry it also covered remains open and unowned — still tracked in `docs/domains/ui-visual-system/known-issues.md`, not yet resequenced onto this list as its own item.
 9. **Klondike Solitaire** — per the original roadmap order, now behind Pis Yedili.
 10. **Batak's visual polish against the Alper Games reference checklist** (the one Pişti went through) — explicitly deferred and unscheduled. Now that gömmeli has its own UI, whether to bring any of that checklist to gömmeli specifically is also an open, unscheduled question.
 11. **Porting the Demo 01 fan-arc-smoothness fix into `apps/mobile`'s own `seating.ts`** (Pişti/Batak share the identical underlying bug) — raised with the user, explicitly not decided.

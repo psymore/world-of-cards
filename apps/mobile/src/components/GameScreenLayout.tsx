@@ -16,8 +16,10 @@ export interface GameScreenLayoutProps {
   // nothing to add simply omits it, unchanged from today.
   extraHeaderActions?: React.ReactNode;
   // Swaps the header row's default HeaderWoodFrame photo backing for a solid near-black bar with
-  // a green glow, matching the homescreen's HeroCard glow (#1f5c3a) over its dark background
-  // (#180a26) — see HeroCard.tsx/HomeBackground.tsx. Edge-to-edge, same footprint HeaderWoodFrame
+  // a green glow — originally chosen to match HomeScreen's old HeroCard glow (#1f5c3a) over its
+  // dark purple background (#180a26); HomeScreen moved to a shared TableFelt background on
+  // 2026-08-07 (HomeBackground.tsx no longer exists), but this bar's own colors are unchanged and
+  // still Batak's own deliberate choice. Edge-to-edge, same footprint HeaderWoodFrame
   // used (full width, from the very top, covering CONTAINER_PADDING_TOP too) — an inset/rounded
   // version left slivers of the screen's own `backgroundColor` showing at the edges. Opt-in and
   // defaults to false so every existing caller (Pişti, and Batak unless it passes this) is
@@ -106,8 +108,10 @@ const styles = StyleSheet.create({
   content: { flex: 1 },
   // Solid, edge-to-edge near-black backdrop for darkGlowHeader (same footprint HeaderWoodFrame
   // used — full width, top:0, height covers the paddingTop gap too) with a green glow on its
-  // bottom edge, matching HeroCard.tsx's glowShadow('#1f5c3a', 20) over HomeBackground.tsx's
-  // darkest gradient stop (#180a26). No borderRadius/margin — the header row itself renders on
+  // bottom edge, matching HeroCard.tsx's glowShadow('#1f5c3a', 20) over the same dark tone
+  // (#180a26) HomeScreen's old purple background used to bottom out at (that background was
+  // replaced by a shared TableFelt on 2026-08-07; this bar's own color choice is unchanged and
+  // stands on its own now). No borderRadius/margin — the header row itself renders on
   // top of this with its own transparent background, so title/icons/Exit sit directly on solid
   // black with nothing showing through around it.
   headerGlowBackdrop: {

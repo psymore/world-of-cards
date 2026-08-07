@@ -36,7 +36,7 @@ Specs/plans for changes that touched shared visual components used by more than 
 
 ## HomeScreen
 
-`apps/mobile/src/screens/home/*` is owned by this domain, not `mobile-expo` — its visual identity is this domain's concern even though the files live inside the `mobile` module. The app's Home screen is its own deliberate visual identity, distinct from the in-game felt/wood table look — see `docs/domains/ui-visual-system/decisions.md` for the reasoning.
+`apps/mobile/src/screens/home/*` is owned by this domain, not `mobile-expo` — its visual identity is this domain's concern even though the files live inside the `mobile` module. As of 2026-08-07, Home shares the same `TableFelt` emerald-felt identity as the Pişti/Batak setup screens and the in-game tables themselves — see `docs/domains/ui-visual-system/decisions.md` for the reasoning (this supersedes an earlier decision that had given Home its own distinct purple-marquee identity).
 
 ## Animation Playground
 
