@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { useReducedMotion } from '../components/useReducedMotion';
 
 export type DealPhase = 'dealing' | 'revealing';
@@ -22,7 +22,15 @@ export function useDealSequence(resetKey: string | number = 0): DealPhase {
   const reducedMotion = useReducedMotion();
   const [dealPhase, setDealPhase] = useState<DealPhase>(reducedMotion ? 'revealing' : 'dealing');
 
-  useEffect(() => {
+  // useLayoutEffect, not useEffect: resetKey changes (Pişti's mid-hand stock redeal) land in the
+  // same commit as the real state update that already contains the freshly-dealt hands. A passive
+  // effect fires only after that frame has already been presented, so for one commit the new
+  // (already-dealt) hands would render with the stale dealPhase='revealing' from the previous
+  // deal — visible as a brief flash of real card backs before this hook gets a chance to flip
+  // dealPhase back to 'dealing' and hide them again behind DealFlightOverlay. A layout effect
+  // fires synchronously after the commit but before it's presented, so the correction lands in
+  // the same frame instead of the next one.
+  useLayoutEffect(() => {
     if (reducedMotion) {
       setDealPhase('revealing');
       return;
