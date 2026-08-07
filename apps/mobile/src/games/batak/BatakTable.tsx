@@ -4,6 +4,7 @@ import type { BatakState, BatakMove } from '@world-cards/engine/games/batak';
 import { ruleConstants } from '@world-cards/engine/games/batak';
 import {
   TableFelt,
+  GeminiTableBackground,
   HandFrame,
   HAND_FRAME_PEAK_FRACTION,
   CARD_DIMS,
@@ -13,6 +14,7 @@ import {
   HAND_FRAME_BOTTOM_OVERSHOOT,
 } from '@world-cards/ui';
 import { DeselectableSurface } from '../../components/DeselectableSurface';
+import { useDevTuningStore } from '../../state/devTuningStore';
 import { useCardSelection } from '../../components/useCardSelection';
 import { CenteredDecisionModal } from '../../components/CenteredDecisionModal';
 import { DealFlightOverlay } from '../../table/DealFlightOverlay';
@@ -203,6 +205,7 @@ export function BatakTable({
   restingRotations,
   dealPhase,
 }: BatakTableProps) {
+  const devTableBackground = useDevTuningStore((s) => s.tableBackground);
   const seats = useMemo(() => assignSeats(opponentPlayerIds), [opponentPlayerIds]);
   // Deal order: human first, then opponents in existing turn order (right, top, left for the
   // fixed 4-player table) — see docs/superpowers/specs/2026-07-17-batak-deal-selection-and-
@@ -473,7 +476,7 @@ export function BatakTable({
 
   return (
     <DeselectableSurface style={styles.container} onDeselect={clearSelection}>
-      <TableFelt />
+      {__DEV__ && devTableBackground === 'gemini' ? <GeminiTableBackground /> : <TableFelt />}
       <OpponentSeatGroup
         position="top"
         seats={seats}
