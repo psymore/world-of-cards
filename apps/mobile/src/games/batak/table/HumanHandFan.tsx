@@ -142,16 +142,31 @@ export function HumanHandFan({
   handFanRef: React.RefObject<View | null>;
   onHandFanLayout: () => void;
 }) {
-  const devTop = useDevTuningStore((s) => ({ overlap: s.topOverlap, spacingPx: s.topSpacingPx }));
-  const devBottom = useDevTuningStore((s) => ({ overlap: s.bottomOverlap, spacingPx: s.bottomSpacingPx }));
+  // Read as four separate scalars (never an object literal) — zustand 5's useStore has no
+  // shallow-equality shim, so a selector returning a fresh object every call never structurally
+  // equals its previous snapshot and re-renders forever ("Maximum update depth exceeded"). Every
+  // other zustand call site in this codebase already reads one scalar per selector; this matches.
+  const devTopOverlap = useDevTuningStore((s) => s.topOverlap);
+  const devTopSpacingPx = useDevTuningStore((s) => s.topSpacingPx);
+  const devBottomOverlap = useDevTuningStore((s) => s.bottomOverlap);
+  const devBottomSpacingPx = useDevTuningStore((s) => s.bottomSpacingPx);
 
   // Resolves each row's real rail config, applying the dev-only per-row overlap/spacing overrides
   // only in __DEV__ (dead-code-eliminated from a release build, per this file's own production-
   // safety requirement) — arcDegrees/maxRotationDeg/radius always stay shared across both rows.
+  // Each override is applied only when non-null (i.e. once the panel's control has actually been
+  // touched) — otherwise baseConfig (Standard or Compact, whichever is really live for this hand)
+  // passes through untouched.
   function configForRow(row: "top" | "bottom"): RailAngleConfig {
     const baseConfig = compact ? COMPACT_RAIL_CONFIG : STANDARD_RAIL_CONFIG;
     if (!__DEV__) return baseConfig;
-    return { ...baseConfig, ...(row === "top" ? devTop : devBottom) };
+    const overlap = row === "top" ? devTopOverlap : devBottomOverlap;
+    const spacingPx = row === "top" ? devTopSpacingPx : devBottomSpacingPx;
+    return {
+      ...baseConfig,
+      ...(overlap != null ? { overlap } : {}),
+      ...(spacingPx != null ? { spacingPx } : {}),
+    };
   }
 
   return (

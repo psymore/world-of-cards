@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Modal, StyleSheet, Text, View } from 'react-native';
 import { CARD_DIMS, PressableFeedback } from '@world-cards/ui';
 import { useDevTuningStore } from '../../state/devTuningStore';
+import { STANDARD_RAIL_CONFIG } from './table/batakRailFan';
 
 export interface BatakDevTuningModalProps {
   visible: boolean;
@@ -116,7 +117,7 @@ export function BatakDevTuningModal({ visible, onClose }: BatakDevTuningModalPro
           <CollapsibleSection title="Hand Fan">
             <StepperRow
               label="Top overlap"
-              value={topOverlap}
+              value={topOverlap ?? STANDARD_RAIL_CONFIG.overlap}
               step={OVERLAP_STEP}
               min={OVERLAP_MIN}
               max={OVERLAP_MAX}
@@ -124,7 +125,7 @@ export function BatakDevTuningModal({ visible, onClose }: BatakDevTuningModalPro
             />
             <StepperRow
               label="Bottom overlap"
-              value={bottomOverlap}
+              value={bottomOverlap ?? STANDARD_RAIL_CONFIG.overlap}
               step={OVERLAP_STEP}
               min={OVERLAP_MIN}
               max={OVERLAP_MAX}
@@ -132,7 +133,7 @@ export function BatakDevTuningModal({ visible, onClose }: BatakDevTuningModalPro
             />
             <StepperRow
               label="Top spacing (px)"
-              value={topSpacingPx}
+              value={topSpacingPx ?? STANDARD_RAIL_CONFIG.spacingPx}
               step={SPACING_STEP}
               min={SPACING_MIN}
               max={SPACING_MAX}
@@ -140,7 +141,7 @@ export function BatakDevTuningModal({ visible, onClose }: BatakDevTuningModalPro
             />
             <StepperRow
               label="Bottom spacing (px)"
-              value={bottomSpacingPx}
+              value={bottomSpacingPx ?? STANDARD_RAIL_CONFIG.spacingPx}
               step={SPACING_STEP}
               min={SPACING_MIN}
               max={SPACING_MAX}
