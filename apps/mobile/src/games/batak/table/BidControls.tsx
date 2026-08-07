@@ -1,8 +1,8 @@
 import React from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 import type { BatakMove } from '@world-cards/engine/games/batak';
-import { glowShadow } from '@world-cards/ui';
+import { glowShadow, PressableFeedback } from '@world-cards/ui';
 import { DecisionPanel } from './DecisionPanel';
 
 // Baldur's Gate 3-inspired bid button palette
@@ -69,7 +69,11 @@ function BidButton({
   fontSize: number;
 }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" style={{ width, height }}>
+    <PressableFeedback
+      onPress={onPress}
+      accessibilityRole="button"
+      style={{ width, height }}
+      overlayBorderRadius={BID_BUTTON_RADIUS}>
       {({ pressed }) => {
         const fillTop = pressed ? palette.fillTopPressed : palette.fillTop;
         const fillBottom = pressed ? palette.fillBottomPressed : palette.fillBottom;
@@ -109,7 +113,7 @@ function BidButton({
           </View>
         );
       }}
-    </Pressable>
+    </PressableFeedback>
   );
 }
 
