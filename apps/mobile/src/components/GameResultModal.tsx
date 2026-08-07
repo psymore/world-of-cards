@@ -1,5 +1,6 @@
 import React from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, StyleSheet, Text, View } from 'react-native';
+import { PressableFeedback } from '@world-cards/ui';
 import type { PlayerId, ScoreBoard } from '@world-cards/engine';
 
 export interface GameResultModalProps {
@@ -46,12 +47,12 @@ export function GameResultModal({
             </Text>
           ))}
           <View style={styles.actions}>
-            <Pressable onPress={onPlayAgain} accessibilityRole="button">
+            <PressableFeedback onPress={onPlayAgain} accessibilityRole="button">
               <Text style={styles.actionText}>Play Again</Text>
-            </Pressable>
-            <Pressable onPress={onBackHome} accessibilityRole="button">
+            </PressableFeedback>
+            <PressableFeedback onPress={onBackHome} accessibilityRole="button">
               <Text style={styles.actionText}>Back to Home</Text>
-            </Pressable>
+            </PressableFeedback>
           </View>
         </View>
       </View>

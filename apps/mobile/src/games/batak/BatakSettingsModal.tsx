@@ -1,5 +1,6 @@
 import React from 'react';
-import { Modal, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Modal, StyleSheet, Switch, Text, View } from 'react-native';
+import { PressableFeedback } from '@world-cards/ui';
 import { useSettingsStore } from '../../state/settingsStore';
 
 export interface BatakSettingsModalProps {
@@ -20,9 +21,9 @@ export function BatakSettingsModal({ visible, onClose }: BatakSettingsModalProps
             <Text style={styles.label}>Dim Unplayable Cards</Text>
             <Switch value={dimUnplayableCards} onValueChange={setDimUnplayableCards} />
           </View>
-          <Pressable onPress={onClose} accessibilityRole="button" style={styles.closeButton}>
+          <PressableFeedback onPress={onClose} accessibilityRole="button" style={styles.closeButton}>
             <Text style={styles.closeText}>Done</Text>
-          </Pressable>
+          </PressableFeedback>
         </View>
       </View>
     </Modal>
