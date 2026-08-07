@@ -421,6 +421,7 @@ function ActiveGame({
       onExit={onBackHome}
       backgroundColor="#0b6623"
       titleColor="#f4c542"
+      darkGlowHeader
       onSettingsPress={() => setSettingsVisible(true)}
       extraHeaderActions={
         __DEV__ ? (
