@@ -106,22 +106,41 @@ Since `GameScreenLayout` is shared, this single change covers both Pişti's and 
 
 ## 7. Press-feedback "blacken" effect, app-wide
 
-New `packages/ui/src/PressableFeedback.tsx` — a drop-in wrapper matching RN `Pressable`'s prop surface (`style`, `onPress`, `children`, `accessibilityRole`, `testID`, etc., spread through), adding one behavior: while pressed, an absolute-fill `rgba(0,0,0,0.25)` overlay (`pointerEvents="none"`) renders on top of `children`, inside a container with `overflow: 'hidden'` so the overlay respects whatever `borderRadius` the caller's own `style` sets (e.g. `BurySlots`' rounded slot corners, `PhaseCenterPanels`' pill buttons).
+New `packages/ui/src/PressableFeedback.tsx` — a drop-in wrapper matching RN `Pressable`'s prop surface (`style`, `onPress`, `children`, `accessibilityRole`, `testID`, etc., spread through unmodified), plus one new optional prop, `overlayBorderRadius?: number` (default `0`). While pressed, an absolute-fill `rgba(0,0,0,0.25)` overlay (`pointerEvents="none"`) renders on top of `children`, itself carrying `borderRadius: overlayBorderRadius` so it visually matches whatever corner radius the caller's button already has.
+
+**Revised during plan file-mapping** from an earlier draft that forced `overflow: 'hidden'` onto the wrapping `Pressable` itself to achieve clipping: that approach broke `BidControls.tsx`'s `BidButton`, whose drop shadow lives on a sibling child view (`styles.bidButtonShadow`) the *same size* as the Pressable — forcing the parent's overflow to `hidden` would clip that shadow's visible bleed. Giving the overlay its own `borderRadius` directly sidesteps the Pressable's `overflow` entirely, so it can't conflict with any caller's own shadow/overflow needs (also relevant for `BurySlots.tsx`'s `.slot`, which explicitly sets `overflow: 'visible'` for its own reasons).
 
 ```tsx
-export function PressableFeedback({ style, children, ...rest }: PressableProps) {
+export interface PressableFeedbackProps extends PressableProps {
+  // Matches the caller's own button corner radius so the press overlay's edges align with it.
+  // Defaults to 0 (square) for callers with no rounding.
+  overlayBorderRadius?: number;
+}
+
+export function PressableFeedback({ style, children, overlayBorderRadius = 0, ...rest }: PressableFeedbackProps) {
   return (
-    <Pressable style={[styles.clip, style]} {...rest}>
+    <Pressable style={style} {...rest}>
       {(state) => (
         <>
           {typeof children === 'function' ? children(state) : children}
-          {state.pressed && <View style={styles.overlay} pointerEvents="none" />}
+          {state.pressed && (
+            <View
+              style={[styles.overlay, { borderRadius: overlayBorderRadius }]}
+              pointerEvents="none"
+            />
+          )}
         </>
       )}
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.25)' },
+});
 ```
+
+**`BidControls.tsx`'s `BidButton`:** per direct confirmation, the overlay applies here too (stacked on top of its existing palette/glow pressed-state swap), passing `overlayBorderRadius={BID_BUTTON_RADIUS}` (10) to match `styles.bidButtonClip`'s own radius.
 
 `style` is merged as a plain `[styles.clip, style]` array, not resolved through the pressed-state function form RN's `Pressable.style` also accepts — confirmed safe: a repo-wide check found no existing call site passes a function-of-pressed-state `style`, only plain objects/arrays. If a future caller needs pressed-aware styling of its own, `PressableFeedback`'s `style` prop would need extending to handle that form too; not needed for this pass.
 
