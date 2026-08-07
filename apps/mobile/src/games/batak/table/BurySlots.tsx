@@ -1,7 +1,7 @@
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { Card } from '@world-cards/engine';
-import { PlayingCard } from '@world-cards/ui';
+import { PlayingCard, PressableFeedback } from '@world-cards/ui';
 import { TravelCard } from '../../../table/TravelCard';
 
 const BURY_SLOT_SIZE = 56;
@@ -28,9 +28,9 @@ export function BurySlots({
           <View key={i} style={[styles.slot, card && styles.slotFilled]}>
             {card && (
               <TravelCard originOffset={HAND_TO_SLOT_OFFSET} resetKey={card.id}>
-                <Pressable onPress={() => onTapCard(card.id)} accessibilityRole="button">
+                <PressableFeedback onPress={() => onTapCard(card.id)} accessibilityRole="button" overlayBorderRadius={6}>
                   <PlayingCard card={card} size="small" />
-                </Pressable>
+                </PressableFeedback>
               </TravelCard>
             )}
           </View>

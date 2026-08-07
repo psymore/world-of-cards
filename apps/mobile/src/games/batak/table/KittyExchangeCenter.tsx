@@ -1,7 +1,8 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { Card } from '@world-cards/engine';
 import type { BatakState } from '@world-cards/engine/games/batak';
+import { PressableFeedback } from '@world-cards/ui';
 import { centerPanelStyles } from './centerPanelStyles';
 import { BurySlots } from './BurySlots';
 import { GatherCard } from '../../../table/GatherCard';
@@ -66,13 +67,14 @@ export function KittyExchangeCenter({
       {isHumanBidder && !pendingBury && (
         <>
           <BurySlots slotCardIds={slotCardIds} cardsById={cardsById} onTapCard={onTapSlotCard} />
-          <Pressable
+          <PressableFeedback
             onPress={onConfirm}
             disabled={!canConfirm}
             accessibilityRole="button"
-            style={[styles.confirmButton, !canConfirm && styles.confirmButtonDisabled]}>
+            style={[styles.confirmButton, !canConfirm && styles.confirmButtonDisabled]}
+            overlayBorderRadius={8}>
             <Text style={styles.confirmText}>Confirm</Text>
-          </Pressable>
+          </PressableFeedback>
         </>
       )}
     </View>
