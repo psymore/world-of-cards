@@ -47,9 +47,21 @@ function TableShellComponent({ seats, tilt = false, children }: TableShellProps)
   return (
     <View style={styles.backdrop}>
       <View style={[styles.tableBox, tilt ? { transform: TILT_TRANSFORM } : null]} testID="table-shell">
-        <Image source={FELT_IMAGE} style={styles.fill} resizeMode="stretch" testID="table-shell-felt" />
-        <Image source={FRAME_IMAGE} style={styles.fill} resizeMode="stretch" testID="table-shell-frame" />
-        {children != null ? <View style={styles.centerContent}>{children}</View> : null}
+        <Image
+          source={FELT_IMAGE}
+          style={[StyleSheet.absoluteFill, styles.fill]}
+          resizeMode="stretch"
+          testID="table-shell-felt"
+        />
+        <Image
+          source={FRAME_IMAGE}
+          style={[StyleSheet.absoluteFill, styles.fill]}
+          resizeMode="stretch"
+          testID="table-shell-frame"
+        />
+        {children != null ? (
+          <View style={[StyleSheet.absoluteFill, styles.centerContent]}>{children}</View>
+        ) : null}
         {SEAT_POSITIONS.map((position) => {
           const content = seats?.[position];
           if (content == null) return null;
@@ -70,11 +82,14 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center' },
   tableBox: { width: '92%', aspectRatio: TABLE_SHELL_ASPECT_RATIO },
   // react-native-web's Image implementation falls back to the loaded image's *natural* pixel
-  // dimensions (e.g. 941x1672) unless width/height are explicit — StyleSheet.absoluteFillObject
-  // alone (position/top/left/right/bottom) fills a plain View, but for Image on web it leaves
+  // dimensions (e.g. 941x1672) unless width/height are explicit — StyleSheet.absoluteFill alone
+  // (position/top/left/right/bottom) fills a plain View, but for Image on web it leaves
   // width/height as 'auto', so the image renders oversized and gets clipped instead of stretching
   // to the parent box. Explicit 100%/100% forces the fill on web while remaining a no-op on
-  // native, where absoluteFillObject already resolves this correctly.
-  fill: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
-  centerContent: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  // native, where StyleSheet.absoluteFill already resolves this correctly. Applied alongside
+  // StyleSheet.absoluteFill in a style array at each call site (matching AbsoluteOverlay's
+  // precedent) rather than spread into one object, since absoluteFillObject isn't a real
+  // TypeScript-visible API on this RN version.
+  fill: { width: '100%', height: '100%' },
+  centerContent: { alignItems: 'center', justifyContent: 'center' },
 });

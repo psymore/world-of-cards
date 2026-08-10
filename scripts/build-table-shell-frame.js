@@ -4,14 +4,15 @@
 // runtime. Uses flood-fill connectivity masking to distinguish the felt hole from disconnected
 // dark regions like plaques and buttons (kept opaque).
 //
-// The final alpha is derived BINARILY from the (closed) connectivity mask — mask[i] ? 0 : 255
-// — not from punchBlackToAlpha's per-pixel luminance feather. Connectivity already proved which
-// pixels are part of the hole; re-deriving alpha from a masked-in pixel's own luminance let dust/
-// grain/highlight specks inside the hole (which are still <= the flood threshold, or get pulled
-// in by closeMaskGaps, but have elevated luminance) produce visible mid-range alpha "speckle".
-// The binary mask has a hard, jagged 0/255 edge, so the alpha channel is blurred afterward to
-// soften that edge into a smooth few-pixel transition, without reintroducing luminance
-// sensitivity (the blur smooths the mask's edge geometry, not per-pixel brightness).
+// The final alpha is derived BINARILY from the (closed) connectivity mask — mask[i] ? 0 : 255.
+// An earlier approach re-derived alpha from each masked-in pixel's own luminance instead;
+// connectivity already proved which pixels are part of the hole, and re-deriving alpha from
+// luminance let dust/grain/highlight specks inside the hole (which are still <= the flood
+// threshold, or get pulled in by closeMaskGaps, but have elevated luminance) produce visible
+// mid-range alpha "speckle" — that approach was abandoned. The binary mask has a hard, jagged
+// 0/255 edge, so the alpha channel is blurred afterward to soften that edge into a smooth
+// few-pixel transition, without reintroducing luminance sensitivity (the blur smooths the mask's
+// edge geometry, not per-pixel brightness).
 //
 // Not part of the app build — run manually: node scripts/build-table-shell-frame.js
 const path = require('path');
