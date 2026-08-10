@@ -4,6 +4,7 @@ import { usePlaygroundStore } from "./state/playgroundStore";
 import { TableTemplateEditor } from "./components/TableTemplateEditor";
 import { CardTemplateEditor } from "./components/CardTemplateEditor";
 import { CardGallery } from "./components/CardGallery";
+import { TableShellPreview } from "./components/TableShellPreview";
 
 // The functionality panels below the gallery share the felt color as their background
 // (not a fixed dark shade) so the table reads as one continuous surface from the card
@@ -24,6 +25,7 @@ export function PlaygroundScreen() {
       contentContainerStyle={styles.scrollContent}>
       <View style={styles.contentWrapper}>
         <Text style={styles.title}>Card Playground</Text>
+        <TableShellPreview />
         <CardGallery />
         <TableTemplateEditor />
         <CardTemplateEditor />

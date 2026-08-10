@@ -10,14 +10,16 @@ export const TABLE_SHELL_ASPECT_RATIO = 941 / 1672;
 
 export type TableSeatPosition = 'top' | 'bottom' | 'left' | 'right';
 
-// First-pass calibration against FRAME-C-NOFELT-01A.png's baked glass-plaque positions.
-// Verify/adjust these visually against the rendered Playground preview (Task 5) before
-// treating them as final — see this plan's Global Constraints.
+// Calibrated against FRAME-C-NOFELT-01A.png's baked glass-plaque positions using the Task 5
+// Playground preview: pixel-sampled where each plaque's dark glass interior actually falls
+// versus the anchor box's center, then nudged each anchor toward that measured center (top
+// needed the largest correction — the initial value centered "You" on the plaque's lower rim/
+// gold trim rather than its glass; left/right and bottom needed smaller nudges).
 const SEAT_ANCHOR_STYLE: Record<TableSeatPosition, ViewStyle> = {
-  top: { position: 'absolute', top: '3.6%', left: '29%', right: '30%', height: '10.5%' },
-  bottom: { position: 'absolute', bottom: '3.6%', left: '29%', right: '30%', height: '10.5%' },
-  left: { position: 'absolute', left: '9%', top: '32.6%', bottom: '32.6%', width: '13%' },
-  right: { position: 'absolute', right: '9%', top: '32.6%', bottom: '32.6%', width: '13%' },
+  top: { position: 'absolute', top: '1.4%', left: '29%', right: '30%', height: '10.5%' },
+  bottom: { position: 'absolute', bottom: '4.3%', left: '29%', right: '30%', height: '10.5%' },
+  left: { position: 'absolute', left: '9%', top: '31.3%', bottom: '33.9%', width: '13%' },
+  right: { position: 'absolute', right: '9%', top: '31.3%', bottom: '33.9%', width: '13%' },
 };
 
 const SEAT_POSITIONS: TableSeatPosition[] = ['top', 'bottom', 'left', 'right'];
@@ -59,6 +61,12 @@ export const TableShell = React.memo(TableShellComponent);
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center' },
   tableBox: { width: '92%', aspectRatio: TABLE_SHELL_ASPECT_RATIO },
-  fill: { ...StyleSheet.absoluteFillObject },
+  // react-native-web's Image implementation falls back to the loaded image's *natural* pixel
+  // dimensions (e.g. 941x1672) unless width/height are explicit — StyleSheet.absoluteFillObject
+  // alone (position/top/left/right/bottom) fills a plain View, but for Image on web it leaves
+  // width/height as 'auto', so the image renders oversized and gets clipped instead of stretching
+  // to the parent box. Explicit 100%/100% forces the fill on web while remaining a no-op on
+  // native, where absoluteFillObject already resolves this correctly.
+  fill: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
   centerContent: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
 });
