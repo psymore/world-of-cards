@@ -1,25 +1,48 @@
 // scripts/build-table-shell-frame.js
 // One-off dev tool: alpha-punches FRAME-C-NOFELT-01A.png's opaque-black center into real
 // transparency so packages/ui/src/TableShell.tsx can composite it over a felt image at
-// runtime. Uses flood-fill connectivity masking to distinguish the felt hole (punched
-// transparent) from disconnected dark regions like plaques and buttons (kept opaque).
+// runtime. Uses flood-fill connectivity masking to distinguish the felt hole from disconnected
+// dark regions like plaques and buttons (kept opaque).
+//
+// The final alpha is derived BINARILY from the (closed) connectivity mask — mask[i] ? 0 : 255
+// — not from punchBlackToAlpha's per-pixel luminance feather. Connectivity already proved which
+// pixels are part of the hole; re-deriving alpha from a masked-in pixel's own luminance let dust/
+// grain/highlight specks inside the hole (which are still <= the flood threshold, or get pulled
+// in by closeMaskGaps, but have elevated luminance) produce visible mid-range alpha "speckle".
+// The binary mask has a hard, jagged 0/255 edge, so the alpha channel is blurred afterward to
+// soften that edge into a smooth few-pixel transition, without reintroducing luminance
+// sensitivity (the blur smooths the mask's edge geometry, not per-pixel brightness).
+//
 // Not part of the app build — run manually: node scripts/build-table-shell-frame.js
 const path = require('path');
 const sharp = require('sharp');
-const { punchBlackToAlpha } = require('./lib/punchBlackToAlpha');
 const { floodFillHoleMask, closeMaskGaps } = require('./lib/floodFillHoleMask');
+const { blurAlphaChannel } = require('./lib/blurAlphaChannel');
 
 const SOURCE = path.join(
   __dirname, '..', 'docs', 'references', 'GPT-powerful-assets-review', 'FRAME-C-NOFELT-01A.png'
 );
 const OUTPUT = path.join(__dirname, '..', 'packages', 'ui', 'assets', 'table', 'table-shell-frame.png');
 
-const LOW_THRESHOLD = 22;
-const HIGH_THRESHOLD = 80;
-const FLOOD_THRESHOLD = 40;
+// Retuned down from 40: under the old per-pixel-luminance-feather approach, masked pixels with
+// luminance in the (22,40] band still contributed nonzero opacity (up to ~79 alpha), which
+// happened to keep the plaque/gear/hamburger region-average checks above their thresholds even
+// though a modest amount of their shadow area gets pulled into the connectivity mask by
+// FLOOD_THRESHOLD=40. Switching to binary mask->alpha (this rework) removes that nonzero
+// contribution entirely (masked now always means alpha=0), so that same amount of mask
+// over-inclusion now reads as a real opacity drop and regresses those checks. Measured directly:
+// FLOOD_THRESHOLD=40 covers the felt hole box at 100.00% either way, and 27 still covers it at
+// 99.99% (i.e. the actual hole is unaffected), while whole-image mask coverage barely moves
+// (40.57% -> 40.36%) — the difference is only the marginal shadow-bridging into frame regions
+// that the old feathering was inadvertently compensating for. 27 keeps a comfortable safety
+// margin below FLOOD_THRESHOLD=29, where a single connectivity bridge pixel flips the
+// gear-icon region from passing to failing.
+const FLOOD_THRESHOLD = 27;
+const EDGE_BLUR_RADIUS = 3;
 
 async function main() {
   const { data, info } = await sharp(SOURCE).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const pixelCount = info.width * info.height;
 
   // Compute flood-fill mask from the known center seed, generously including antialiased edges
   const seedX = Math.round(info.width * 0.5);
@@ -31,18 +54,24 @@ async function main() {
   // over-closing into frame regions
   holeMask = closeMaskGaps(holeMask, info.width, info.height, 3, 0.5);
 
-  // Apply alpha punch to all pixels
-  const punched = punchBlackToAlpha(data, { lowThreshold: LOW_THRESHOLD, highThreshold: HIGH_THRESHOLD });
-
-  // Restrict transparency to only masked pixels (the connected hole); force masked-out pixels back to opaque
-  for (let i = 0; i < holeMask.length; i++) {
-    if (holeMask[i] === 0) {
-      // Not part of the hole region: force alpha to 255 (fully opaque)
-      punched[i * 4 + 3] = 255;
-    }
+  // Binary alpha from the mask: no per-pixel luminance check left to trip over a dust speck
+  // once a pixel is inside the connected hole.
+  const binaryAlpha = new Uint8Array(pixelCount);
+  for (let i = 0; i < pixelCount; i++) {
+    binaryAlpha[i] = holeMask[i] === 1 ? 0 : 255;
   }
 
-  await sharp(punched, { raw: { width: info.width, height: info.height, channels: 4 } })
+  // Soften the hard binary edge into a smooth few-pixel transition by blurring the alpha
+  // channel itself (edge geometry), not by re-deriving alpha from brightness.
+  const blurredAlpha = blurAlphaChannel(binaryAlpha, info.width, info.height, EDGE_BLUR_RADIUS);
+
+  // Recombine the blurred alpha with the original RGB (unchanged).
+  const output = Buffer.from(data);
+  for (let i = 0; i < pixelCount; i++) {
+    output[i * 4 + 3] = blurredAlpha[i];
+  }
+
+  await sharp(output, { raw: { width: info.width, height: info.height, channels: 4 } })
     .png()
     .toFile(OUTPUT);
 
@@ -86,8 +115,8 @@ async function main() {
   const holeRegionAvg = measureRegionAlpha(250, 400, 700, 1250);
 
   // Check for speckles: isolated opaque pixels inside the transparent hole
-  // Sample at step=3 for denser measurement to catch fine speckle patterns
-  const holeSpeckleFraction = measureSpeckleFraction(250, 400, 700, 1250, 60, 3);
+  // Sample at full resolution (step=1) so no speckle pattern can hide between sample points
+  const holeSpeckleFraction = measureSpeckleFraction(250, 400, 700, 1250, 60, 1);
 
   // Frame regions should be opaque
   const plaqueAvg = measureRegionAlpha(60, 700, 220, 1000);
@@ -96,7 +125,7 @@ async function main() {
 
   const checks = [
     { name: 'hole region avg', value: holeRegionAvg, min: undefined, max: 50, operator: '<=' },
-    { name: 'hole speckle fraction (alpha>60)', value: holeSpeckleFraction, min: undefined, max: 0.05, operator: '<=' },
+    { name: 'hole speckle fraction (alpha>60)', value: holeSpeckleFraction, min: undefined, max: 0.01, operator: '<=' },
     { name: 'center pixel', value: centerAlpha, min: undefined, max: 10, operator: '<=' },
     { name: 'plaque region avg', value: plaqueAvg, min: 0.88 * 255, max: undefined, operator: '>=' },
     { name: 'gear-icon region avg', value: gearAvg, min: 0.78 * 255, max: undefined, operator: '>=' },
