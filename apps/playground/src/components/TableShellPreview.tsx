@@ -4,10 +4,15 @@ import { TABLE_SHELL_ASPECT_RATIO, TableShell } from '@world-cards/ui';
 
 const SEAT_LABEL = { top: 'You', bottom: 'South AI', left: 'West AI', right: 'East AI' } as const;
 
-function SeatBadge({ label }: { label: string }) {
+// left/right plaques are much narrower (13%-width anchor) than top/bottom, and their baked
+// glass interior is narrower still than that anchor box — measured via browser pixel-sampling
+// (see task-5-report.md's fix entry) at ~34 CSS px wide vs. ~46 CSS px for the anchor. At the
+// shared 12px font, "West AI"/"East AI" render ~40-44px wide and spill off the glass onto the
+// wood trim. `narrow` drops to a font size measured to fit inside that ~34px glass width.
+function SeatBadge({ label, narrow }: { label: string; narrow?: boolean }) {
   return (
     <View style={styles.seatBadge}>
-      <Text style={styles.seatBadgeText}>{label}</Text>
+      <Text style={[styles.seatBadgeText, narrow && styles.seatBadgeTextNarrow]}>{label}</Text>
     </View>
   );
 }
@@ -24,8 +29,8 @@ export function TableShellPreview() {
     ? {
         top: <SeatBadge label={SEAT_LABEL.top} />,
         bottom: <SeatBadge label={SEAT_LABEL.bottom} />,
-        left: <SeatBadge label={SEAT_LABEL.left} />,
-        right: <SeatBadge label={SEAT_LABEL.right} />,
+        left: <SeatBadge label={SEAT_LABEL.left} narrow />,
+        right: <SeatBadge label={SEAT_LABEL.right} narrow />,
       }
     : {
         top: <SeatBadge label={SEAT_LABEL.top} />,
@@ -63,4 +68,7 @@ const styles = StyleSheet.create({
   tableWrapper: { aspectRatio: TABLE_SHELL_ASPECT_RATIO },
   seatBadge: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   seatBadgeText: { color: '#2a1a13', fontWeight: 'bold', fontSize: 12 },
+  // See SeatBadge's `narrow` comment above — sized to fit "West AI"/"East AI" inside the
+  // left/right plaques' measured ~34 CSS px glass width, with a couple px margin on each side.
+  seatBadgeTextNarrow: { fontSize: 8 },
 });

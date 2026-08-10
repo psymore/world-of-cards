@@ -15,11 +15,19 @@ export type TableSeatPosition = 'top' | 'bottom' | 'left' | 'right';
 // versus the anchor box's center, then nudged each anchor toward that measured center (top
 // needed the largest correction — the initial value centered "You" on the plaque's lower rim/
 // gold trim rather than its glass; left/right and bottom needed smaller nudges).
+//
+// left/right width re-measured during the code-review fix-up for the "West AI"/"East AI"
+// clipping bug: pixel-sampling a text-free row (2-seat mode, so the plaque is empty) found the
+// baked glass interior is only ~34 CSS px wide at typical preview widths, versus this anchor's
+// previous 13%-width (~46 CSS px) — the anchor was overshooting the glass into the wood/gold
+// trim on the outward side of each plaque (right side of "left", both sides of "right").
+// Narrowed to 9.5% (~34 CSS px) and re-centered so the anchor's edges land on the measured
+// glass edges instead of spilling past them.
 const SEAT_ANCHOR_STYLE: Record<TableSeatPosition, ViewStyle> = {
   top: { position: 'absolute', top: '1.4%', left: '29%', right: '30%', height: '10.5%' },
   bottom: { position: 'absolute', bottom: '4.3%', left: '29%', right: '30%', height: '10.5%' },
-  left: { position: 'absolute', left: '9%', top: '31.3%', bottom: '33.9%', width: '13%' },
-  right: { position: 'absolute', right: '9%', top: '31.3%', bottom: '33.9%', width: '13%' },
+  left: { position: 'absolute', left: '9%', top: '31.3%', bottom: '33.9%', width: '9.5%' },
+  right: { position: 'absolute', right: '11%', top: '31.3%', bottom: '33.9%', width: '9.5%' },
 };
 
 const SEAT_POSITIONS: TableSeatPosition[] = ['top', 'bottom', 'left', 'right'];
