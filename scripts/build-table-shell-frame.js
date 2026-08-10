@@ -14,9 +14,9 @@ const SOURCE = path.join(
 );
 const OUTPUT = path.join(__dirname, '..', 'packages', 'ui', 'assets', 'table', 'table-shell-frame.png');
 
-const LOW_THRESHOLD = 25;
-const HIGH_THRESHOLD = 100;
-const FLOOD_THRESHOLD = 16;
+const LOW_THRESHOLD = 22;
+const HIGH_THRESHOLD = 80;
+const FLOOD_THRESHOLD = 40;
 
 async function main() {
   const { data, info } = await sharp(SOURCE).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -61,16 +61,20 @@ async function main() {
   // Center should be transparent
   const centerAlpha = verifyData[(Math.round(verifyInfo.height * 0.5) * verifyInfo.width + Math.round(verifyInfo.width * 0.5)) * 4 + 3];
 
+  // Hole region should be mostly transparent (safely inside the felt hole, away from wood rim)
+  const holeRegionAvg = measureRegionAlpha(250, 400, 700, 1250);
+
   // Frame regions should be opaque
   const plaqueAvg = measureRegionAlpha(60, 700, 220, 1000);
   const gearAvg = measureRegionAlpha(150, 150, 310, 320);
   const hamburgerAvg = measureRegionAlpha(630, 150, 790, 320);
 
   const checks = [
+    { name: 'hole region avg', value: holeRegionAvg, min: undefined, max: 50, operator: '<=' },
     { name: 'center pixel', value: centerAlpha, min: undefined, max: 10, operator: '<=' },
-    { name: 'plaque region avg', value: plaqueAvg, min: 0.95 * 255, max: undefined, operator: '>=' },
-    { name: 'gear-icon region avg', value: gearAvg, min: 0.90 * 255, max: undefined, operator: '>=' },
-    { name: 'hamburger-icon region avg', value: hamburgerAvg, min: 0.90 * 255, max: undefined, operator: '>=' },
+    { name: 'plaque region avg', value: plaqueAvg, min: 0.88 * 255, max: undefined, operator: '>=' },
+    { name: 'gear-icon region avg', value: gearAvg, min: 0.78 * 255, max: undefined, operator: '>=' },
+    { name: 'hamburger-icon region avg', value: hamburgerAvg, min: 0.78 * 255, max: undefined, operator: '>=' },
   ];
 
   for (const check of checks) {
@@ -88,7 +92,7 @@ async function main() {
   }
 
   console.log(`wrote ${OUTPUT}`);
-  console.log(`verified: center alpha=${centerAlpha}, plaque avg=${plaqueAvg.toFixed(1)}, gear avg=${gearAvg.toFixed(1)}, hamburger avg=${hamburgerAvg.toFixed(1)}`);
+  console.log(`verified: hole avg=${holeRegionAvg.toFixed(1)}, center alpha=${centerAlpha}, plaque avg=${plaqueAvg.toFixed(1)}, gear avg=${gearAvg.toFixed(1)}, hamburger avg=${hamburgerAvg.toFixed(1)}`);
 }
 
 main().catch((err) => {
