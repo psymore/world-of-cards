@@ -67,8 +67,13 @@ const styles = StyleSheet.create({
   // the heading/toggles above and CardGallery below on narrower viewports.
   tableWrapper: { aspectRatio: TABLE_SHELL_ASPECT_RATIO },
   seatBadge: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  seatBadgeText: { color: '#2a1a13', fontWeight: 'bold', fontSize: 12 },
+  // Cream (matches this app's existing light-on-dark text, e.g. PlaygroundScreen's `title`
+  // uses the sibling gold `#f4c542`) — replaces the original `#2a1a13` dark brown, which was
+  // nearly invisible against the plaques' near-black glass at real (non-zoomed) render scale.
+  seatBadgeText: { color: '#e8e3d2', fontWeight: 'bold', fontSize: 12 },
   // See SeatBadge's `narrow` comment above — sized to fit "West AI"/"East AI" inside the
   // left/right plaques' measured ~34 CSS px glass width, with a couple px margin on each side.
-  seatBadgeTextNarrow: { fontSize: 8 },
+  // 9px (not the original 12px) to fit; bumped from 8px back up now that cream-on-glass
+  // contrast makes a slightly larger size legible at real scale without reintroducing clipping.
+  seatBadgeTextNarrow: { fontSize: 9 },
 });
