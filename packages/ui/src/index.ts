@@ -35,3 +35,5 @@ export {
   HAND_FRAME_REVEAL_MARGIN,
   HAND_FRAME_BOTTOM_OVERSHOOT,
 } from './handAreaLayout';
+export { TableShell, TABLE_SHELL_ASPECT_RATIO } from './TableShell';
+export type { TableShellProps, TableSeatPosition } from './TableShell';
