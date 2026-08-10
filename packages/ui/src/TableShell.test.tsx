@@ -28,4 +28,19 @@ describe('TableShell', () => {
     );
     expect(screen.getByText('Center pile')).toBeTruthy();
   });
+
+  it('applies no transform by default (flat)', async () => {
+    await render(<TableShell />);
+    const table = screen.getByTestId('table-shell');
+    const styleArray = Array.isArray(table.props.style) ? table.props.style : [table.props.style];
+    expect(styleArray.some((s: any) => s != null && s.transform != null)).toBe(false);
+  });
+
+  it('applies the perspective tilt transform when tilt is true', async () => {
+    await render(<TableShell tilt />);
+    const table = screen.getByTestId('table-shell');
+    const styleArray = Array.isArray(table.props.style) ? table.props.style : [table.props.style];
+    const transformStyle = styleArray.find((s: any) => s != null && s.transform != null);
+    expect(transformStyle.transform).toEqual([{ perspective: 1400 }, { rotateX: '20deg' }]);
+  });
 });

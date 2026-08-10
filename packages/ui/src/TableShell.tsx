@@ -24,13 +24,19 @@ const SEAT_POSITIONS: TableSeatPosition[] = ['top', 'bottom', 'left', 'right'];
 
 export interface TableShellProps {
   seats?: Partial<Record<TableSeatPosition, React.ReactNode>>;
+  tilt?: boolean;
   children?: React.ReactNode;
 }
 
-function TableShellComponent({ seats, children }: TableShellProps) {
+// Starting value picked during brainstorming (subtler than a 38deg mockup, more than a
+// 12deg one) — see docs/superpowers/specs/2026-08-10-table-shell-redesign-design.md §7.
+// Tune visually against this component, not the CSS mockup, before treating as final.
+const TILT_TRANSFORM: NonNullable<ViewStyle['transform']> = [{ perspective: 1400 }, { rotateX: '20deg' }];
+
+function TableShellComponent({ seats, tilt = false, children }: TableShellProps) {
   return (
     <View style={styles.backdrop}>
-      <View style={styles.tableBox} testID="table-shell">
+      <View style={[styles.tableBox, tilt ? { transform: TILT_TRANSFORM } : null]} testID="table-shell">
         <Image source={FELT_IMAGE} style={styles.fill} resizeMode="stretch" testID="table-shell-felt" />
         <Image source={FRAME_IMAGE} style={styles.fill} resizeMode="stretch" testID="table-shell-frame" />
         {children != null ? <View style={styles.centerContent}>{children}</View> : null}
