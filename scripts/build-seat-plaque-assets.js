@@ -1,19 +1,23 @@
 // scripts/build-seat-plaque-assets.js
-// One-off dev tool: crops two small ornament pieces (a glass pill, a glass badge circle) out of
-// PANELKIT-GLASS-01A.png's flat-black sheet and alpha-punches the surrounding black into real
-// transparency, so packages/ui/src/SeatIdentity.tsx can composite them over TableShell's felt/
-// frame at runtime.
+// One-off dev tool: crops a small glass badge circle out of PANELKIT-GLASS-01A.png's flat-black
+// sheet and alpha-punches the surrounding black into real transparency, so
+// packages/ui/src/SeatIdentity.tsx can composite it over TableShell's felt/frame at runtime.
 //
 // Uses the same flood-fill connectivity masking + binary-alpha + edge-blur pipeline as
 // scripts/build-table-shell-frame.js's Task 1 (see that file's header for the full history of
 // why binary-mask-then-blur beats per-pixel luminance feathering). The one difference: that
 // script seeds from the CENTER to find a hole surrounded by opaque content; this one seeds from
-// a CORNER (guaranteed background) to find the background surrounding an opaque object. Both
-// crops here sit on flat, isolated #000000 with the object as the only other content in the crop
-// box (verified via direct luminance histogram during design — see
+// a CORNER (guaranteed background) to find the background surrounding an opaque object. The crop
+// sits on flat, isolated #000000 with the object as the only other content in the crop box
+// (verified via direct luminance histogram during design — see
 // docs/superpowers/specs/2026-08-10-seat-identity-design.md, Decision 5), so a single
-// conservative threshold per crop is enough; no closeMaskGaps gap-closing is needed (no other
-// dark region in either crop to accidentally bridge into).
+// conservative threshold is enough; no closeMaskGaps gap-closing is needed (no other dark region
+// in the crop to accidentally bridge into).
+//
+// This used to also produce seat-plaque.png (a glass pill used as SeatIdentity's background),
+// removed per user request to drop the green-tinted glass layer sitting behind the seat content
+// — TableShell's own baked frame art already provides a dark plaque cavity at each seat anchor,
+// so SeatIdentity's content now sits directly over that instead of a second, redundant layer.
 //
 // Not part of the app build — run manually: node scripts/build-seat-plaque-assets.js
 const path = require('path');
@@ -27,19 +31,11 @@ const SOURCE = path.join(
 const OUTPUT_DIR = path.join(__dirname, '..', 'packages', 'ui', 'assets', 'table');
 const EDGE_BLUR_RADIUS = 2;
 
-// Crop boxes and flood thresholds were measured directly against the source sheet during
-// design: both crops' backgrounds are pure #000000 (luminance 0) with a soft antialiased glow
-// around the object before its solid material starts. floodThreshold sits in the low-count
-// valley between the background spike and the object's material, per crop (measured separately
-// because the pill's glow valley sits ~14-18 and the badge's sits ~9-13).
+// Crop box and flood threshold were measured directly against the source sheet during design:
+// the crop's background is pure #000000 (luminance 0) with a soft antialiased glow around the
+// object before its solid material starts. floodThreshold sits in the low-count valley between
+// the background spike and the object's material (measured at ~9-13 for this crop).
 const PIECES = [
-  {
-    name: 'seat-plaque.png',
-    crop: { left: 20, top: 1150, width: 450, height: 90 },
-    floodThreshold: 16,
-    backgroundSample: { x: 2, y: 2 },
-    objectSample: { x: 225, y: 45 },
-  },
   {
     name: 'seat-badge.png',
     crop: { left: 30, top: 1020, width: 130, height: 110 },

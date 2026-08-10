@@ -3,10 +3,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SeatIdentity, TABLE_SHELL_ASPECT_RATIO, TableShell } from '@world-cards/ui';
 
 const SEAT_SAMPLE = {
-  top: { name: 'You', trickCount: 0 },
-  bottom: { name: 'South AI', trickCount: 2 },
-  left: { name: 'West AI', trickCount: 1 },
-  right: { name: 'East AI', trickCount: 0 },
+  top: { name: 'You', trickCount: 0, avatar: 'male-01' },
+  bottom: { name: 'South AI', trickCount: 2, avatar: 'female-01' },
+  left: { name: 'West AI', trickCount: 1, avatar: 'male-02' },
+  right: { name: 'East AI', trickCount: 0, avatar: 'female-03' },
 } as const;
 
 // Prototype-only screen: exercises TableShell's flat/tilted and 4-seat/2-seat cases with no

@@ -3,9 +3,8 @@ import { render, screen } from '@testing-library/react-native';
 import { SeatIdentity } from './SeatIdentity';
 
 describe('SeatIdentity', () => {
-  it('renders the plaque, avatar, badge, name, and trick count', async () => {
+  it('renders the avatar, badge, name, and trick count', async () => {
     await render(<SeatIdentity name="West AI" trickCount={3} />);
-    expect(screen.getByTestId('seat-identity-plaque')).toBeTruthy();
     expect(screen.getByTestId('seat-identity-avatar')).toBeTruthy();
     expect(screen.getByTestId('seat-identity-badge')).toBeTruthy();
     expect(screen.getByText('West AI')).toBeTruthy();
@@ -33,5 +32,15 @@ describe('SeatIdentity', () => {
     const styleArray = Array.isArray(node.props.style) ? node.props.style : [node.props.style];
     const transformStyle = styleArray.find((s: any) => s != null && s.transform != null);
     expect(transformStyle.transform).toEqual([{ rotate: '-90deg' }]);
+  });
+
+  it('renders a different avatar image when the avatar prop changes', async () => {
+    const { rerender } = await render(<SeatIdentity name="You" trickCount={0} />);
+    const defaultSource = screen.getByTestId('seat-identity-avatar-image').props.source;
+
+    await rerender(<SeatIdentity name="You" trickCount={0} avatar="female-02" />);
+    const femaleSource = screen.getByTestId('seat-identity-avatar-image').props.source;
+
+    expect(femaleSource).not.toEqual(defaultSource);
   });
 });
