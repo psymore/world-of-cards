@@ -16,12 +16,15 @@
 const path = require('path');
 const sharp = require('sharp');
 
-const SOURCE = path.join(__dirname, '..', 'docs', 'references', 'GPT-powerful-assets-review', 'TABLE-010.png');
+const SOURCE = path.join(__dirname, '..', 'docs', 'references', 'GPT-powerful-assets-review', 'TABLE-010-Photoroom.png');
 const OUTPUT_DIR = path.join(__dirname, '..', 'packages', 'ui', 'assets', 'table');
 
 // Crop boxes measured directly against the source sheet during design: a 3x2 grid of circular
 // portraits, each ~72px across, inset far enough from TABLE-010's own baked gold ring that the
-// crop's inscribed circle is clean photo.
+// crop's inscribed circle is clean photo. Source is TABLE-010-Photoroom.png — a background-cut
+// version of the same 1024x1536 sheet (real alpha around the whole sheet's content, not just
+// this one photo grid) — same canvas dimensions as the original, so these boxes carry over
+// unchanged.
 const PIECES = [
   { name: 'avatar-male-01.png', crop: { left: 597, top: 142, width: 72, height: 72 } },
   { name: 'avatar-female-01.png', crop: { left: 757, top: 142, width: 72, height: 72 } },

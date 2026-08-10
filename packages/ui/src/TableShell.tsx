@@ -2,7 +2,11 @@ import React from 'react';
 import { Image, StyleSheet, View, ViewStyle } from 'react-native';
 
 const FRAME_IMAGE = require('../assets/table/table-shell-frame.png');
-const FELT_IMAGE = require('../assets/table/green.png');
+// A richer, gold-rimmed felt render (FELT-GREEN-BORDERED-01.png in the GPT-review catalog) —
+// deliberately a separate file from TableFelt.tsx's shared `green.png` (used by Batak/Home/etc.)
+// rather than replacing it, since this is TableShell-specific and per-app visual changes need an
+// explicit decision before spreading elsewhere (see docs/governance/guardrails.md).
+const FELT_IMAGE = require('../assets/table/felt-green-bordered.png');
 
 // Matches table-shell-frame.png's pixel dimensions (941x1672) so the felt and frame layers
 // stay pixel-aligned to each other regardless of the width TableShell is rendered at.

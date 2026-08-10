@@ -1,80 +1,31 @@
 // scripts/build-table-shell-frame.js
-// One-off dev tool: alpha-punches FRAME-C-NOFELT-01A.png's opaque-black center into real
-// transparency so packages/ui/src/TableShell.tsx can composite it over a felt image at
-// runtime. Uses flood-fill connectivity masking to distinguish the felt hole from disconnected
-// dark regions like plaques and buttons (kept opaque).
+// One-off dev tool: copies FRAME-C-NOFELT-01A-dup-Photoroom.png to
+// packages/ui/assets/table/table-shell-frame.png so packages/ui/src/TableShell.tsx can composite
+// it over a felt image at runtime, then re-verifies its alpha channel against the same
+// region checks this script always has (see below).
 //
-// The final alpha is derived BINARILY from the (closed) connectivity mask — mask[i] ? 0 : 255.
-// An earlier approach re-derived alpha from each masked-in pixel's own luminance instead;
-// connectivity already proved which pixels are part of the hole, and re-deriving alpha from
-// luminance let dust/grain/highlight specks inside the hole (which are still <= the flood
-// threshold, or get pulled in by closeMaskGaps, but have elevated luminance) produce visible
-// mid-range alpha "speckle" — that approach was abandoned. The binary mask has a hard, jagged
-// 0/255 edge, so the alpha channel is blurred afterward to soften that edge into a smooth
-// few-pixel transition, without reintroducing luminance sensitivity (the blur smooths the mask's
-// edge geometry, not per-pixel brightness).
+// This used to alpha-punch FRAME-C-NOFELT-01A.png's opaque-black center itself, via flood-fill
+// connectivity masking (see git history for that algorithm — floodFillHoleMask + closeMaskGaps +
+// binary-mask-to-alpha + blurAlphaChannel, the end result of a 4-round fix arc). The new source,
+// FRAME-C-NOFELT-01A-dup-Photoroom.png, already comes with a correct alpha channel (processed
+// externally through Photoroom) — verified directly against this file's own region checks below
+// before adopting it, including the specific disconnected-dark-region cases (gear icon,
+// hamburger icon, corner medallions) that the original flood-fill algorithm existed to get
+// right. Since the source is already correct, this script no longer needs to compute anything;
+// it just copies and re-verifies, so the checks still guard against a future source swap
+// breaking silently.
 //
 // Not part of the app build — run manually: node scripts/build-table-shell-frame.js
 const path = require('path');
 const sharp = require('sharp');
-const { floodFillHoleMask, closeMaskGaps } = require('./lib/floodFillHoleMask');
-const { blurAlphaChannel } = require('./lib/blurAlphaChannel');
 
 const SOURCE = path.join(
-  __dirname, '..', 'docs', 'references', 'GPT-powerful-assets-review', 'FRAME-C-NOFELT-01A.png'
+  __dirname, '..', 'docs', 'references', 'GPT-powerful-assets-review', 'FRAME-C-NOFELT-01A-dup-Photoroom.png'
 );
 const OUTPUT = path.join(__dirname, '..', 'packages', 'ui', 'assets', 'table', 'table-shell-frame.png');
 
-// Retuned down from 40: under the old per-pixel-luminance-feather approach, masked pixels with
-// luminance in the (22,40] band still contributed nonzero opacity (up to ~79 alpha), which
-// happened to keep the plaque/gear/hamburger region-average checks above their thresholds even
-// though a modest amount of their shadow area gets pulled into the connectivity mask by
-// FLOOD_THRESHOLD=40. Switching to binary mask->alpha (this rework) removes that nonzero
-// contribution entirely (masked now always means alpha=0), so that same amount of mask
-// over-inclusion now reads as a real opacity drop and regresses those checks. Measured directly:
-// FLOOD_THRESHOLD=40 covers the felt hole box at 100.00% either way, and 27 still covers it at
-// 99.99% (i.e. the actual hole is unaffected), while whole-image mask coverage barely moves
-// (40.57% -> 40.36%) — the difference is only the marginal shadow-bridging into frame regions
-// that the old feathering was inadvertently compensating for. 27 keeps a comfortable safety
-// margin below FLOOD_THRESHOLD=29, where a single connectivity bridge pixel flips the
-// gear-icon region from passing to failing.
-const FLOOD_THRESHOLD = 27;
-const EDGE_BLUR_RADIUS = 3;
-
 async function main() {
-  const { data, info } = await sharp(SOURCE).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-  const pixelCount = info.width * info.height;
-
-  // Compute flood-fill mask from the known center seed, generously including antialiased edges
-  const seedX = Math.round(info.width * 0.5);
-  const seedY = Math.round(info.height * 0.5);
-  let holeMask = floodFillHoleMask(data, info.width, info.height, seedX, seedY, { floodThreshold: FLOOD_THRESHOLD });
-
-  // Close small gaps (isolated bright specks inside the hole that failed the flood threshold)
-  // Use moderate threshold (0.5 = 50% neighbors masked) to absorb boundary speckles without
-  // over-closing into frame regions
-  holeMask = closeMaskGaps(holeMask, info.width, info.height, 3, 0.5);
-
-  // Binary alpha from the mask: no per-pixel luminance check left to trip over a dust speck
-  // once a pixel is inside the connected hole.
-  const binaryAlpha = new Uint8Array(pixelCount);
-  for (let i = 0; i < pixelCount; i++) {
-    binaryAlpha[i] = holeMask[i] === 1 ? 0 : 255;
-  }
-
-  // Soften the hard binary edge into a smooth few-pixel transition by blurring the alpha
-  // channel itself (edge geometry), not by re-deriving alpha from brightness.
-  const blurredAlpha = blurAlphaChannel(binaryAlpha, info.width, info.height, EDGE_BLUR_RADIUS);
-
-  // Recombine the blurred alpha with the original RGB (unchanged).
-  const output = Buffer.from(data);
-  for (let i = 0; i < pixelCount; i++) {
-    output[i * 4 + 3] = blurredAlpha[i];
-  }
-
-  await sharp(output, { raw: { width: info.width, height: info.height, channels: 4 } })
-    .png()
-    .toFile(OUTPUT);
+  await sharp(SOURCE).png().toFile(OUTPUT);
 
   // Region-based sanity checks: measure alpha averages across known problem areas
   const { data: verifyData, info: verifyInfo } = await sharp(OUTPUT).raw().toBuffer({ resolveWithObject: true });
