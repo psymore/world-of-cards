@@ -42,10 +42,21 @@ export interface TableShellProps {
   children?: React.ReactNode;
 }
 
-// Starting value picked during brainstorming (subtler than a 38deg mockup, more than a
-// 12deg one) — see docs/superpowers/specs/2026-08-10-table-shell-redesign-design.md §7.
-// Tune visually against this component, not the CSS mockup, before treating as final.
-const TILT_TRANSFORM: NonNullable<ViewStyle['transform']> = [{ perspective: 1400 }, { rotateX: '20deg' }];
+// rotateX angle picked during brainstorming (subtler than a 38deg mockup, more than a 12deg
+// one) — see docs/superpowers/specs/2026-08-10-table-shell-redesign-design.md §7.
+//
+// perspective retuned up from 1400 to 2500 after the tilt visibly softened seat text: a CSS 3D
+// transform gets rasterized once at the element's flat layout size and then GPU-warped, so any
+// point far from the rotation's center (top/bottom seats sit right at the far/near edges) gets
+// resampled through a real scale change — shrunk at the far edge, magnified at the near one —
+// and both directions blur a bitmap that was never re-rendered at the new size. `perspective` is
+// the lever for how aggressively that scale varies with distance from center: a bigger value
+// reads as a more distant "camera," which flattens the projection (less scale swing top-to-
+// bottom) for the same rotateX angle. Verified visually at 1400/2000/2500/3000/4000 — 2500 was
+// the smallest increase where seat text stopped looking visibly softer than the flat state,
+// while the table still clearly reads as tilted (2000 was close but still a little soft; 3000+
+// started flattening the depth cue further than needed for the sharpness gained).
+const TILT_TRANSFORM: NonNullable<ViewStyle['transform']> = [{ perspective: 2500 }, { rotateX: '20deg' }];
 
 function TableShellComponent({ seats, tilt = false, children }: TableShellProps) {
   return (
