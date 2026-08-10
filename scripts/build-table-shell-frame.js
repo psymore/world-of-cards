@@ -7,7 +7,7 @@
 const path = require('path');
 const sharp = require('sharp');
 const { punchBlackToAlpha } = require('./lib/punchBlackToAlpha');
-const { floodFillHoleMask } = require('./lib/floodFillHoleMask');
+const { floodFillHoleMask, closeMaskGaps } = require('./lib/floodFillHoleMask');
 
 const SOURCE = path.join(
   __dirname, '..', 'docs', 'references', 'GPT-powerful-assets-review', 'FRAME-C-NOFELT-01A.png'
@@ -24,7 +24,12 @@ async function main() {
   // Compute flood-fill mask from the known center seed, generously including antialiased edges
   const seedX = Math.round(info.width * 0.5);
   const seedY = Math.round(info.height * 0.5);
-  const holeMask = floodFillHoleMask(data, info.width, info.height, seedX, seedY, { floodThreshold: FLOOD_THRESHOLD });
+  let holeMask = floodFillHoleMask(data, info.width, info.height, seedX, seedY, { floodThreshold: FLOOD_THRESHOLD });
+
+  // Close small gaps (isolated bright specks inside the hole that failed the flood threshold)
+  // Use moderate threshold (0.5 = 50% neighbors masked) to absorb boundary speckles without
+  // over-closing into frame regions
+  holeMask = closeMaskGaps(holeMask, info.width, info.height, 3, 0.5);
 
   // Apply alpha punch to all pixels
   const punched = punchBlackToAlpha(data, { lowThreshold: LOW_THRESHOLD, highThreshold: HIGH_THRESHOLD });
@@ -58,11 +63,31 @@ async function main() {
     return count > 0 ? sum / count : 0;
   };
 
+  // Helper: measure fraction of pixels in a region with alpha > threshold
+  const measureSpeckleFraction = (x1, y1, x2, y2, alphaThreshold, step = 5) => {
+    let speckles = 0;
+    let count = 0;
+    for (let y = y1; y <= y2; y += step) {
+      for (let x = x1; x <= x2; x += step) {
+        const idx = (y * verifyInfo.width + x) * 4;
+        if (verifyData[idx + 3] > alphaThreshold) {
+          speckles++;
+        }
+        count++;
+      }
+    }
+    return count > 0 ? speckles / count : 0;
+  };
+
   // Center should be transparent
   const centerAlpha = verifyData[(Math.round(verifyInfo.height * 0.5) * verifyInfo.width + Math.round(verifyInfo.width * 0.5)) * 4 + 3];
 
   // Hole region should be mostly transparent (safely inside the felt hole, away from wood rim)
   const holeRegionAvg = measureRegionAlpha(250, 400, 700, 1250);
+
+  // Check for speckles: isolated opaque pixels inside the transparent hole
+  // Sample at step=3 for denser measurement to catch fine speckle patterns
+  const holeSpeckleFraction = measureSpeckleFraction(250, 400, 700, 1250, 60, 3);
 
   // Frame regions should be opaque
   const plaqueAvg = measureRegionAlpha(60, 700, 220, 1000);
@@ -71,6 +96,7 @@ async function main() {
 
   const checks = [
     { name: 'hole region avg', value: holeRegionAvg, min: undefined, max: 50, operator: '<=' },
+    { name: 'hole speckle fraction (alpha>60)', value: holeSpeckleFraction, min: undefined, max: 0.05, operator: '<=' },
     { name: 'center pixel', value: centerAlpha, min: undefined, max: 10, operator: '<=' },
     { name: 'plaque region avg', value: plaqueAvg, min: 0.88 * 255, max: undefined, operator: '>=' },
     { name: 'gear-icon region avg', value: gearAvg, min: 0.78 * 255, max: undefined, operator: '>=' },
@@ -92,7 +118,7 @@ async function main() {
   }
 
   console.log(`wrote ${OUTPUT}`);
-  console.log(`verified: hole avg=${holeRegionAvg.toFixed(1)}, center alpha=${centerAlpha}, plaque avg=${plaqueAvg.toFixed(1)}, gear avg=${gearAvg.toFixed(1)}, hamburger avg=${hamburgerAvg.toFixed(1)}`);
+  console.log(`verified: hole avg=${holeRegionAvg.toFixed(1)}, hole speckles=${(holeSpeckleFraction*100).toFixed(2)}%, center alpha=${centerAlpha}, plaque avg=${plaqueAvg.toFixed(1)}, gear avg=${gearAvg.toFixed(1)}, hamburger avg=${hamburgerAvg.toFixed(1)}`);
 }
 
 main().catch((err) => {

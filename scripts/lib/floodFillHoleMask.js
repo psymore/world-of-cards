@@ -31,4 +31,35 @@ function floodFillHoleMask(rgba, width, height, seedX, seedY, { floodThreshold }
   return mask;
 }
 
-module.exports = { floodFillHoleMask };
+// Fills small isolated gaps in a flood-fill mask — a bright dust/grain speck inside the
+// hole that failed the flood threshold at its own pixel, but is surrounded by masked
+// neighbors, gets absorbed into the mask too. A genuinely separate region (a plaque, an
+// icon button) is NOT absorbed: its neighbors are mostly unmasked wood, not hole, so it
+// never crosses the majority-neighbors-masked bar below.
+// neighborThreshold: minimum fraction of neighbors that must be masked for a pixel to be filled
+// (default 0.75 = 3 of 4 neighbors; lower = more aggressive filling)
+function closeMaskGaps(mask, width, height, iterations, neighborThreshold = 0.75) {
+  let current = mask;
+  for (let iter = 0; iter < iterations; iter++) {
+    const next = Uint8Array.from(current);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const index = y * width + x;
+        if (current[index] === 1) continue;
+        let maskedNeighbors = 0;
+        let totalNeighbors = 0;
+        if (x + 1 < width) { totalNeighbors++; if (current[index + 1] === 1) maskedNeighbors++; }
+        if (x - 1 >= 0) { totalNeighbors++; if (current[index - 1] === 1) maskedNeighbors++; }
+        if (y + 1 < height) { totalNeighbors++; if (current[index + width] === 1) maskedNeighbors++; }
+        if (y - 1 >= 0) { totalNeighbors++; if (current[index - width] === 1) maskedNeighbors++; }
+        if (totalNeighbors > 0 && maskedNeighbors / totalNeighbors >= neighborThreshold) {
+          next[index] = 1;
+        }
+      }
+    }
+    current = next;
+  }
+  return current;
+}
+
+module.exports = { floodFillHoleMask, closeMaskGaps };

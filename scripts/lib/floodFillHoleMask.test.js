@@ -1,7 +1,7 @@
 // scripts/lib/floodFillHoleMask.test.js
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { floodFillHoleMask } = require('./floodFillHoleMask');
+const { floodFillHoleMask, closeMaskGaps } = require('./floodFillHoleMask');
 
 test('seed pixel itself is masked', () => {
   // 3x3 grid: seed at (1,1) center
@@ -149,4 +149,76 @@ test('threshold boundary is respected', () => {
   assert.equal(mask[1 * 3 + 1], 1, 'center masked');
   assert.equal(mask[1 * 3 + 2], 1, 'right neighbor at exactly threshold (luminance 30) is masked');
   assert.equal(mask[2 * 3 + 1], 0, 'bottom neighbor above threshold (luminance 31) is NOT masked');
+});
+
+test('closeMaskGaps: isolated unmasked pixel surrounded by masked gets filled', () => {
+  // 3x3 grid: center masked, all neighbors masked, except one gap at (1,2)
+  const mask = new Uint8Array(9);
+  // Set all to 1 (masked)
+  for (let i = 0; i < 9; i++) {
+    mask[i] = 1;
+  }
+  // Unset the center gap at (1, 2) to create an isolated hole
+  mask[2 * 3 + 1] = 0;
+
+  const closed = closeMaskGaps(mask, 3, 3, 1);
+  assert.equal(closed[2 * 3 + 1], 1, 'isolated gap surrounded by masked neighbors should be filled');
+});
+
+test('closeMaskGaps: pixel with only 1 of 4 neighbors masked does NOT get filled', () => {
+  // 5x5 grid: mostly unmasked, with just one masked pixel
+  const mask = new Uint8Array(25);
+  mask[2 * 5 + 2] = 1;
+
+  const closed = closeMaskGaps(mask, 5, 5, 1);
+  // All other pixels should still be unmasked (only 1 neighbor is masked, < 75%)
+  for (let i = 0; i < 25; i++) {
+    if (i !== 2 * 5 + 2) {
+      assert.equal(closed[i], 0, 'pixel at ' + i + ' should remain unmasked');
+    }
+  }
+});
+
+test('closeMaskGaps: zero iterations changes nothing', () => {
+  const mask = new Uint8Array(9);
+  mask[0] = 1;
+  mask[8] = 1;
+
+  const closed = closeMaskGaps(mask, 3, 3, 0);
+  assert.deepEqual(closed, mask, '0 iterations should return unchanged mask');
+});
+
+test('closeMaskGaps: small 2-pixel gap closes after 2 iterations', () => {
+  // 5x5: create a cross pattern of masked pixels with a small 2-pixel gap
+  // Masked: center + 4 neighbors (cross shape)
+  const mask = new Uint8Array(25);
+  mask[2 * 5 + 2] = 1; // center
+  mask[1 * 5 + 2] = 1; // top
+  mask[3 * 5 + 2] = 1; // bottom
+  mask[2 * 5 + 1] = 1; // left
+  mask[2 * 5 + 3] = 1; // right
+
+  // Add two gap pixels that should be surrounded enough to close after 2 iterations
+  // Create a 2x1 gap adjacent to the cross
+  // At (1, 1) and (1, 2) - these have some masked neighbors
+  mask[1 * 5 + 1] = 0; // gap
+  mask[1 * 5 + 2] = 1; // already masked (top of cross)
+  // Actually, let me create a clearer case: a pixel with exactly 3 of 4 neighbors masked
+  // At (2, 1) neighbor positions: up=edge, down=masked, left=masked, right=masked = 3/3 = 100%
+
+  // Simpler test: create a ring of masked pixels around a gap
+  const gap_mask = new Uint8Array(25);
+  // Mark a 3x3 region as masked except the center
+  for (let y = 1; y < 4; y++) {
+    for (let x = 1; x < 4; x++) {
+      if (x === 2 && y === 2) {
+        gap_mask[y * 5 + x] = 0; // The gap
+      } else {
+        gap_mask[y * 5 + x] = 1;
+      }
+    }
+  }
+
+  const closed = closeMaskGaps(gap_mask, 5, 5, 2);
+  assert.equal(closed[2 * 5 + 2], 1, 'gap surrounded by 8 masked neighbors should be filled after 2 iterations');
 });
