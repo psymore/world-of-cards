@@ -9,6 +9,10 @@ const SEAT_SAMPLE = {
   right: { name: 'East AI', trickCount: 0 },
 } as const;
 
+// Prototype-only screen: exercises TableShell's flat/tilted and 4-seat/2-seat cases with no
+// game-state dependency, so the component can be judged purely on how it looks before it's
+// wired into a real game (a separate, later plan). No zustand store entry for tilt/seat-count
+// — this is throwaway exploration state, not a persisted card/table template.
 export function TableShellPreview() {
   const [tilt, setTilt] = useState(false);
   const [fourSeats, setFourSeats] = useState(true);
@@ -49,5 +53,8 @@ const styles = StyleSheet.create({
   controls: { flexDirection: 'row', gap: 12, marginBottom: 12 },
   toggleButton: { backgroundColor: '#2a1a13', padding: 10, borderRadius: 6, alignItems: 'center' },
   toggleButtonLabel: { color: '#e8e3d2', fontWeight: 'bold' },
+  // aspectRatio, not a fixed height: a fixed 480 caused the tall (941x1672) table image to
+  // overflow its box and bleed into the heading/toggles above and CardGallery below on
+  // narrower viewports.
   tableWrapper: { aspectRatio: TABLE_SHELL_ASPECT_RATIO },
 });
