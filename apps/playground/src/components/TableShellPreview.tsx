@@ -1,13 +1,31 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { SeatIdentity, TABLE_SHELL_ASPECT_RATIO, TableShell } from '@world-cards/ui';
+import { SeatIdentity, SeatIdentityTurnState, TABLE_SHELL_ASPECT_RATIO, TableShell, TableSeatPosition } from '@world-cards/ui';
 
 const SEAT_SAMPLE = {
-  top: { name: 'You', trickCount: 0, avatar: 'male-01' },
+  top: { name: 'You', trickCount: 0, avatar: 'female-01' },
   bottom: { name: 'South AI', trickCount: 2, avatar: 'female-01' },
-  left: { name: 'West AI', trickCount: 1, avatar: 'male-02' },
-  right: { name: 'East AI', trickCount: 0, avatar: 'female-03' },
+  left: { name: 'West AI', trickCount: 1, avatar: 'female-01' },
+  right: { name: 'East AI', trickCount: 0, avatar: 'female-01' },
 } as const;
+
+// Cycle order for the turn toggle below — null (no seat active) included so the placeholder
+// glow can be compared side-by-side against the fully-idle state.
+const ACTIVE_TURN_CYCLE: (TableSeatPosition | null)[] = ['top', 'right', 'bottom', 'left', null];
+
+// Clockwise seating order, used only to derive which seat is "next" after whichever one is
+// active — matches TABLE-034's 3-state reference (active/next/idle), not any real game's turn
+// rule (no game is wired to this prototype screen).
+const CLOCKWISE_ORDER: TableSeatPosition[] = ['top', 'right', 'bottom', 'left'];
+
+function turnStateFor(position: TableSeatPosition, activeSeat: TableSeatPosition | null): SeatIdentityTurnState {
+  if (position === activeSeat) return 'active';
+  if (activeSeat != null) {
+    const nextIndex = (CLOCKWISE_ORDER.indexOf(activeSeat) + 1) % CLOCKWISE_ORDER.length;
+    if (position === CLOCKWISE_ORDER[nextIndex]) return 'next';
+  }
+  return 'idle';
+}
 
 // Prototype-only screen: exercises TableShell's flat/tilted and 4-seat/2-seat cases with no
 // game-state dependency, so the component can be judged purely on how it looks before it's
@@ -16,17 +34,22 @@ const SEAT_SAMPLE = {
 export function TableShellPreview() {
   const [tilt, setTilt] = useState(false);
   const [fourSeats, setFourSeats] = useState(true);
+  const [activeSeat, setActiveSeat] = useState<TableSeatPosition | null>('top');
 
   const seats = fourSeats
     ? {
-        top: <SeatIdentity {...SEAT_SAMPLE.top} />,
-        bottom: <SeatIdentity {...SEAT_SAMPLE.bottom} />,
-        left: <SeatIdentity {...SEAT_SAMPLE.left} orientation="rotated-left" />,
-        right: <SeatIdentity {...SEAT_SAMPLE.right} orientation="rotated-right" />,
+        top: <SeatIdentity {...SEAT_SAMPLE.top} turnState={turnStateFor('top', activeSeat)} />,
+        bottom: <SeatIdentity {...SEAT_SAMPLE.bottom} turnState={turnStateFor('bottom', activeSeat)} />,
+        left: (
+          <SeatIdentity {...SEAT_SAMPLE.left} orientation="rotated-left" turnState={turnStateFor('left', activeSeat)} />
+        ),
+        right: (
+          <SeatIdentity {...SEAT_SAMPLE.right} orientation="rotated-right" turnState={turnStateFor('right', activeSeat)} />
+        ),
       }
     : {
-        top: <SeatIdentity {...SEAT_SAMPLE.top} />,
-        bottom: <SeatIdentity {...SEAT_SAMPLE.bottom} />,
+        top: <SeatIdentity {...SEAT_SAMPLE.top} turnState={turnStateFor('top', activeSeat)} />,
+        bottom: <SeatIdentity {...SEAT_SAMPLE.bottom} turnState={turnStateFor('bottom', activeSeat)} />,
       };
 
   return (
@@ -38,6 +61,18 @@ export function TableShellPreview() {
         </Pressable>
         <Pressable testID="seat-count-toggle" onPress={() => setFourSeats((v) => !v)} style={styles.toggleButton}>
           <Text style={styles.toggleButtonLabel}>{fourSeats ? '4 seats' : '2 seats'}</Text>
+        </Pressable>
+        <Pressable
+          testID="active-turn-toggle"
+          onPress={() =>
+            setActiveSeat((current) => {
+              const nextIndex = (ACTIVE_TURN_CYCLE.indexOf(current) + 1) % ACTIVE_TURN_CYCLE.length;
+              return ACTIVE_TURN_CYCLE[nextIndex];
+            })
+          }
+          style={styles.toggleButton}
+        >
+          <Text style={styles.toggleButtonLabel}>Turn: {activeSeat ?? 'none'}</Text>
         </Pressable>
       </View>
       <View style={styles.tableWrapper}>
