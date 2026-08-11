@@ -6,7 +6,12 @@ const FRAME_IMAGE = require('../assets/table/table-shell-frame.png');
 // deliberately a separate file from TableFelt.tsx's shared `green.png` (used by Batak/Home/etc.)
 // rather than replacing it, since this is TableShell-specific and per-app visual changes need an
 // explicit decision before spreading elsewhere (see docs/governance/guardrails.md).
-const FELT_IMAGE = require('../assets/table/felt-green-bordered.png');
+//
+// -masked, not the plain copy: the plain felt is a full rounded-rect that's wider than
+// FRAME_IMAGE's own oval ring, so it showed green through the corners outside the ring, not just
+// through the actual center hole. build-felt-hole-mask.js derives the hole's real shape from
+// FRAME_IMAGE's own alpha channel and punches the felt down to just that shape.
+const FELT_IMAGE = require('../assets/table/felt-green-bordered-masked.png');
 
 // Matches table-shell-frame.png's pixel dimensions (941x1672) so the felt and frame layers
 // stay pixel-aligned to each other regardless of the width TableShell is rendered at.
