@@ -56,7 +56,10 @@ export interface SeatIdentityTurnStateFrames {
 
 export interface SeatIdentityProps {
   name: string;
-  trickCount: number;
+  // Caller-formatted status text (e.g. Pişti's "🂠 N" captured-card count, or "N tricks" for a
+  // trick-taking game) — SeatIdentity just lays it out, matching apps/mobile's PlayerBadge
+  // pattern instead of assuming trick-taking terminology.
+  statusText: string;
   orientation?: SeatIdentityOrientation;
   avatar?: SeatIdentityAvatar;
   turnState?: SeatIdentityTurnState;
@@ -117,7 +120,7 @@ function contentSize(anchorWidth: number, anchorHeight: number, rotated: boolean
 
 function SeatIdentityComponent({
   name,
-  trickCount,
+  statusText,
   orientation = 'horizontal',
   avatar = 'male-01',
   turnState = 'idle',
@@ -223,7 +226,7 @@ function SeatIdentityComponent({
             {name}
           </Text>
           <Text style={[styles.trickText, { fontSize: 5.5 * scale, lineHeight: 7 * scale }]} numberOfLines={1}>
-            {trickCount} tricks
+            {statusText}
           </Text>
         </View>
         <Image
