@@ -1,42 +1,28 @@
 import React from 'react';
 import { Image, StyleSheet, View, ViewStyle } from 'react-native';
 
-const FRAME_IMAGE = require('../assets/table/table-shell-frame.png');
-// A richer, gold-rimmed felt render (FELT-GREEN-BORDERED-01.png in the GPT-review catalog) —
-// deliberately a separate file from TableFelt.tsx's shared `green.png` (used by Batak/Home/etc.)
-// rather than replacing it, since this is TableShell-specific and per-app visual changes need an
-// explicit decision before spreading elsewhere (see docs/governance/guardrails.md).
-//
-// -masked, not the plain copy: the plain felt is a full rounded-rect that's wider than
-// FRAME_IMAGE's own oval ring, so it showed green through the corners outside the ring, not just
-// through the actual center hole. build-felt-hole-mask.js derives the hole's real shape from
-// FRAME_IMAGE's own alpha channel and punches the felt down to just that shape.
-const FELT_IMAGE = require('../assets/table/felt-green-bordered-masked.png');
+// A single pre-merged wood-frame + green-felt + ambient-glow image (source:
+// docs/references/GPT-powerful-assets-review/assets-v1/TABLE-ASSEMBLED-TRY-02-GLOW.png) —
+// already cleanly cut (alpha 0 outside the wood ring, ~253 inside), so unlike the frame this
+// replaces, there's no separate felt layer to composite: this one image is the whole table
+// surface.
+const SURFACE_IMAGE = require('../assets/table/table-shell-surface.png');
 
-// Matches table-shell-frame.png's pixel dimensions (941x1672) so the felt and frame layers
-// stay pixel-aligned to each other regardless of the width TableShell is rendered at.
-export const TABLE_SHELL_ASPECT_RATIO = 941 / 1672;
+// Matches table-shell-surface.png's pixel dimensions (1024x1536).
+export const TABLE_SHELL_ASPECT_RATIO = 1024 / 1536;
 
 export type TableSeatPosition = 'top' | 'bottom' | 'left' | 'right';
 
-// Calibrated against FRAME-C-NOFELT-01A.png's baked glass-plaque positions using the Task 5
-// Playground preview: pixel-sampled where each plaque's dark glass interior actually falls
-// versus the anchor box's center, then nudged each anchor toward that measured center (top
-// needed the largest correction — the initial value centered "You" on the plaque's lower rim/
-// gold trim rather than its glass; left/right and bottom needed smaller nudges).
-//
-// left/right width re-measured during the code-review fix-up for the "West AI"/"East AI"
-// clipping bug: pixel-sampling a text-free row (2-seat mode, so the plaque is empty) found the
-// baked glass interior is only ~34 CSS px wide at typical preview widths, versus this anchor's
-// previous 13%-width (~46 CSS px) — the anchor was overshooting the glass into the wood/gold
-// trim on the outward side of each plaque (right side of "left", both sides of "right").
-// Narrowed to 9.5% (~34 CSS px) and re-centered so the anchor's edges land on the measured
-// glass edges instead of spilling past them.
+// Calibrated against table-shell-surface.png's own baked plaque-bar positions — measured by eye
+// against the rendered image (see docs/superpowers/specs/2026-08-12-pisti-table-shell-pilot-design.md
+// §2), the same percentages already validated in the Playground's v1 comparison tab
+// (apps/playground/src/components/TableShellPreview.tsx's V1_SEAT_ANCHOR_STYLE) before this asset
+// was adopted as the real default.
 const SEAT_ANCHOR_STYLE: Record<TableSeatPosition, ViewStyle> = {
-  top: { position: 'absolute', top: '1.4%', left: '29%', right: '30%', height: '10.5%' },
-  bottom: { position: 'absolute', bottom: '4.3%', left: '29%', right: '30%', height: '10.5%' },
-  left: { position: 'absolute', left: '9%', top: '31.3%', bottom: '33.9%', width: '9.5%' },
-  right: { position: 'absolute', right: '11%', top: '31.3%', bottom: '33.9%', width: '9.5%' },
+  top: { position: 'absolute', top: '5%', left: '31%', right: '29%', height: '4.6%' },
+  bottom: { position: 'absolute', bottom: '10.5%', left: '31%', right: '29%', height: '4.9%' },
+  left: { position: 'absolute', left: '7.3%', top: '34.8%', bottom: '38.2%', width: '13.7%' },
+  right: { position: 'absolute', right: '7.3%', top: '34.8%', bottom: '38.2%', width: '13.7%' },
 };
 
 const SEAT_POSITIONS: TableSeatPosition[] = ['top', 'bottom', 'left', 'right'];
@@ -68,16 +54,10 @@ function TableShellComponent({ seats, tilt = false, children }: TableShellProps)
     <View style={styles.backdrop}>
       <View style={[styles.tableBox, tilt ? { transform: TILT_TRANSFORM } : null]} testID="table-shell">
         <Image
-          source={FELT_IMAGE}
+          source={SURFACE_IMAGE}
           style={[StyleSheet.absoluteFill, styles.fill]}
           resizeMode="stretch"
-          testID="table-shell-felt"
-        />
-        <Image
-          source={FRAME_IMAGE}
-          style={[StyleSheet.absoluteFill, styles.fill]}
-          resizeMode="stretch"
-          testID="table-shell-frame"
+          testID="table-shell-surface"
         />
         {children != null ? (
           <View style={[StyleSheet.absoluteFill, styles.centerContent]}>{children}</View>

@@ -4,10 +4,10 @@ import { render, screen } from '@testing-library/react-native';
 import { TableShell } from './TableShell';
 
 describe('TableShell', () => {
-  it('renders the felt and frame layers', async () => {
+  it('renders the single merged surface image', async () => {
     await render(<TableShell />);
-    expect(screen.getByTestId('table-shell-felt')).toBeTruthy();
-    expect(screen.getByTestId('table-shell-frame')).toBeTruthy();
+    expect(screen.getByTestId('table-shell-surface')).toBeTruthy();
+    expect(screen.queryByTestId('table-shell-felt')).toBeNull();
   });
 
   it('renders seat content only for seats that were provided', async () => {
@@ -41,6 +41,6 @@ describe('TableShell', () => {
     const table = screen.getByTestId('table-shell');
     const styleArray = Array.isArray(table.props.style) ? table.props.style : [table.props.style];
     const transformStyle = styleArray.find((s: any) => s != null && s.transform != null);
-    expect(transformStyle.transform).toEqual([{ perspective: 1400 }, { rotateX: '20deg' }]);
+    expect(transformStyle.transform).toEqual([{ perspective: 2500 }, { rotateX: '20deg' }]);
   });
 });
