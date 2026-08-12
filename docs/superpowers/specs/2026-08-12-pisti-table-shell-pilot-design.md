@@ -51,6 +51,17 @@ Each of the four rendered seats gets a fixed avatar from the existing 6-image se
 
 Batak still uses both. They become unused by Pişti specifically, not dead code repo-wide.
 
+### 8. Integration architecture: full migration, nameplate-only seat anchors
+
+Confirmed during planning (`PistiTable.tsx` read in full): `TableShell`'s floating-object layout doesn't line up with Pişti's current screen-relative pile/hand/deal-flight positioning, and `TableShell`'s seat anchors are sized only for a nameplate (`SeatIdentity`'s whole scope) — Pişti's opponent seats today show a nameplate *plus* a face-down card stack, which can't both fit in the baked plaque anchor. User confirmed **full migration** (not a seats-only pilot) with this specific split:
+
+- `TableShell`'s 4 anchors hold only the nameplate (`SeatIdentity`, replacing `PlayerBadge`) — name, avatar, turn-state ring.
+- The pile becomes `TableShell`'s `children` (already supported — rendered centered inside the box via `styles.centerContent`), replacing today's separately-positioned `pileArea`/`pileMat`.
+- Face-down opponent card stacks, `HandFrame`, and the human's hand fan **keep their current positioning logic** — `OpponentSeat`'s card-stack rendering, `fillWidthMarginPx` fan math, `HAND_ROW_PEAK_DISTANCE_FROM_BOTTOM`, and `HandFrame`'s own bottom-offset derivation are all self-contained (not tied to the old full-bleed felt), so they render layered around/over the new floating `TableShell` object rather than needing new anchor geometry.
+- The human's own nameplate (currently the `<PlayerBadge>` call inside `styles.handArea`, above the hand fan) moves into `TableShell`'s `bottom` anchor; the hand fan of face-up cards itself stays exactly where it is today, outside/below the table box.
+- `REVEAL_ORIGIN_OFFSETS` (`apps/mobile/src/table/seating.ts:115-120`) are fixed pixel deltas, not measured — the on-screen distance from the pile to each seat changes once seats move to `TableShell`'s internal anchors, so these will very likely need visual re-tuning once live. This is a tuning pass against the real rendered result, not a logic change, and not blocking — call out during implementation if the travel animations look visually wrong (too short/long a throw), don't guess new values speculatively now.
+- `destRef`/`handFanRef` `measureInWindow` calls need no change — they measure real rendered positions regardless of what's behind them.
+
 ## Explicitly out of scope
 
 - Batak, Home, `TableEdgeRails`, gömmeli's 3-seat layout — untouched, per the prior specs' decision.
@@ -64,3 +75,4 @@ Note: unlike `FRAME-C-NOFELT-01A.png` (the prior spec's asset), `TABLE-ASSEMBLED
 - `SeatIdentity.test.tsx`: update for the `statusText` rename.
 - `PistiTable.test.tsx`: add coverage asserting the correct seat receives `active`/`next`/`idle` given a known `state.currentPlayerIndex`, using real engine state (not prop-level mocking of a geometric approximation).
 - Visual: react-native-web + Playwright/local Chrome screenshots of Pişti's real table in both 2-player (top+bottom only) and 4-player (all 4 seats) modes, confirming the crossfade and seat-anchor fit hold up with live game data, not just the Playground's static sample data.
+- Visual: confirm the pile (now `TableShell`'s `children`) sits correctly centered inside the table box, and that opponent face-down card stacks + `HandFrame` + the human hand fan still read correctly around the new floating table — a full play-through (deal, play a few cards, capture a trick) to catch any travel-animation offset that now looks visually wrong per Decision 8's `REVEAL_ORIGIN_OFFSETS` note.
