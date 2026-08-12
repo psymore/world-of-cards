@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from 'react';
-import { Image, LayoutChangeEvent, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, Image, LayoutChangeEvent, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { glowShadow } from './glowShadow';
 
 const BADGE_IMAGE = require('../assets/table/seat-badge.png');
@@ -44,12 +44,23 @@ export type SeatIdentityOrientation = 'horizontal' | 'rotated-left' | 'rotated-r
 // glowShadow only — until the real glow-halo/segmented-ring assets are cut from that reference.
 export type SeatIdentityTurnState = 'active' | 'next' | 'idle';
 
+// One ring image per turn state, e.g. the AVATAR-FRAME-MEDIUM-{IDLE,GLOW,APEAK-GLOW} set — an
+// alternative to the default static AVATAR_FRAME_IMAGE for callers that have real per-state ring
+// art instead of the code-drawn glowShadow placeholder. When provided, all three are rendered
+// stacked and cross-faded (see turnOpacities below) instead of glowShadow being applied.
+export interface SeatIdentityTurnStateFrames {
+  idle: number;
+  next: number;
+  active: number;
+}
+
 export interface SeatIdentityProps {
   name: string;
   trickCount: number;
   orientation?: SeatIdentityOrientation;
   avatar?: SeatIdentityAvatar;
   turnState?: SeatIdentityTurnState;
+  turnStateFrames?: SeatIdentityTurnStateFrames;
 }
 
 // Rotating a View via `transform` is paint-only — it never changes the element's own layout box.
@@ -88,6 +99,12 @@ const TURN_STATE_GLOW_RADIUS: Record<SeatIdentityTurnState, number> = {
   idle: 0,
 };
 
+// How long the ring takes to cross-fade from one turn state's art to another's — long enough to
+// read as a deliberate transition ("this player is coming up"), short enough not to lag behind
+// the actual turn change.
+const TURN_STATE_CROSSFADE_MS = 350;
+const TURN_STATES: SeatIdentityTurnState[] = ['idle', 'next', 'active'];
+
 function contentSize(anchorWidth: number, anchorHeight: number, rotated: boolean): { width: number; height: number } {
   const availableLong = rotated ? anchorHeight : anchorWidth;
   const availableShort = rotated ? anchorWidth : anchorHeight;
@@ -104,6 +121,7 @@ function SeatIdentityComponent({
   orientation = 'horizontal',
   avatar = 'male-01',
   turnState = 'idle',
+  turnStateFrames,
 }: SeatIdentityProps) {
   const rotated = orientation !== 'horizontal';
   const transform = ORIENTATION_TRANSFORM[orientation];
@@ -122,6 +140,38 @@ function SeatIdentityComponent({
   const scale = size.width / FALLBACK_SIZE.width;
   const turnGlowRadius = TURN_STATE_GLOW_RADIUS[turnState] * scale;
 
+  // One Animated.Value per state, each holding that state's current opacity (1 = fully shown).
+  // Initialized directly to the starting turnState rather than always starting at 0 and fading
+  // in, so the very first render shows the correct ring immediately with no unwanted flash.
+  const idleOpacity = useRef(new Animated.Value(turnState === 'idle' ? 1 : 0)).current;
+  const nextOpacity = useRef(new Animated.Value(turnState === 'next' ? 1 : 0)).current;
+  const activeOpacity = useRef(new Animated.Value(turnState === 'active' ? 1 : 0)).current;
+  const turnOpacities: Record<SeatIdentityTurnState, Animated.Value> = {
+    idle: idleOpacity,
+    next: nextOpacity,
+    active: activeOpacity,
+  };
+
+  useEffect(() => {
+    if (turnStateFrames == null) return;
+    // Cross-fades by animating every state's opacity toward whether it's the current one —
+    // the outgoing state's ring fades out at the same time the incoming one fades in, rather
+    // than a hard cut.
+    Animated.parallel(
+      TURN_STATES.map((state) =>
+        Animated.timing(turnOpacities[state], {
+          toValue: state === turnState ? 1 : 0,
+          duration: TURN_STATE_CROSSFADE_MS,
+          useNativeDriver: true,
+        })
+      )
+    ).start();
+    // turnOpacities is rebuilt every render from the same three ref-backed Animated.Values, so
+    // it isn't a stable dependency — depending on the refs directly instead avoids re-running
+    // this effect on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [turnState, turnStateFrames, idleOpacity, nextOpacity, activeOpacity]);
+
   return (
     <View style={styles.anchorFill} onLayout={handleLayout}>
       <View
@@ -132,7 +182,7 @@ function SeatIdentityComponent({
           style={[
             styles.avatarRing,
             { width: 14 * scale, height: 14 * scale },
-            turnGlowRadius > 0 ? glowShadow('#f4c542', turnGlowRadius) : null,
+            turnStateFrames == null && turnGlowRadius > 0 ? glowShadow('#f4c542', turnGlowRadius) : null,
           ]}
           testID="seat-identity-avatar"
         >
@@ -144,12 +194,29 @@ function SeatIdentityComponent({
               testID="seat-identity-avatar-image"
             />
           </View>
-          <Image
-            source={AVATAR_FRAME_IMAGE}
-            style={[StyleSheet.absoluteFill, styles.avatarFrameOverlay, AVATAR_COUNTER_TRANSFORM[orientation] ? { transform: AVATAR_COUNTER_TRANSFORM[orientation] } : null]}
-            resizeMode="contain"
-            testID="seat-identity-avatar-frame"
-          />
+          {turnStateFrames == null ? (
+            <Image
+              source={AVATAR_FRAME_IMAGE}
+              style={[StyleSheet.absoluteFill, styles.avatarFrameOverlay, AVATAR_COUNTER_TRANSFORM[orientation] ? { transform: AVATAR_COUNTER_TRANSFORM[orientation] } : null]}
+              resizeMode="contain"
+              testID="seat-identity-avatar-frame"
+            />
+          ) : (
+            TURN_STATES.map((state) => (
+              <Animated.Image
+                key={state}
+                source={turnStateFrames[state]}
+                style={[
+                  StyleSheet.absoluteFill,
+                  styles.avatarFrameOverlay,
+                  { opacity: turnOpacities[state] },
+                  AVATAR_COUNTER_TRANSFORM[orientation] ? { transform: AVATAR_COUNTER_TRANSFORM[orientation] } : null,
+                ]}
+                resizeMode="contain"
+                testID={`seat-identity-avatar-frame-${state}`}
+              />
+            ))
+          )}
         </View>
         <View style={styles.textColumn}>
           <Text style={[styles.nameText, { fontSize: 7 * scale, lineHeight: 9 * scale }]} numberOfLines={1}>

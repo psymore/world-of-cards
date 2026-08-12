@@ -38,4 +38,10 @@ export {
 export { TableShell, TABLE_SHELL_ASPECT_RATIO } from './TableShell';
 export type { TableShellProps, TableSeatPosition } from './TableShell';
 export { SeatIdentity } from './SeatIdentity';
-export type { SeatIdentityProps, SeatIdentityOrientation, SeatIdentityAvatar, SeatIdentityTurnState } from './SeatIdentity';
+export type {
+  SeatIdentityProps,
+  SeatIdentityOrientation,
+  SeatIdentityAvatar,
+  SeatIdentityTurnState,
+  SeatIdentityTurnStateFrames,
+} from './SeatIdentity';
