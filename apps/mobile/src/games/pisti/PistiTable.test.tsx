@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, within } from '@testing-library/react-native';
-import { PistiTable } from './PistiTable';
+import { PistiTable, turnStateForPlayer } from './PistiTable';
 import type { PistiState } from '@world-cards/engine/games/pisti';
 
 const PLAYER_NAMES = { human: 'You', ai: 'Computer' };
@@ -79,5 +79,27 @@ describe('PistiTable', () => {
       />
     );
     expect(screen.getByText('Pişti! +10')).toBeTruthy();
+  });
+});
+
+describe('turnStateForPlayer', () => {
+  const state = makeState(0); // players: ['human', 'ai'], currentPlayerIndex: 0
+
+  it('marks the current player active', () => {
+    expect(turnStateForPlayer('human', state)).toBe('active');
+  });
+
+  it('marks the next player in turn order as next', () => {
+    expect(turnStateForPlayer('ai', state)).toBe('next');
+  });
+
+  it('marks everyone else idle', () => {
+    const threePlayerState = { ...state, players: ['human', 'ai', 'ai2'], currentPlayerIndex: 0 };
+    expect(turnStateForPlayer('ai2', threePlayerState)).toBe('idle');
+  });
+
+  it('wraps around to the first player when the current player is last', () => {
+    const lastPlayerState = { ...state, players: ['human', 'ai'], currentPlayerIndex: 1 };
+    expect(turnStateForPlayer('human', lastPlayerState)).toBe('next');
   });
 });

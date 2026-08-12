@@ -21,6 +21,7 @@ import {
   HAND_FRAME_BOTTOM_OVERSHOOT,
   WOOD_TRIM_COLOR,
 } from '@world-cards/ui';
+import type { SeatIdentityTurnState, SeatIdentityAvatar } from '@world-cards/ui';
 import { useDevTuningStore } from '../../state/devTuningStore';
 import { DeselectableSurface } from '../../components/DeselectableSurface';
 import { useCardSelection } from '../../components/useCardSelection';
@@ -110,6 +111,25 @@ const HAND_ROW_PEAK_DISTANCE_FROM_BOTTOM =
 function capturedStatusText(capturedCount: number): string {
   return `🂠 ${capturedCount}`;
 }
+
+// Real turn order from engine state, replacing the Playground prototype's clockwise-seat-order
+// approximation — active/next both derive from state.players/state.currentPlayerIndex, which is
+// already a plain round-robin (packages/engine/src/games/pisti/rules.ts's nextIndex derivation).
+export function turnStateForPlayer(playerId: string, state: PistiState): SeatIdentityTurnState {
+  if (state.players[state.currentPlayerIndex] === playerId) return 'active';
+  const nextIndex = (state.currentPlayerIndex + 1) % state.players.length;
+  if (state.players[nextIndex] === playerId) return 'next';
+  return 'idle';
+}
+
+// Fixed by seat position, not derived from player identity (docs/superpowers/specs/2026-08-12-
+// pisti-table-shell-pilot-design.md Decision 6) — the simplest deterministic scheme.
+export const AVATAR_BY_POSITION: Record<'top' | 'left' | 'right' | 'bottom', SeatIdentityAvatar> = {
+  top: 'female-01',
+  left: 'male-01',
+  right: 'male-02',
+  bottom: 'female-02',
+};
 
 interface OpponentSeatProps {
   seat: Seat;
