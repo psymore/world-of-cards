@@ -10,10 +10,10 @@ import {
 } from '@world-cards/ui';
 
 const SEAT_SAMPLE = {
-  top: { name: 'You', trickCount: 0, avatar: 'female-01' },
-  bottom: { name: 'South AI', trickCount: 2, avatar: 'female-01' },
-  left: { name: 'West AI', trickCount: 1, avatar: 'female-01' },
-  right: { name: 'East AI', trickCount: 0, avatar: 'female-01' },
+  top: { name: 'You', statusText: '0 tricks', avatar: 'female-01' },
+  bottom: { name: 'South AI', statusText: '2 tricks', avatar: 'female-01' },
+  left: { name: 'West AI', statusText: '1 tricks', avatar: 'female-01' },
+  right: { name: 'East AI', statusText: '0 tricks', avatar: 'female-01' },
 } as const;
 
 // Cycle order for the turn toggle below — null (no seat active) included so the placeholder
