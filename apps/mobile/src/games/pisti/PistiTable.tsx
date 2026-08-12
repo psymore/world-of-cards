@@ -10,8 +10,8 @@ import type { Card } from '@world-cards/engine';
 import type { PistiState } from '@world-cards/engine/games/pisti';
 import {
   PlayingCard,
-  TableFelt,
-  GeminiTableBackground,
+  TableShell,
+  SeatIdentity,
   HandFrame,
   HAND_FRAME_PEAK_FRACTION,
   CARD_DIMS,
@@ -20,12 +20,13 @@ import {
   HAND_FRAME_REVEAL_MARGIN,
   HAND_FRAME_BOTTOM_OVERSHOOT,
   WOOD_TRIM_COLOR,
+  AVATAR_FRAME_IDLE_IMAGE,
+  AVATAR_FRAME_NEXT_IMAGE,
+  AVATAR_FRAME_ACTIVE_IMAGE,
 } from '@world-cards/ui';
-import type { SeatIdentityTurnState, SeatIdentityAvatar } from '@world-cards/ui';
-import { useDevTuningStore } from '../../state/devTuningStore';
+import type { SeatIdentityTurnState, SeatIdentityAvatar, SeatIdentityTurnStateFrames } from '@world-cards/ui';
 import { DeselectableSurface } from '../../components/DeselectableSurface';
 import { useCardSelection } from '../../components/useCardSelection';
-import { PlayerBadge } from '../../table/PlayerBadge';
 import { OpponentSeatGroup, seatLayoutStyles } from '../../table/OpponentSeatGroup';
 import {
   assignSeats,
@@ -40,6 +41,17 @@ import type { DealFlightSeat } from '../../table/DealFlightOverlay';
 import type { DealPhase } from '../../hooks/useDealSequence';
 import { PistiHandFan, pistiCardRotationDeg } from './table/PistiHandFan';
 import { useCardMotion } from '../../table/useCardMotion';
+
+// The real per-state ring art (idle/next/active), replacing SeatIdentity's default glowShadow
+// placeholder — see docs/superpowers/specs/2026-08-12-pisti-table-shell-pilot-design.md Decision 4.
+// Sourced via named exports from @world-cards/ui rather than a direct
+// require('@world-cards/ui/assets/...') — that package's `exports` map only publishes ".", so the
+// asset subpath isn't resolvable from a consuming app.
+const PISTI_TURN_STATE_FRAMES: SeatIdentityTurnStateFrames = {
+  idle: AVATAR_FRAME_IDLE_IMAGE,
+  next: AVATAR_FRAME_NEXT_IMAGE,
+  active: AVATAR_FRAME_ACTIVE_IMAGE,
+};
 
 export interface PistiRevealCard {
   card: Card;
@@ -131,10 +143,14 @@ export const AVATAR_BY_POSITION: Record<'top' | 'left' | 'right' | 'bottom', Sea
   bottom: 'female-02',
 };
 
-interface OpponentSeatProps {
+// The opponent's face-down card stack only. The nameplate half of what used to be one combined
+// `OpponentSeat` now renders separately via renderOpponentNameplate below, because the two halves
+// no longer live in the same place on screen: nameplates are handed to TableShell, which draws
+// them inside its own baked plaque anchors, while the card stacks stay in this file's own
+// top-row/middle-row flex layout.
+interface OpponentHandStackProps {
   seat: Seat;
   state: PistiState;
-  playerNames: Record<string, string>;
   revealCard?: PistiRevealCard | null;
   dealPhase: DealPhase;
   // Measured height of the middle row (see PistiTable's onLayout below) — the real available
@@ -143,7 +159,7 @@ interface OpponentSeatProps {
   sideStackHeight: number;
 }
 
-function OpponentSeat({ seat, state, playerNames, revealCard, dealPhase, sideStackHeight }: OpponentSeatProps) {
+function OpponentHandStack({ seat, state, revealCard, dealPhase, sideStackHeight }: OpponentHandStackProps) {
   const { position, playerId } = seat;
   const isSide = position !== 'top';
   const hand = state.table.zones[`hand-${playerId}`].cards;
@@ -151,8 +167,6 @@ function OpponentSeat({ seat, state, playerNames, revealCard, dealPhase, sideSta
   // No face-down cards render until the deal-flight animation finishes, so the opponent's hand
   // doesn't pop in ahead of the cards that are still visually traveling toward them.
   const count = dealPhase !== 'revealing' ? 0 : Math.max(isRevealing ? hand.length - 1 : hand.length, 0);
-  const capturedCount = state.table.zones[`captured-${playerId}`].cards.length;
-  const isCurrentTurn = state.players[state.currentPlayerIndex] === playerId;
 
   const { width: windowWidth } = useWindowDimensions();
   const cardMargin = isSide
@@ -176,19 +190,31 @@ function OpponentSeat({ seat, state, playerNames, revealCard, dealPhase, sideSta
         styles.opponentArea,
         isSide ? seatLayoutStyles.opponentAreaSide : styles.opponentAreaTop,
       ]}>
-      <PlayerBadge
-        name={playerNames[playerId] ?? playerId}
-        statusText={capturedStatusText(capturedCount)}
-        active={isCurrentTurn}
-        isHuman={false}
-        compact={isSide}
-      />
       <View style={isSide ? styles.opponentColumn : styles.opponentRow} testID={`opponent-hand-${playerId}`}>
         {cardStyles.map((style, i) => (
           <PlayingCard key={i} faceDown size="small" style={style} />
         ))}
       </View>
     </View>
+  );
+}
+
+// The nameplate half of the old OpponentSeat: a plain function (not a component) because its
+// output is handed to TableShell as a `seats` entry, which renders it inside its own anchor View
+// — there's no separate element for a component wrapper to own here.
+function renderOpponentNameplate(seat: Seat, state: PistiState, playerNames: Record<string, string>) {
+  const { position, playerId } = seat;
+  const capturedCount = state.table.zones[`captured-${playerId}`].cards.length;
+  const orientation = position === 'left' ? 'rotated-left' : position === 'right' ? 'rotated-right' : 'horizontal';
+  return (
+    <SeatIdentity
+      name={playerNames[playerId] ?? playerId}
+      statusText={capturedStatusText(capturedCount)}
+      orientation={orientation}
+      avatar={AVATAR_BY_POSITION[position]}
+      turnState={turnStateForPlayer(playerId, state)}
+      turnStateFrames={PISTI_TURN_STATE_FRAMES}
+    />
   );
 }
 
@@ -203,10 +229,6 @@ export function PistiTable({
   dealPhase,
   pileRestingRotations = {},
 }: PistiTableProps) {
-  // Unconditional — required by React's Rules of Hooks even though its *use* below is
-  // __DEV__-gated. Shares Batak's devTuningStore.tableBackground field (one shared dev-tuning
-  // background choice, not per-game) — see BatakTable.tsx's identical read.
-  const devTableBackground = useDevTuningStore((s) => s.tableBackground);
   const isHumanTurn = state.players[state.currentPlayerIndex] === humanPlayerId;
   // While the human's own play is revealing (traveling to the pile), the engine state hasn't
   // committed the move yet, so `isHumanTurn` alone would still say it's their turn. Hide the
@@ -235,6 +257,24 @@ export function PistiTable({
   }, [isHumanTurn, clearSelection]);
 
   const seats = assignSeats(opponentPlayerIds);
+
+  // Every seat's nameplate, keyed by the table position TableShell draws it at. The human's is
+  // built inline (its data comes straight from this function's own scope); the opponents' come
+  // from renderOpponentNameplate, which each seat's own zones supply.
+  const tableShellSeats: Partial<Record<'top' | 'bottom' | 'left' | 'right', React.ReactNode>> = {
+    bottom: (
+      <SeatIdentity
+        name={playerNames[humanPlayerId] ?? 'You'}
+        statusText={capturedStatusText(capturedHuman)}
+        avatar={AVATAR_BY_POSITION.bottom}
+        turnState={turnStateForPlayer(humanPlayerId, state)}
+        turnStateFrames={PISTI_TURN_STATE_FRAMES}
+      />
+    ),
+  };
+  for (const seat of seats) {
+    tableShellSeats[seat.position] = renderOpponentNameplate(seat, state, playerNames);
+  }
 
   // Side seats live inside a centered (non-stretching) flex row, so there's no way to derive
   // their available vertical space from window height alone — measure the row itself. 280 is a
@@ -328,39 +368,8 @@ export function PistiTable({
 
   return (
     <DeselectableSurface style={styles.container} onDeselect={clearSelection}>
-      {__DEV__ && devTableBackground === 'gemini' ? <GeminiTableBackground /> : <TableFelt />}
-      <OpponentSeatGroup
-        position="top"
-        seats={seats}
-        renderSeat={(seat) => (
-          <OpponentSeat
-            seat={seat}
-            state={state}
-            playerNames={playerNames}
-            revealCard={revealCard}
-            dealPhase={dealPhase}
-            sideStackHeight={middleRowHeight}
-          />
-        )}
-      />
-
-      <View style={seatLayoutStyles.middleRow} onLayout={handleMiddleRowLayout}>
-        <OpponentSeatGroup
-          position="left"
-          seats={seats}
-          renderSeat={(seat) => (
-            <OpponentSeat
-              seat={seat}
-              state={state}
-              playerNames={playerNames}
-              revealCard={revealCard}
-              dealPhase={dealPhase}
-              sideStackHeight={middleRowHeight}
-            />
-          )}
-        />
-
-        <View style={styles.pileArea}>
+      <View style={styles.tableArea}>
+        <TableShell seats={tableShellSeats}>
           <View style={styles.pileMat} ref={destRef} onLayout={handlePileMatLayout}>
             <View style={styles.pileStack}>
               {stackedPile.map((card, i) => (
@@ -416,29 +425,44 @@ export function PistiTable({
             </View>
             <Text style={styles.pileCount}>{`${pile.length} card${pile.length === 1 ? '' : 's'}`}</Text>
           </View>
-        </View>
+        </TableShell>
 
-        <OpponentSeatGroup
-          position="right"
-          seats={seats}
-          renderSeat={(seat) => (
-            <OpponentSeat
-              seat={seat}
-              state={state}
-              playerNames={playerNames}
-              revealCard={revealCard}
-              dealPhase={dealPhase}
-              sideStackHeight={middleRowHeight}
+        <View style={styles.handStackOverlay} pointerEvents="box-none">
+          <OpponentSeatGroup
+            position="top"
+            seats={seats}
+            renderSeat={(seat) => (
+              <OpponentHandStack seat={seat} state={state} revealCard={revealCard} dealPhase={dealPhase} sideStackHeight={middleRowHeight} />
+            )}
+          />
+          <View
+            style={[seatLayoutStyles.middleRow, styles.middleRowInset]}
+            onLayout={handleMiddleRowLayout}
+            pointerEvents="box-none"
+          >
+            <OpponentSeatGroup
+              position="left"
+              seats={seats}
+              renderSeat={(seat) => (
+                <OpponentHandStack seat={seat} state={state} revealCard={revealCard} dealPhase={dealPhase} sideStackHeight={middleRowHeight} />
+              )}
             />
-          )}
-        />
+            <View style={styles.pileSpacer} pointerEvents="none" />
+            <OpponentSeatGroup
+              position="right"
+              seats={seats}
+              renderSeat={(seat) => (
+                <OpponentHandStack seat={seat} state={state} revealCard={revealCard} dealPhase={dealPhase} sideStackHeight={middleRowHeight} />
+              )}
+            />
+          </View>
+        </View>
       </View>
 
       <View style={styles.bannerArea}>{bannerText ? <Text style={styles.banner}>{bannerText}</Text> : null}</View>
 
       <HandFrame bottomOffset={handFrameBottomOffset} height={handFrameHeight} />
       <View style={styles.handArea}>
-        <PlayerBadge name={playerNames[humanPlayerId] ?? 'You'} statusText={capturedStatusText(capturedHuman)} active={isHumanTurn} isHuman />
         <PistiHandFan
           slots={
             dealPhase === 'revealing'
@@ -472,10 +496,40 @@ const styles = StyleSheet.create({
   handArea: { minHeight: 177, justifyContent: 'center', borderRadius: 12, paddingVertical: 4 },
   opponentRow: { flexDirection: 'row', justifyContent: 'center' },
   opponentColumn: { flexDirection: 'column', alignItems: 'center' },
-  // Same cross-subtree reasoning as seatLayoutStyles.middleRow's own zIndex, one level down:
-  // outranks the left/right OpponentSeatGroup siblings within middleRow, so a reveal traveling
-  // from either side seat paints above that seat's own remaining cards too.
-  pileArea: { flex: 1, alignItems: 'center', justifyContent: 'center', zIndex: 10 },
+  // Wraps TableShell plus the overlaid opponent card-stacks so they share one positioning
+  // context — everything in here visually belongs to "the table," even though the pile and
+  // nameplates render inside TableShell while the card stacks render as siblings above it.
+  // `flex: 1` (rather than an auto height) is what actually reserves the table its share of the
+  // screen: TableShell's own root is flex: 1, so with an auto-height parent it would collapse to
+  // its intrinsic aspect-ratio height and every following sibling (banner, hand area) would be
+  // pushed past the bottom of the screen instead of sharing the remaining space.
+  tableArea: { flex: 1, position: 'relative' },
+  // The card stacks overlay TableShell rather than stacking below it: they're an absolute layer
+  // over the exact same box, so they read as cards lying on the table instead of the whole
+  // table+stacks column growing taller than the screen. `pointerEvents="box-none"` here and on
+  // middleRow so the table underneath still receives taps. (Longhand rather than
+  // StyleSheet.absoluteFillObject, which isn't a TypeScript-visible API on this RN version — see
+  // TableShell.tsx's `fill` style for the same note.)
+  //
+  // The two insets keep the stacks off TableShell's baked plaques, which the stacks would
+  // otherwise cover completely: `top` drops the top seat's card row below the top plaque, and
+  // `bottom` shortens the middle row — the side stacks size themselves from its measured height —
+  // so their lower ends stay clear of the human's own plaque. Percentages, not pixels, so they
+  // track the table box, which is itself sized as a fraction of the screen. Eyeballed against the
+  // rendered table rather than derived; provisional tuning the plan's visual pass may revisit.
+  handStackOverlay: { position: 'absolute', top: '13%', left: 0, right: 0, bottom: '15%' },
+  // Same idea on the other axis: pushes the left/right card columns inboard of the side plaques so
+  // they sit on the felt beside each nameplate instead of on top of it. Kept as a Pişti-local
+  // style rather than folded into the shared seatLayoutStyles.opponentAreaSide, which Batak's
+  // table also uses. 21% is a compromise, not a clean fit — at phone width the felt isn't wide
+  // enough for two card columns, the pile, AND both side plaques to be mutually clear, so this
+  // leaves a few px of overlap at each column's inner and outer edge instead of fully hiding
+  // either the plaques (a smaller inset) or the pile (a larger one). Flagged for the visual pass.
+  middleRowInset: { paddingHorizontal: '21%' },
+  // Occupies the middle row's center slot now that the pile itself lives inside TableShell as
+  // its `children` — without this, middleRow's `justifyContent: 'space-between'` would pull the
+  // left/right card stacks together with no gap between them.
+  pileSpacer: { flex: 1 },
   pileMat: {
     width: 195,
     height: 225,

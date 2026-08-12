@@ -38,6 +38,13 @@ export {
 export { TableShell, TABLE_SHELL_ASPECT_RATIO } from './TableShell';
 export type { TableShellProps, TableSeatPosition } from './TableShell';
 export { SeatIdentity } from './SeatIdentity';
+// The per-turn-state avatar ring art, re-exported as plain asset handles so consuming apps can
+// build a SeatIdentityTurnStateFrames object without reaching into this package's asset folder
+// directly: package.json's `exports` map only publishes "." (./src/index.ts), so a consumer-side
+// require('@world-cards/ui/assets/table/avatar-frame-idle.png') is not a resolvable subpath.
+export const AVATAR_FRAME_IDLE_IMAGE: number = require('../assets/table/avatar-frame-idle.png');
+export const AVATAR_FRAME_NEXT_IMAGE: number = require('../assets/table/avatar-frame-next.png');
+export const AVATAR_FRAME_ACTIVE_IMAGE: number = require('../assets/table/avatar-frame-active.png');
 export type {
   SeatIdentityProps,
   SeatIdentityOrientation,
