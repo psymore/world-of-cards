@@ -11,12 +11,12 @@ import type { PistiState } from '@world-cards/engine/games/pisti';
 import {
   PlayingCard,
   TableShell,
+  TABLE_SHELL_ASPECT_RATIO,
   SeatIdentity,
   HandFrame,
   HAND_FRAME_PEAK_FRACTION,
   CARD_DIMS,
   CONTAINER_BOTTOM_PADDING,
-  HAND_BADGE_HEIGHT,
   HAND_FRAME_REVEAL_MARGIN,
   HAND_FRAME_BOTTOM_OVERSHOOT,
   WOOD_TRIM_COLOR,
@@ -24,7 +24,12 @@ import {
   AVATAR_FRAME_NEXT_IMAGE,
   AVATAR_FRAME_ACTIVE_IMAGE,
 } from '@world-cards/ui';
-import type { SeatIdentityTurnState, SeatIdentityAvatar, SeatIdentityTurnStateFrames } from '@world-cards/ui';
+import type {
+  SeatIdentityTurnState,
+  SeatIdentityAvatar,
+  SeatIdentityTurnStateFrames,
+  TableSeatPosition,
+} from '@world-cards/ui';
 import { DeselectableSurface } from '../../components/DeselectableSurface';
 import { useCardSelection } from '../../components/useCardSelection';
 import { OpponentSeatGroup, seatLayoutStyles } from '../../table/OpponentSeatGroup';
@@ -103,6 +108,30 @@ const TOP_FAN_MAX_GAP = 10;
 const SIDE_STACK_HEIGHT_FRACTION = 0.82; // fraction of the measured middle-row height the side stack may use
 const SIDE_FAN_MAX_GAP = 10;
 
+// Mirrors TableShell's own `tableBox: { width: '92%', aspectRatio: TABLE_SHELL_ASPECT_RATIO }`
+// (packages/ui/src/TableShell.tsx). TableShell exposes no ref or onLayout for its box, so the only
+// way to position anything against that box from out here is to recompute its geometry from the
+// container size the same way TableShell's own styles do. Keep in sync if that width ever changes.
+const TABLE_BOX_WIDTH_FRACTION = 0.92;
+// Where handStackOverlay's top and bottom edges sit, as fractions of the TABLE BOX's height (not
+// the container's) — the box is what the baked plaque anchors are relative to, so these are the
+// only numbers that keep the card stacks clear of the plaques at every viewport shape. Top lands
+// just under the top plaque (whose lower edge is at 5% + 4.6% = 9.6% of box height per
+// TableShell's SEAT_ANCHOR_STYLE); bottom shortens the middle row — the side stacks size
+// themselves from its measured height — enough that their lower ends clear the human's plaque.
+// Both were chosen to reproduce the visually-verified 412x915 layout the earlier container-height
+// percentages happened to produce there; unlike those, they now hold at any aspect ratio.
+const STACK_OVERLAY_TOP_FRACTION = 0.1;
+const STACK_OVERLAY_BOTTOM_FRACTION = 0.12;
+
+// Named because two places need them: styles.pileMat/pileStack themselves, and the reveal layer's
+// positioning ghost (styles.revealPileMatGhost), which only lands the traveling card correctly
+// while it matches the real mat exactly.
+const PILE_MAT_WIDTH = 195;
+const PILE_MAT_HEIGHT = 225;
+const PILE_STACK_WIDTH = 114;
+const PILE_STACK_HEIGHT = 144;
+
 // First-pass constants for positioning HandFrame behind the human hand row, derived from this
 // file's own layout below (not measured on a real device — tune these if the frame's arch peak
 // doesn't line up with the hand row once visually checked). Simpler than Batak's version: Pişti's
@@ -110,16 +139,20 @@ const SIDE_FAN_MAX_GAP = 10;
 // edge, uniform across every card.
 const HUMAN_CARD_HEIGHT = CARD_DIMS.normal.height;
 const HAND_AREA_HEIGHT = 177; // matches styles.handArea.minHeight
-const HAND_CONTENT_HEIGHT = HAND_BADGE_HEIGHT + HUMAN_CARD_HEIGHT;
+// handArea's whole content is the card row and nothing else: the human's nameplate used to render
+// here (as a PlayerBadge above the cards, hence an extra HAND_BADGE_HEIGHT term in both this and
+// HAND_ROW_PEAK_DISTANCE_FROM_BOTTOM) but now lives in TableShell's `bottom` seat anchor instead.
+const HAND_CONTENT_HEIGHT = HUMAN_CARD_HEIGHT;
 const HAND_AREA_TOP_INSET = (HAND_AREA_HEIGHT - HAND_CONTENT_HEIGHT) / 2;
 // Distance from the container's true bottom edge (where HandFrame's own bottom:0 would sit,
 // since absolute positioning ignores the container's own paddingVertical) up to the hand row's
-// top edge.
+// top edge. With the badge gone, the row's top edge *is* the content's top edge, so the inset
+// alone locates it — no badge height to skip past first.
 const HAND_ROW_PEAK_DISTANCE_FROM_BOTTOM =
-  CONTAINER_BOTTOM_PADDING + HAND_AREA_HEIGHT - HAND_AREA_TOP_INSET - HAND_BADGE_HEIGHT;
+  CONTAINER_BOTTOM_PADDING + HAND_AREA_HEIGHT - HAND_AREA_TOP_INSET;
 
-// Pişti's badge shows a captured-card count (🂠 N) rather than Batak's bid/tricks text — each
-// game formats its own statusText string, the shared PlayerBadge just lays it out.
+// Pişti's nameplate shows a captured-card count (🂠 N) rather than Batak's bid/tricks text — each
+// game formats its own statusText string, the shared SeatIdentity just lays it out.
 function capturedStatusText(capturedCount: number): string {
   return `🂠 ${capturedCount}`;
 }
@@ -261,7 +294,7 @@ export function PistiTable({
   // Every seat's nameplate, keyed by the table position TableShell draws it at. The human's is
   // built inline (its data comes straight from this function's own scope); the opponents' come
   // from renderOpponentNameplate, which each seat's own zones supply.
-  const tableShellSeats: Partial<Record<'top' | 'bottom' | 'left' | 'right', React.ReactNode>> = {
+  const tableShellSeats: Partial<Record<TableSeatPosition, React.ReactNode>> = {
     bottom: (
       <SeatIdentity
         name={playerNames[humanPlayerId] ?? 'You'}
@@ -283,6 +316,50 @@ export function PistiTable({
   const [middleRowHeight, setMiddleRowHeight] = useState(280);
   function handleMiddleRowLayout(event: LayoutChangeEvent) {
     setMiddleRowHeight(event.nativeEvent.layout.height);
+  }
+
+  // Same measure-don't-assume pattern, for the card-stack overlay's vertical insets. TableShell's
+  // box derives BOTH its height and its vertical centering offset from the container's *width*
+  // (width: 92%, then aspectRatio), so a height-relative percentage inset only tracks the plaques
+  // at whatever single viewport shape it was eyeballed at. Measuring tableArea lets the insets be
+  // real pixels off the box's real top/bottom edges instead.
+  const [tableAreaSize, setTableAreaSize] = useState<{ width: number; height: number } | null>(null);
+  function handleTableAreaLayout(event: LayoutChangeEvent) {
+    const { width, height } = event.nativeEvent.layout;
+    setTableAreaSize((prev) => (prev?.width === width && prev?.height === height ? prev : { width, height }));
+  }
+  // Null until the first layout pass; styles.handStackOverlay's own percentages stand in until then
+  // (close enough at phone shapes that there's no visible settle), and these pixel values override
+  // them once the real box geometry is known.
+  const stackOverlayInsets = useMemo(() => {
+    if (!tableAreaSize) return null;
+    const boxHeight = (tableAreaSize.width * TABLE_BOX_WIDTH_FRACTION) / TABLE_SHELL_ASPECT_RATIO;
+    // TableShell centers the box vertically in the container (backdrop's justifyContent: 'center').
+    // Deliberately unclamped: on a short/wide container the box is taller than the space it's given
+    // and overflows evenly above and below, so both of these go negative — and the insets have to
+    // follow it out of bounds, or they'd snap back to tracking the container again exactly in the
+    // cases this fix exists for.
+    const boxTop = (tableAreaSize.height - boxHeight) / 2;
+    const spaceBelowBox = tableAreaSize.height - boxTop - boxHeight;
+    return {
+      top: boxTop + boxHeight * STACK_OVERLAY_TOP_FRACTION,
+      bottom: spaceBelowBox + boxHeight * STACK_OVERLAY_BOTTOM_FRACTION,
+    };
+  }, [tableAreaSize]);
+
+  // Where pileStack sits inside pileMat, measured because it isn't derivable: pileMat centers
+  // pileStack together with the `N cards` label below it, so the stack's offset depends on that
+  // text's rendered line height. The hoisted reveal layer (see the render tree) has to reproduce
+  // this offset exactly, since the reveal card's translateX/Y are expressed in pileStack's
+  // coordinate space. Defaults are the horizontal centering (195-114)/2 and the label-free
+  // vertical centering, both corrected on the first layout pass.
+  const [pileStackOffset, setPileStackOffset] = useState({
+    x: (PILE_MAT_WIDTH - PILE_STACK_WIDTH) / 2,
+    y: (PILE_MAT_HEIGHT - PILE_STACK_HEIGHT) / 2,
+  });
+  function handlePileStackLayout(event: LayoutChangeEvent) {
+    const { x, y } = event.nativeEvent.layout;
+    setPileStackOffset((prev) => (prev.x === x && prev.y === y ? prev : { x, y }));
   }
 
   // Destination for the human's play-travel origin delta: the pile's on-screen center,
@@ -368,10 +445,10 @@ export function PistiTable({
 
   return (
     <DeselectableSurface style={styles.container} onDeselect={clearSelection}>
-      <View style={styles.tableArea}>
+      <View style={styles.tableArea} onLayout={handleTableAreaLayout}>
         <TableShell seats={tableShellSeats}>
           <View style={styles.pileMat} ref={destRef} onLayout={handlePileMatLayout}>
-            <View style={styles.pileStack}>
+            <View style={styles.pileStack} onLayout={handlePileStackLayout}>
               {stackedPile.map((card, i) => (
                 <View
                   key={card.id}
@@ -390,44 +467,12 @@ export function PistiTable({
                   <PlayingCard card={card} />
                 </View>
               ))}
-              {revealCard && (
-                <>
-                  <Text style={styles.revealLabel}>
-                    {revealCard.playerId === humanPlayerId
-                      ? 'You played'
-                      : `${playerNames[revealCard.playerId] ?? revealCard.playerId} played`}
-                  </Text>
-                  <View
-                    style={[
-                      styles.pileCardSlot,
-                      {
-                        zIndex: MAX_STACKED_PILE_CARDS + 1,
-                        transform: [
-                          { translateX: revealDestinationOffset.x },
-                          { translateY: revealDestinationOffset.y },
-                        ],
-                      },
-                    ]}
-                  >
-                    <TravelCard
-                      originOffset={
-                        revealCard.originOffset ??
-                        revealOriginOffset(resolveRevealOrigin(revealCard.playerId, humanPlayerId, seats))
-                      }
-                      originRotateDeg={revealCard.originRotateDeg ?? 0}
-                      resetKey={revealCard.card.id}
-                    >
-                      <PlayingCard card={revealCard.card} highlighted />
-                    </TravelCard>
-                  </View>
-                </>
-              )}
             </View>
             <Text style={styles.pileCount}>{`${pile.length} card${pile.length === 1 ? '' : 's'}`}</Text>
           </View>
         </TableShell>
 
-        <View style={styles.handStackOverlay} pointerEvents="box-none">
+        <View style={[styles.handStackOverlay, stackOverlayInsets]} pointerEvents="box-none">
           <OpponentSeatGroup
             position="top"
             seats={seats}
@@ -457,6 +502,42 @@ export function PistiTable({
             />
           </View>
         </View>
+
+        {revealCard && (
+          <View style={styles.revealLayer} pointerEvents="none">
+            <View style={styles.revealPileMatGhost}>
+              <View style={[styles.pileStack, styles.revealPileStackGhost, { left: pileStackOffset.x, top: pileStackOffset.y }]}>
+                <Text style={styles.revealLabel}>
+                  {revealCard.playerId === humanPlayerId
+                    ? 'You played'
+                    : `${playerNames[revealCard.playerId] ?? revealCard.playerId} played`}
+                </Text>
+                <View
+                  style={[
+                    styles.pileCardSlot,
+                    {
+                      transform: [
+                        { translateX: revealDestinationOffset.x },
+                        { translateY: revealDestinationOffset.y },
+                      ],
+                    },
+                  ]}
+                >
+                  <TravelCard
+                    originOffset={
+                      revealCard.originOffset ??
+                      revealOriginOffset(resolveRevealOrigin(revealCard.playerId, humanPlayerId, seats))
+                    }
+                    originRotateDeg={revealCard.originRotateDeg ?? 0}
+                    resetKey={revealCard.card.id}
+                  >
+                    <PlayingCard card={revealCard.card} highlighted />
+                  </TravelCard>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
       </View>
 
       <View style={styles.bannerArea}>{bannerText ? <Text style={styles.banner}>{bannerText}</Text> : null}</View>
@@ -485,14 +566,14 @@ export function PistiTable({
 const styles = StyleSheet.create({
   container: { flex: 1, paddingVertical: 12 },
   opponentArea: { minHeight: 135, justifyContent: 'center', alignItems: 'center', borderRadius: 12, paddingVertical: 4 },
-  // Top opponent only: a fixed (not minHeight-floored) height and a top-anchored badge, so neither
-  // the box nor the badge moves when the face-down row empties out at the end of a hand — with
-  // justifyContent: 'center' (opponentArea's own default), a taller badge+row block (cards present)
-  // vs. a shorter one (row collapsed to 0 height, no cards) recenter to different positions, which
-  // read as the badge (and everything visually anchored near it, including the trick pile just
-  // below) jumping at that exact moment. Height is derived, not guessed: badge height + one row of
-  // face-down cards + the area's own paddingVertical (4 top + 4 bottom).
-  opponentAreaTop: { height: HAND_BADGE_HEIGHT + SMALL_CARD_HEIGHT + 8, justifyContent: 'flex-start' },
+  // Top opponent only: a fixed (not minHeight-floored) height and a top-anchored card row, so the
+  // box doesn't move when the face-down row empties out at the end of a hand — with
+  // justifyContent: 'center' (opponentArea's own default), a full row vs. one collapsed to 0
+  // height (no cards) recenter to different positions, which reads as the row jumping at that
+  // exact moment. Height is derived, not guessed: one row of face-down cards + the area's own
+  // paddingVertical (4 top + 4 bottom). This box used to also contain the seat's badge (hence a
+  // HAND_BADGE_HEIGHT term here too); that nameplate now renders in TableShell's own top plaque.
+  opponentAreaTop: { height: SMALL_CARD_HEIGHT + 8, justifyContent: 'flex-start' },
   handArea: { minHeight: 177, justifyContent: 'center', borderRadius: 12, paddingVertical: 4 },
   opponentRow: { flexDirection: 'row', justifyContent: 'center' },
   opponentColumn: { flexDirection: 'column', alignItems: 'center' },
@@ -511,12 +592,14 @@ const styles = StyleSheet.create({
   // StyleSheet.absoluteFillObject, which isn't a TypeScript-visible API on this RN version — see
   // TableShell.tsx's `fill` style for the same note.)
   //
-  // The two insets keep the stacks off TableShell's baked plaques, which the stacks would
+  // The two vertical insets keep the stacks off TableShell's baked plaques, which the stacks would
   // otherwise cover completely: `top` drops the top seat's card row below the top plaque, and
   // `bottom` shortens the middle row — the side stacks size themselves from its measured height —
-  // so their lower ends stay clear of the human's own plaque. Percentages, not pixels, so they
-  // track the table box, which is itself sized as a fraction of the screen. Eyeballed against the
-  // rendered table rather than derived; provisional tuning the plan's visual pass may revisit.
+  // so their lower ends stay clear of the human's own plaque. The percentages here are only a
+  // pre-measurement stand-in: top/bottom percentages resolve against this container's HEIGHT,
+  // while the table box those plaques belong to takes both its height and its centered position
+  // from the container's WIDTH, so the two only agree at one viewport shape. `stackOverlayInsets`
+  // (computed from the measured box geometry) overrides both with real pixels after first layout.
   handStackOverlay: { position: 'absolute', top: '13%', left: 0, right: 0, bottom: '15%' },
   // Same idea on the other axis: pushes the left/right card columns inboard of the side plaques so
   // they sit on the felt beside each nameplate instead of on top of it. Kept as a Pişti-local
@@ -531,14 +614,39 @@ const styles = StyleSheet.create({
   // left/right card stacks together with no gap between them.
   pileSpacer: { flex: 1 },
   pileMat: {
-    width: 195,
-    height: 225,
+    width: PILE_MAT_WIDTH,
+    height: PILE_MAT_HEIGHT,
     borderRadius: 98,
     backgroundColor: 'rgba(0, 0, 0, 0.16)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pileStack: { width: 114, height: 144 },
+  pileStack: { width: PILE_STACK_WIDTH, height: PILE_STACK_HEIGHT },
+  // The in-flight reveal card renders here instead of alongside the resting pile cards inside
+  // TableShell's children, purely for paint order: the opponents' face-down stacks live in
+  // handStackOverlay, whose middleRow carries zIndex: 10 (seatLayoutStyles, shared with Batak), so
+  // anything nested inside TableShell — an earlier sibling with no zIndex — paints underneath
+  // them. A card traveling from a side seat would then fly *behind* that seat's own remaining
+  // cards, since the left/right stacks overlap pileMat's horizontal span. A zIndex on TableShell
+  // itself would lift the whole felt above the stacks too, so the reveal gets its own layer here:
+  // last sibling, zIndex above middleRow's.
+  revealLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
+  },
+  // Reproduces pileMat's box (same size, same centering inside the same container — TableShell's
+  // backdrop fills tableArea and centers its box, which in turn centers pileMat) so the reveal
+  // card's translateX/translateY, which are offsets in pileStack's coordinate space, keep landing
+  // it on exactly the pile slot it did before this layer existed. Deliberately has no background:
+  // it's a positioning ghost, not a second mat.
+  revealPileMatGhost: { width: PILE_MAT_WIDTH, height: PILE_MAT_HEIGHT },
+  revealPileStackGhost: { position: 'absolute' },
   pileCardSlot: { position: 'absolute', left: 0, bottom: 0 },
   revealLabel: {
     position: 'absolute',
