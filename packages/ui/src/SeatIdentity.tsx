@@ -1,8 +1,16 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Image, LayoutChangeEvent, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { glowShadow } from './glowShadow';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Image,
+  LayoutChangeEvent,
+  StyleSheet,
+  Text,
+  View,
+  ViewStyle,
+} from "react-native";
+import { glowShadow } from "./glowShadow";
 
-const BADGE_IMAGE = require('../assets/table/seat-badge.png');
+const BADGE_IMAGE = require("../assets/avatars/seat-badge.png");
 // Decorative ring (silver band, gold rim, two diamond accents) that replaces the plain
 // code-drawn gold border. Source was docs/references/GPT-powerful-assets-review/
 // diamond-avatar-frame-Photoroom-textcut.heic — actually a HEIF file despite its original .png
@@ -12,17 +20,23 @@ const BADGE_IMAGE = require('../assets/table/seat-badge.png');
 // HEIF, so unlike the other table assets this one isn't mechanically reproducible from source on
 // every machine. If this needs to change again, re-export from Photoroom as a real PNG/JPEG
 // first to avoid repeating the manual conversion.
-const AVATAR_FRAME_IMAGE = require('../assets/table/diamond-avatar-frame.png');
+const AVATAR_FRAME_IMAGE = require("../assets/avatars/diamond-avatar-frame.png");
 
-export type SeatIdentityAvatar = 'male-01' | 'female-01' | 'male-02' | 'female-02' | 'male-03' | 'female-03';
+export type SeatIdentityAvatar =
+  | "male-01"
+  | "female-01"
+  | "male-02"
+  | "female-02"
+  | "male-03"
+  | "female-03";
 
 const AVATAR_IMAGES: Record<SeatIdentityAvatar, number> = {
-  'male-01': require('../assets/table/avatar-male-01.png'),
-  'female-01': require('../assets/table/avatar-female-01.png'),
-  'male-02': require('../assets/table/avatar-male-02.png'),
-  'female-02': require('../assets/table/avatar-female-02.png'),
-  'male-03': require('../assets/table/avatar-male-03.png'),
-  'female-03': require('../assets/table/avatar-female-03.png'),
+  "male-01": require("../assets/avatars/avatar-male-01.png"),
+  "female-01": require("../assets/avatars/avatar-female-01.png"),
+  "male-02": require("../assets/avatars/avatar-male-02.png"),
+  "female-02": require("../assets/avatars/avatar-female-02.png"),
+  "male-03": require("../assets/avatars/avatar-male-03.png"),
+  "female-03": require("../assets/avatars/avatar-female-03.png"),
 };
 
 // The desired shape of the content row (avatar + name/tricks + badge). Not tied to any image
@@ -36,13 +50,16 @@ const CONTENT_ASPECT_RATIO = 450 / 90;
 // actually lays views out.
 const FALLBACK_SIZE = { width: 100, height: 100 / CONTENT_ASPECT_RATIO };
 
-export type SeatIdentityOrientation = 'horizontal' | 'rotated-left' | 'rotated-right';
+export type SeatIdentityOrientation =
+  | "horizontal"
+  | "rotated-left"
+  | "rotated-right";
 
 // Modeled on TABLE-034's "2. TURN INDICATOR" reference (docs/references/GPT-powerful-assets-review/):
 // active = bright glow halo around the plain avatar ring, next = a partially-lit segmented dial
 // (reads as "coming up soon"), idle = the same dial mostly unlit. Placeholder styling below —
 // glowShadow only — until the real glow-halo/segmented-ring assets are cut from that reference.
-export type SeatIdentityTurnState = 'active' | 'next' | 'idle';
+export type SeatIdentityTurnState = "active" | "next" | "idle";
 
 // One ring image per turn state, e.g. the AVATAR-FRAME-MEDIUM-{IDLE,GLOW,APEAK-GLOW} set — an
 // alternative to the default static AVATAR_FRAME_IMAGE for callers that have real per-state ring
@@ -78,19 +95,25 @@ export interface SeatIdentityProps {
 // the anchor's top-left (View children don't stretch/center under RN's layout defaults when the
 // child has an explicit size, and nothing here was centering it) and, for the rotated seats, the
 // rotated footprint landed partly outside the anchor entirely.
-const ORIENTATION_TRANSFORM: Record<SeatIdentityOrientation, ViewStyle['transform'] | undefined> = {
+const ORIENTATION_TRANSFORM: Record<
+  SeatIdentityOrientation,
+  ViewStyle["transform"] | undefined
+> = {
   horizontal: undefined,
-  'rotated-left': [{ rotate: '90deg' }],
-  'rotated-right': [{ rotate: '-90deg' }],
+  "rotated-left": [{ rotate: "90deg" }],
+  "rotated-right": [{ rotate: "-90deg" }],
 };
 
 // Sideways text reads as an intentional style (labels on the side of a table); a sideways face
 // does not. So the avatar ring gets the exact inverse rotation of its rotated parent, canceling
 // the outer rotation out and keeping the photo upright regardless of which seat it's in.
-const AVATAR_COUNTER_TRANSFORM: Record<SeatIdentityOrientation, ViewStyle['transform'] | undefined> = {
+const AVATAR_COUNTER_TRANSFORM: Record<
+  SeatIdentityOrientation,
+  ViewStyle["transform"] | undefined
+> = {
   horizontal: undefined,
-  'rotated-left': [{ rotate: '-90deg' }],
-  'rotated-right': [{ rotate: '90deg' }],
+  "rotated-left": [{ rotate: "-90deg" }],
+  "rotated-right": [{ rotate: "90deg" }],
 };
 
 // Base (unscaled) glowShadow radius per turn state — active reads as a strong halo (closest
@@ -106,36 +129,48 @@ const TURN_STATE_GLOW_RADIUS: Record<SeatIdentityTurnState, number> = {
 // read as a deliberate transition ("this player is coming up"), short enough not to lag behind
 // the actual turn change.
 const TURN_STATE_CROSSFADE_MS = 350;
-const TURN_STATES: SeatIdentityTurnState[] = ['idle', 'next', 'active'];
+const TURN_STATES: SeatIdentityTurnState[] = ["idle", "next", "active"];
 
-function contentSize(anchorWidth: number, anchorHeight: number, rotated: boolean): { width: number; height: number } {
+function contentSize(
+  anchorWidth: number,
+  anchorHeight: number,
+  rotated: boolean,
+): { width: number; height: number } {
   const availableLong = rotated ? anchorHeight : anchorWidth;
   const availableShort = rotated ? anchorWidth : anchorHeight;
   const heightFromLong = availableLong / CONTENT_ASPECT_RATIO;
   if (heightFromLong <= availableShort) {
     return { width: availableLong, height: heightFromLong };
   }
-  return { width: availableShort * CONTENT_ASPECT_RATIO, height: availableShort };
+  return {
+    width: availableShort * CONTENT_ASPECT_RATIO,
+    height: availableShort,
+  };
 }
 
 function SeatIdentityComponent({
   name,
   statusText,
-  orientation = 'horizontal',
-  avatar = 'male-01',
-  turnState = 'idle',
+  orientation = "horizontal",
+  avatar = "male-01",
+  turnState = "idle",
   turnStateFrames,
 }: SeatIdentityProps) {
-  const rotated = orientation !== 'horizontal';
+  const rotated = orientation !== "horizontal";
   const transform = ORIENTATION_TRANSFORM[orientation];
-  const [anchorSize, setAnchorSize] = useState<{ width: number; height: number } | null>(null);
+  const [anchorSize, setAnchorSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
 
   const handleLayout = useCallback((event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
     setAnchorSize({ width, height });
   }, []);
 
-  const size = anchorSize ? contentSize(anchorSize.width, anchorSize.height, rotated) : FALLBACK_SIZE;
+  const size = anchorSize
+    ? contentSize(anchorSize.width, anchorSize.height, rotated)
+    : FALLBACK_SIZE;
   // Every inner element (avatar ring, badge, text) was originally sized against a 100-wide
   // content row. Scaling them by how much bigger/smaller the measured size actually is keeps
   // their proportions correct instead of staying pinned at one fixed pixel size on every table
@@ -146,9 +181,15 @@ function SeatIdentityComponent({
   // One Animated.Value per state, each holding that state's current opacity (1 = fully shown).
   // Initialized directly to the starting turnState rather than always starting at 0 and fading
   // in, so the very first render shows the correct ring immediately with no unwanted flash.
-  const idleOpacity = useRef(new Animated.Value(turnState === 'idle' ? 1 : 0)).current;
-  const nextOpacity = useRef(new Animated.Value(turnState === 'next' ? 1 : 0)).current;
-  const activeOpacity = useRef(new Animated.Value(turnState === 'active' ? 1 : 0)).current;
+  const idleOpacity = useRef(
+    new Animated.Value(turnState === "idle" ? 1 : 0),
+  ).current;
+  const nextOpacity = useRef(
+    new Animated.Value(turnState === "next" ? 1 : 0),
+  ).current;
+  const activeOpacity = useRef(
+    new Animated.Value(turnState === "active" ? 1 : 0),
+  ).current;
   const turnOpacities: Record<SeatIdentityTurnState, Animated.Value> = {
     idle: idleOpacity,
     next: nextOpacity,
@@ -161,13 +202,13 @@ function SeatIdentityComponent({
     // the outgoing state's ring fades out at the same time the incoming one fades in, rather
     // than a hard cut.
     Animated.parallel(
-      TURN_STATES.map((state) =>
+      TURN_STATES.map(state =>
         Animated.timing(turnOpacities[state], {
           toValue: state === turnState ? 1 : 0,
           duration: TURN_STATE_CROSSFADE_MS,
           useNativeDriver: true,
-        })
-      )
+        }),
+      ),
     ).start();
     // turnOpacities is rebuilt every render from the same three ref-backed Animated.Values, so
     // it isn't a stable dependency — depending on the refs directly instead avoids re-running
@@ -178,21 +219,35 @@ function SeatIdentityComponent({
   return (
     <View style={styles.anchorFill} onLayout={handleLayout}>
       <View
-        style={[styles.content, { width: size.width, height: size.height, paddingHorizontal: 4 * scale, gap: 3 * scale }, transform ? { transform } : null]}
-        testID="seat-identity"
-      >
+        style={[
+          styles.content,
+          {
+            width: size.width,
+            height: size.height,
+            paddingHorizontal: 4 * scale,
+            gap: 3 * scale,
+          },
+          transform ? { transform } : null,
+        ]}
+        testID="seat-identity">
         <View
           style={[
             styles.avatarRing,
             { width: 14 * scale, height: 14 * scale },
-            turnStateFrames == null && turnGlowRadius > 0 ? glowShadow('#f4c542', turnGlowRadius) : null,
+            turnStateFrames == null && turnGlowRadius > 0
+              ? glowShadow("#f4c542", turnGlowRadius)
+              : null,
           ]}
-          testID="seat-identity-avatar"
-        >
+          testID="seat-identity-avatar">
           <View style={styles.avatarPhotoClip}>
             <Image
               source={AVATAR_IMAGES[avatar]}
-              style={[styles.avatarImage, AVATAR_COUNTER_TRANSFORM[orientation] ? { transform: AVATAR_COUNTER_TRANSFORM[orientation] } : null]}
+              style={[
+                styles.avatarImage,
+                AVATAR_COUNTER_TRANSFORM[orientation]
+                  ? { transform: AVATAR_COUNTER_TRANSFORM[orientation] }
+                  : null,
+              ]}
               resizeMode="cover"
               testID="seat-identity-avatar-image"
             />
@@ -200,12 +255,18 @@ function SeatIdentityComponent({
           {turnStateFrames == null ? (
             <Image
               source={AVATAR_FRAME_IMAGE}
-              style={[StyleSheet.absoluteFill, styles.avatarFrameOverlay, AVATAR_COUNTER_TRANSFORM[orientation] ? { transform: AVATAR_COUNTER_TRANSFORM[orientation] } : null]}
+              style={[
+                StyleSheet.absoluteFill,
+                styles.avatarFrameOverlay,
+                AVATAR_COUNTER_TRANSFORM[orientation]
+                  ? { transform: AVATAR_COUNTER_TRANSFORM[orientation] }
+                  : null,
+              ]}
               resizeMode="contain"
               testID="seat-identity-avatar-frame"
             />
           ) : (
-            TURN_STATES.map((state) => (
+            TURN_STATES.map(state => (
               <Animated.Image
                 key={state}
                 source={turnStateFrames[state]}
@@ -213,7 +274,9 @@ function SeatIdentityComponent({
                   StyleSheet.absoluteFill,
                   styles.avatarFrameOverlay,
                   { opacity: turnOpacities[state] },
-                  AVATAR_COUNTER_TRANSFORM[orientation] ? { transform: AVATAR_COUNTER_TRANSFORM[orientation] } : null,
+                  AVATAR_COUNTER_TRANSFORM[orientation]
+                    ? { transform: AVATAR_COUNTER_TRANSFORM[orientation] }
+                    : null,
                 ]}
                 resizeMode="contain"
                 testID={`seat-identity-avatar-frame-${state}`}
@@ -222,10 +285,20 @@ function SeatIdentityComponent({
           )}
         </View>
         <View style={styles.textColumn}>
-          <Text style={[styles.nameText, { fontSize: 7 * scale, lineHeight: 9 * scale }]} numberOfLines={1}>
+          <Text
+            style={[
+              styles.nameText,
+              { fontSize: 7 * scale, lineHeight: 9 * scale },
+            ]}
+            numberOfLines={1}>
             {name}
           </Text>
-          <Text style={[styles.trickText, { fontSize: 5.5 * scale, lineHeight: 7 * scale }]} numberOfLines={1}>
+          <Text
+            style={[
+              styles.trickText,
+              { fontSize: 5.5 * scale, lineHeight: 7 * scale },
+            ]}
+            numberOfLines={1}>
             {statusText}
           </Text>
         </View>
@@ -244,10 +317,10 @@ export const SeatIdentity = React.memo(SeatIdentityComponent);
 
 const styles = StyleSheet.create({
   // Fills and centers the content row inside whatever seat anchor this is placed in.
-  anchorFill: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  anchorFill: { flex: 1, alignItems: "center", justifyContent: "center" },
   content: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 4,
     gap: 3,
   },
@@ -255,20 +328,25 @@ const styles = StyleSheet.create({
   // come from its two children below, not from this container's own style.
   avatarRing: { width: 14, height: 14 },
   avatarPhotoClip: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
     borderRadius: 9999,
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    backgroundColor: "rgba(0, 0, 0, 0.35)",
     // Clips the avatar photo to the circle regardless of what's in the source crop's corners —
     // see build-avatar-assets.js's header for why the crop itself doesn't need to be pre-masked.
-    overflow: 'hidden',
+    overflow: "hidden",
   },
-  avatarImage: { width: '100%', height: '100%' },
+  avatarImage: { width: "100%", height: "100%" },
   // Drawn on top of the photo at the same box; diamond-avatar-frame.png's own hole is where the
   // photo shows through, so this doesn't need its own circular clip — it's already a ring shape.
-  avatarFrameOverlay: { width: '100%', height: '100%' },
+  avatarFrameOverlay: { width: "100%", height: "100%" },
   textColumn: { flex: 1, minWidth: 0 },
-  nameText: { color: '#e8e3d2', fontWeight: 'bold', fontSize: 7, lineHeight: 9 },
-  trickText: { color: '#b8b3a2', fontSize: 5.5, lineHeight: 7 },
+  nameText: {
+    color: "#e8e3d2",
+    fontWeight: "bold",
+    fontSize: 7,
+    lineHeight: 9,
+  },
+  trickText: { color: "#b8b3a2", fontSize: 5.5, lineHeight: 7 },
   badge: { width: 12, height: 12 },
 });

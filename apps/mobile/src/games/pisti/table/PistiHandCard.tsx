@@ -3,12 +3,10 @@ import { View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Easing, runOnJS, useAnimatedStyle } from 'react-native-reanimated';
 import type { Card } from '@world-cards/engine';
-import { PlayingCard, CARD_DIMS } from '@world-cards/ui';
+import { PlayingCard, CARD_DIMS, PlayingCardSize } from '@world-cards/ui';
 import { useReducedMotion } from '../../../components/useReducedMotion';
 import { useSettingsStore } from '../../../state/settingsStore';
 import { useCardMotion } from '../../../table/useCardMotion';
-
-const CARD_WIDTH = CARD_DIMS.normal.width;
 
 // Reflow (a sibling added/removed, shrinking/growing the row) — matches Pişti's pre-migration
 // AnimatedHandCard's own HAND_CARD_REPOSITION_DURATION_MS/EASING exactly.
@@ -48,6 +46,11 @@ export interface PistiHandCardProps {
   // PistiHandFan uses this to retarget the card on every reflow, and PistiTable's
   // playWithMeasuredOrigin uses it to read the card's real current position at tap time.
   registerMotion: (cardId: string, motion: ReturnType<typeof useCardMotion> | null) => void;
+  // Caller-supplied (not a fixed constant here) since Pişti now renders the human hand two ways:
+  // "small" inside TableShell's felt (narrower usable width than a full-size hand area) and
+  // "normal" in the legacy Dev Tuning table-background comparison, which still has its own
+  // dedicated hand area with room for full-size cards.
+  cardSize: PlayingCardSize;
 }
 
 function PistiHandCardComponent({
@@ -59,7 +62,9 @@ function PistiHandCardComponent({
   selected,
   onPress,
   registerMotion,
+  cardSize,
 }: PistiHandCardProps) {
+  const cardWidth = CARD_DIMS[cardSize].width;
   const reducedMotion = useReducedMotion();
   const dimUnplayableCards = useSettingsStore((s) => s.dimUnplayableCards);
 
@@ -148,9 +153,9 @@ function PistiHandCardComponent({
     <GestureDetector gesture={tap}>
       <Animated.View
         testID={`pisti-hand-card-${cardId}`}
-        style={[{ position: 'absolute', left: '50%', top: 0, marginLeft: -CARD_WIDTH / 2 }, animatedStyle]}>
+        style={[{ position: 'absolute', left: '50%', top: 0, marginLeft: -cardWidth / 2 }, animatedStyle]}>
         <View>
-          <PlayingCard card={card} size="normal" highlighted={selected} />
+          <PlayingCard card={card} size={cardSize} highlighted={selected} />
           {!interactive && dimUnplayableCards && (
             // Dark scrim marking the hand as "not currently tappable" while keeping card art fully
             // visible underneath — carries over the pre-migration SelectableCard's exact behavior
@@ -192,7 +197,8 @@ function arePistiHandCardPropsEqual(prev: PistiHandCardProps, next: PistiHandCar
     prev.liftedTarget.x === next.liftedTarget.x &&
     prev.liftedTarget.y === next.liftedTarget.y &&
     prev.interactive === next.interactive &&
-    prev.selected === next.selected
+    prev.selected === next.selected &&
+    prev.cardSize === next.cardSize
   );
 }
 

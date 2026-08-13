@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, StyleSheet } from 'react-native';
 import { AbsoluteOverlay } from './AbsoluteOverlay';
 
-const GEMINI_TABLE_IMAGE = require('../assets/table/gemini-table-design_upscayl_5x_upscayl-standard-4x.png');
+const GEMINI_TABLE_IMAGE = require('../assets/table/alternatives/gemini-table-design_upscayl_5x_upscayl-standard-4x.png');
 
 // A dev-tuning alternative to TableFelt's green photo texture, for on-device A/B comparison via
 // Batak's __DEV__-gated tuning panel (apps/mobile/src/games/batak/BatakDevTuningModal.tsx). Same

@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { Card } from '@world-cards/engine';
-import { CARD_DIMS } from '@world-cards/ui';
+import { CARD_DIMS, PlayingCardSize } from '@world-cards/ui';
 import { railAngleStepDeg, railAngles, railPosition } from '../../../table/railFan';
 import type { RailAngleConfig } from '../../../table/railFan';
 import { useCardMotion } from '../../../table/useCardMotion';
@@ -9,13 +9,11 @@ import { PISTI_RAIL_CONFIG, PISTI_SELECTED_LIFT_DISTANCE } from './pistiRailFan'
 import { PistiHandCard } from './PistiHandCard';
 import { useDevTuningStore } from '../../../state/devTuningStore';
 
-const PISTI_CARD_HEIGHT = CARD_DIMS.normal.height;
 // Extra vertical room the arc-fan's curve needs below center (railPosition's y grows away from 0
 // as |angle| increases) — computed from PISTI_RAIL_CONFIG's own worst case (a 4-card hand's outer
 // card sits near maxRotationDeg): radius * (1 - cos(maxRotationDeg)) ≈ 320 * (1 - cos(20°)) ≈ 19px,
 // rounded up for margin. A starting point — adjust live once running, per the design spec.
 const FAN_CURVE_MARGIN_PX = 24;
-const PISTI_HAND_FAN_HEIGHT = PISTI_CARD_HEIGHT + FAN_CURVE_MARGIN_PX;
 // Nudges the whole fan down from handArea's centered position, opening up a clearer gap below the
 // "You" badge above it. A starting point — adjust live once running, per the design spec.
 const HAND_FAN_TOP_MARGIN = 16;
@@ -64,6 +62,7 @@ export function PistiHandFan({
   registerHandMotion,
   handFanRef,
   onHandFanLayout,
+  cardSize,
 }: {
   slots: PistiHandSlot[];
   isHumanInteractive: boolean;
@@ -77,6 +76,9 @@ export function PistiHandFan({
   // relative to THIS container's own top/center, not the screen.
   handFanRef: React.RefObject<View | null>;
   onHandFanLayout: () => void;
+  // Caller-supplied — see PistiHandCard's own cardSize doc for why this varies by which table
+  // background is active rather than being a fixed constant here.
+  cardSize: PlayingCardSize;
 }) {
   // Read as three separate scalars, unconditionally — never an object literal (zustand 5's
   // useStore has no shallow-equality shim; a selector returning a fresh object every call never
@@ -100,8 +102,10 @@ export function PistiHandFan({
         }
       : PISTI_RAIL_CONFIG;
 
+  const fanHeight = CARD_DIMS[cardSize].height + FAN_CURVE_MARGIN_PX;
+
   return (
-    <View style={styles.handFan} ref={handFanRef} onLayout={onHandFanLayout} testID="human-hand">
+    <View style={[styles.handFan, { height: fanHeight }]} ref={handFanRef} onLayout={onHandFanLayout} testID="human-hand">
       {slots.map((slot) => {
         const restTarget = slotPosition(slot, config, 0);
         const liftedTarget = slotPosition(slot, config, PISTI_SELECTED_LIFT_DISTANCE);
@@ -116,6 +120,7 @@ export function PistiHandFan({
             selected={selectedCardId === slot.card.id}
             onPress={() => selectCard(slot.card.id)}
             registerMotion={registerHandMotion}
+            cardSize={cardSize}
           />
         );
       })}
@@ -124,7 +129,8 @@ export function PistiHandFan({
 }
 
 const styles = StyleSheet.create({
-  // Fixed height since every card inside is absolutely positioned (see PistiHandCard) and can't
-  // contribute to an auto-computed parent height the way normal-flow children would.
-  handFan: { height: PISTI_HAND_FAN_HEIGHT, marginTop: HAND_FAN_TOP_MARGIN },
+  // Height comes from a per-render inline override (see fanHeight above) since every card inside
+  // is absolutely positioned (see PistiHandCard) and can't contribute to an auto-computed parent
+  // height the way normal-flow children would, and the right height now depends on cardSize.
+  handFan: { marginTop: HAND_FAN_TOP_MARGIN },
 });

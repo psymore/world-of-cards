@@ -25,6 +25,10 @@ export interface GameScreenLayoutProps {
   // defaults to false so every existing caller (Pişti, and Batak unless it passes this) is
   // visually unchanged.
   darkGlowHeader?: boolean;
+  // Overrides headerGlowBackdrop's default #180a26 (Batak's own purple, tied to its old HeroCard
+  // glow — see darkGlowHeader's own doc above). Pişti passes '#000000' here for a pitch-black bar
+  // across all of its table-background dev-tuning options, without changing Batak's color.
+  darkGlowHeaderColor?: string;
 }
 
 export function GameScreenLayout({
@@ -36,6 +40,7 @@ export function GameScreenLayout({
   onSettingsPress,
   extraHeaderActions,
   darkGlowHeader = false,
+  darkGlowHeaderColor,
 }: GameScreenLayoutProps) {
   function handleExitPress() {
     Alert.alert('Discard this game?', 'Your progress in this hand will be lost.', [
@@ -79,7 +84,14 @@ export function GameScreenLayout({
           green) visible in slivers around it. */}
       {headerHeight > 0 &&
         (darkGlowHeader ? (
-          <View style={[styles.headerGlowBackdrop, { height: CONTAINER_PADDING_TOP + headerHeight }]} pointerEvents="none" />
+          <View
+            style={[
+              styles.headerGlowBackdrop,
+              { height: CONTAINER_PADDING_TOP + headerHeight },
+              darkGlowHeaderColor ? { backgroundColor: darkGlowHeaderColor } : null,
+            ]}
+            pointerEvents="none"
+          />
         ) : (
           <HeaderWoodFrame height={CONTAINER_PADDING_TOP + headerHeight} />
         ))}

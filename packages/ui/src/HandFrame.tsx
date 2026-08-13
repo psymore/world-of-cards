@@ -1,7 +1,7 @@
-import React from 'react';
-import { Image, StyleSheet, useWindowDimensions } from 'react-native';
+import React from "react";
+import { Image, StyleSheet, useWindowDimensions } from "react-native";
 
-const FRAME_IMAGE = require('../assets/table/wooden-frame-long-Photoroom.png');
+const FRAME_IMAGE = require("../assets/table/alternatives/wooden-frame-long-Photoroom.png");
 
 // Measured directly from the asset's own pixel/alpha data (not eyeballed): its native
 // height/width ratio, and how far down its top-edge arch peaks (fraction of the image's own
@@ -18,7 +18,8 @@ export const HAND_FRAME_PEAK_FRACTION = 0.084;
 // ornamental hooks touching them.
 const LEFT_CONTENT_MARGIN_FRACTION = 36 / 1566;
 const RIGHT_CONTENT_MARGIN_FRACTION = 37 / 1566;
-const CONTENT_WIDTH_FRACTION = 1 - LEFT_CONTENT_MARGIN_FRACTION - RIGHT_CONTENT_MARGIN_FRACTION;
+const CONTENT_WIDTH_FRACTION =
+  1 - LEFT_CONTENT_MARGIN_FRACTION - RIGHT_CONTENT_MARGIN_FRACTION;
 
 export interface HandFrameProps {
   // Distance in dp from the containing box's true bottom edge to the image's own bottom edge.
@@ -52,7 +53,12 @@ function HandFrameComponent({ bottomOffset, height }: HandFrameProps) {
       resizeMode="stretch"
       style={[
         styles.image,
-        { width: renderedWidth, height: resolvedHeight, left: leftOffset, bottom: bottomOffset },
+        {
+          width: renderedWidth,
+          height: resolvedHeight,
+          left: leftOffset,
+          bottom: bottomOffset,
+        },
       ]}
     />
   );
@@ -61,5 +67,5 @@ function HandFrameComponent({ bottomOffset, height }: HandFrameProps) {
 export const HandFrame = React.memo(HandFrameComponent);
 
 const styles = StyleSheet.create({
-  image: { position: 'absolute', pointerEvents: 'none' },
+  image: { position: "absolute", pointerEvents: "none" },
 });

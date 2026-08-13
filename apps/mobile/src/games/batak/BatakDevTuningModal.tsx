@@ -3,8 +3,10 @@ import React from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { CARD_DIMS, PressableFeedback } from '@world-cards/ui';
 import { useDevTuningStore } from '../../state/devTuningStore';
+import type { DevTableBackground } from '../../state/devTuningStore';
 import { STANDARD_RAIL_CONFIG, STANDARD_TOP_OVERLAP, STANDARD_BOTTOM_OVERLAP } from './table/batakRailFan';
 import { CollapsibleSection, DevTuningModalShell, StepperRow } from '../../components/devTuning/DevTuningControls';
+import { TABLE_SURFACE_MATERIAL_OPTIONS } from '../../components/devTuning/tableSurfaceMaterialOptions';
 
 export interface BatakDevTuningModalProps {
   visible: boolean;
@@ -27,11 +29,24 @@ const ARC_MIN = 0;
 // not an arbitrary one.
 const ARC_MAX = 180;
 
-const SWITCH_BUTTON_RADIUS = 8;
+const OPTION_BUTTON_RADIUS = 8;
+
+// 'frame' pairs TableFelt with the shared DefaultTableFrame overlay (packages/ui/src/
+// DefaultTableFrame.tsx) — the same carved-wood border Pişti ships as its own default table look,
+// made available here too now that the field is game-agnostic (see DevTableBackground's own doc
+// comment in devTuningStore.ts). 'frame' is now Batak's actual shipped default too (matching
+// Pişti's), listed first to match; 'felt' is the legacy look, kept as a comparison.
+const TABLE_BACKGROUND_OPTIONS: { value: DevTableBackground; label: string }[] = [
+  { value: 'frame', label: 'Default Frame (current)' },
+  { value: 'felt', label: 'Felt (legacy default)' },
+  { value: 'gemini', label: 'Gemini (experiment)' },
+];
 
 export function BatakDevTuningModal({ visible, onClose }: BatakDevTuningModalProps) {
   const tableBackground = useDevTuningStore((s) => s.tableBackground);
   const setTableBackground = useDevTuningStore((s) => s.setTableBackground);
+  const tableSurfaceMaterial = useDevTuningStore((s) => s.tableSurfaceMaterial);
+  const setTableSurfaceMaterial = useDevTuningStore((s) => s.setTableSurfaceMaterial);
   const topOverlap = useDevTuningStore((s) => s.topOverlap);
   const setTopOverlap = useDevTuningStore((s) => s.setTopOverlap);
   const bottomOverlap = useDevTuningStore((s) => s.bottomOverlap);
@@ -46,16 +61,43 @@ export function BatakDevTuningModal({ visible, onClose }: BatakDevTuningModalPro
   return (
     <DevTuningModalShell visible={visible} onClose={onClose} title="Dev Tuning">
       <CollapsibleSection title="Table Background">
-        <PressableFeedback
-          onPress={() => setTableBackground(tableBackground === 'felt' ? 'gemini' : 'felt')}
-          accessibilityRole="button"
-          style={styles.switchButton}
-          overlayBorderRadius={SWITCH_BUTTON_RADIUS}
-          testID="dev-tuning-background-switch">
-          <Text style={styles.switchButtonText}>
-            {tableBackground === 'felt' ? 'Switch to Gemini table' : 'Switch to felt table'}
-          </Text>
-        </PressableFeedback>
+        {TABLE_BACKGROUND_OPTIONS.map((option) => {
+          const isSelected = option.value === tableBackground;
+          return (
+            <PressableFeedback
+              key={option.value}
+              onPress={() => setTableBackground(option.value)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isSelected }}
+              style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+              overlayBorderRadius={OPTION_BUTTON_RADIUS}
+              testID={`batak-dev-tuning-background-${option.value}`}>
+              <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                {(isSelected ? '● ' : '○ ') + option.label}
+              </Text>
+            </PressableFeedback>
+          );
+        })}
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Table Felt">
+        {TABLE_SURFACE_MATERIAL_OPTIONS.map((option) => {
+          const isSelected = option.value === tableSurfaceMaterial;
+          return (
+            <PressableFeedback
+              key={option.value}
+              onPress={() => setTableSurfaceMaterial(option.value)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isSelected }}
+              style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+              overlayBorderRadius={OPTION_BUTTON_RADIUS}
+              testID={`batak-dev-tuning-surface-material-${option.value}`}>
+              <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                {(isSelected ? '● ' : '○ ') + option.label}
+              </Text>
+            </PressableFeedback>
+          );
+        })}
       </CollapsibleSection>
 
       <CollapsibleSection title="Hand Fan">
@@ -111,6 +153,14 @@ export function BatakDevTuningModal({ visible, onClose }: BatakDevTuningModalPro
 }
 
 const styles = StyleSheet.create({
-  switchButton: { backgroundColor: '#2f5fa8', borderRadius: SWITCH_BUTTON_RADIUS, paddingVertical: 10, alignItems: 'center' },
-  switchButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  optionRow: {
+    backgroundColor: '#eee',
+    borderRadius: OPTION_BUTTON_RADIUS,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 6,
+  },
+  optionRowSelected: { backgroundColor: '#2f5fa8' },
+  optionText: { color: '#222', fontSize: 14, fontWeight: '600' },
+  optionTextSelected: { color: '#fff' },
 });

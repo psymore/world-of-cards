@@ -236,8 +236,10 @@ function ActiveGame({ difficulty, aiIds, teams, rng, useSessionStore, onPlayAgai
     <GameScreenLayout
       title="Pişti"
       onExit={onBackHome}
-      backgroundColor="#0b6623"
+      backgroundColor="#000000"
       titleColor="#f4c542"
+      darkGlowHeader
+      darkGlowHeaderColor="#000000"
       extraHeaderActions={
         __DEV__ ? (
           <PressableFeedback

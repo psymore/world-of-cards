@@ -1,8 +1,8 @@
-import React from 'react';
-import { Image, StyleSheet } from 'react-native';
-import { AbsoluteOverlay } from './AbsoluteOverlay';
+import React from "react";
+import { Image, StyleSheet } from "react-native";
+import { AbsoluteOverlay } from "./AbsoluteOverlay";
 
-const FELT_IMAGE = require('../assets/table/green.png');
+const FELT_IMAGE = require("../assets/table/alternatives/green.png");
 
 // A photo-textured green felt, reusable by any game with a tabletop playing surface, not just
 // Pişti. Pure decoration: no props, painted once, never redone by game state changes. Replaces
@@ -21,5 +21,5 @@ function TableFeltComponent() {
 export const TableFelt = React.memo(TableFeltComponent);
 
 const styles = StyleSheet.create({
-  image: { width: '100%', height: '100%' },
+  image: { width: "100%", height: "100%" },
 });

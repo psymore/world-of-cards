@@ -5,6 +5,7 @@ import { ruleConstants } from '@world-cards/engine/games/batak';
 import {
   TableFelt,
   GeminiTableBackground,
+  MahoganyTableSurface,
   HandFrame,
   HAND_FRAME_PEAK_FRACTION,
   CARD_DIMS,
@@ -206,6 +207,7 @@ export function BatakTable({
   dealPhase,
 }: BatakTableProps) {
   const devTableBackground = useDevTuningStore((s) => s.tableBackground);
+  const tableSurfaceMaterial = useDevTuningStore((s) => s.tableSurfaceMaterial);
   const seats = useMemo(() => assignSeats(opponentPlayerIds), [opponentPlayerIds]);
   // Deal order: human first, then opponents in existing turn order (right, top, left for the
   // fixed 4-player table) — see docs/superpowers/specs/2026-07-17-batak-deal-selection-and-
@@ -476,7 +478,13 @@ export function BatakTable({
 
   return (
     <DeselectableSurface style={styles.container} onDeselect={clearSelection}>
-      {__DEV__ && devTableBackground === 'gemini' ? <GeminiTableBackground /> : <TableFelt />}
+      {__DEV__ && devTableBackground === 'gemini' ? (
+        <GeminiTableBackground />
+      ) : __DEV__ && devTableBackground === 'frame' ? (
+        <MahoganyTableSurface material={tableSurfaceMaterial} />
+      ) : (
+        <TableFelt />
+      )}
       <OpponentSeatGroup
         position="top"
         seats={seats}
@@ -558,9 +566,11 @@ export function BatakTable({
       </View>
 
       {/* Suppressed on the Gemini table background — its own art doesn't want the wooden arch
-          layered on top. Only relevant in __DEV__ (see devTableBackground above); in a release
-          build this is always true. */}
-      {!(__DEV__ && devTableBackground === 'gemini') && (
+          layered on top — and on the Mahogany frame background, whose own frame already wraps
+          the bottom edge; layering this older plaque on top of it would double up the wood border
+          there. Only relevant in __DEV__ (see devTableBackground above); in a release build this
+          is always true. */}
+      {!(__DEV__ && (devTableBackground === 'gemini' || devTableBackground === 'frame')) && (
         <HandFrame bottomOffset={handFrameBottomOffset} height={handFrameHeight} />
       )}
       <View style={styles.handArea}>
