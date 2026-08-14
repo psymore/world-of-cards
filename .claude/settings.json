@@ -1,4 +1,13 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(/d/Android/Sdk/platform-tools/adb.exe shell *)",
+      "Bash(/d/Android/Sdk/platform-tools/adb.exe pull *)",
+      "Bash(MSYS_NO_PATHCONV=1 /d/Android/Sdk/platform-tools/adb.exe -s c2a9d642 install \"D:\\\\CodeSpace\\\\world-cards\\\\apps\\\\mobile\\\\android\\\\app\\\\build\\\\outputs\\\\apk\\\\debug\\\\app-debug.apk\")",
+      "Bash(MSYS_NO_PATHCONV=1 /d/Android/Sdk/platform-tools/adb.exe devices)",
+      "Bash(adb devices *)"
+    ]
+  },
   "enabledPlugins": {
     "expo@claude-plugins-official": true
   }
