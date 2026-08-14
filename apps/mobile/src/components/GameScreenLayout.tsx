@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { HeaderWoodFrame, PressableFeedback, SettingsIcon } from '@world-cards/ui';
 
 export interface GameScreenLayoutProps {
@@ -77,6 +78,11 @@ export function GameScreenLayout({
 
   return (
     <View style={[styles.container, backgroundColor ? { backgroundColor } : null]}>
+      {/* Hides the system status bar (wifi/battery/time) only while a game screen is mounted —
+          expo-status-bar merges multiple mounted <StatusBar> instances, most-recently-mounted
+          taking priority for props it specifies, so this reverts to App.tsx's `style="light"`
+          (not hidden) the instant this screen unmounts on Exit, with no manual toggle needed. */}
+      <StatusBar hidden />
       {/* Rendered at the container level (not inside header) so it also covers the container's
           own paddingTop gap above the header row — an absolutely positioned child ignores its
           parent's padding and anchors to the container's true top edge, same trick HandFrame
@@ -103,8 +109,10 @@ export function GameScreenLayout({
 }
 
 // Matches styles.container's own paddingTop below — extracted so HeaderWoodFrame's height
-// calculation stays in sync with it instead of duplicating the literal.
-const CONTAINER_PADDING_TOP = 28;
+// calculation stays in sync with it instead of duplicating the literal. Bumped from the original
+// 28 now that the status bar is hidden in-game (see the <StatusBar hidden /> above) — this is
+// pure breathing room from the screen's top edge now, not a safe-area correctness fix.
+const CONTAINER_PADDING_TOP = 44;
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingTop: CONTAINER_PADDING_TOP },
@@ -118,7 +126,9 @@ const styles = StyleSheet.create({
   title: { fontSize: 16, fontWeight: 'bold' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   exit: { fontSize: 21, color: '#c0392b' },
-  content: { flex: 1 },
+  // paddingTop gives the table a little breathing room below the header bar, separate from the
+  // header row's own paddingBottom above (which is internal to the header row's own content).
+  content: { flex: 1, paddingTop: 12 },
   // Solid, edge-to-edge near-black backdrop for darkGlowHeader (same footprint HeaderWoodFrame
   // used — full width, top:0, height covers the paddingTop gap too) with a green glow on its
   // bottom edge, matching HeroCard.tsx's glowShadow('#1f5c3a', 20) over the same dark tone
