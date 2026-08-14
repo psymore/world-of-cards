@@ -85,7 +85,7 @@ const OVERLAY_BASE_SIZE = { normal: 60, small: 38 };
 // consume PlayingCard directly, so this applies everywhere at once — see the 2026-07-17
 // deal/selection/trick-motion polish spec for why this is a deliberate "apply everywhere" call,
 // not a per-game override). Replaces the earlier hand-drawn SVG lattice (CardBackPattern).
-const CARD_BACK_IMAGE = require("../assets/card-art/processed/ai-generated/cards-backround/middle-lighted.png");
+const CARD_BACK_IMAGE = require("../assets/card-art/processed/ai-generated/cards-backround/new-default-card-background.png");
 
 function CornerIndex({
   rank,
