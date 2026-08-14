@@ -419,9 +419,10 @@ function ActiveGame({
     <GameScreenLayout
       title="Batak"
       onExit={onBackHome}
-      backgroundColor="#0b6623"
+      backgroundColor="#000000"
       titleColor="#f4c542"
       darkGlowHeader
+      darkGlowHeaderColor="#000000"
       onSettingsPress={() => setSettingsVisible(true)}
       extraHeaderActions={
         __DEV__ ? (

@@ -18,16 +18,17 @@ export interface GameScreenLayoutProps {
   // Swaps the header row's default HeaderWoodFrame photo backing for a solid near-black bar with
   // a green glow — originally chosen to match HomeScreen's old HeroCard glow (#1f5c3a) over its
   // dark purple background (#180a26); HomeScreen moved to a shared TableFelt background on
-  // 2026-08-07 (HomeBackground.tsx no longer exists), but this bar's own colors are unchanged and
-  // still Batak's own deliberate choice. Edge-to-edge, same footprint HeaderWoodFrame
-  // used (full width, from the very top, covering CONTAINER_PADDING_TOP too) — an inset/rounded
-  // version left slivers of the screen's own `backgroundColor` showing at the edges. Opt-in and
-  // defaults to false so every existing caller (Pişti, and Batak unless it passes this) is
-  // visually unchanged.
+  // 2026-08-07 (HomeBackground.tsx no longer exists), and Batak itself has since moved off the
+  // #180a26 fill too (now overrides it black via darkGlowHeaderColor, matching its root
+  // backgroundColor) — only the green glow itself remains Batak's own deliberate leftover choice.
+  // Edge-to-edge, same footprint HeaderWoodFrame used (full width, from the very top, covering
+  // CONTAINER_PADDING_TOP too) — an inset/rounded version left slivers of the screen's own
+  // `backgroundColor` showing at the edges. Opt-in and defaults to false so every existing caller
+  // (Pişti, and Batak unless it passes this) is visually unchanged.
   darkGlowHeader?: boolean;
-  // Overrides headerGlowBackdrop's default #180a26 (Batak's own purple, tied to its old HeroCard
-  // glow — see darkGlowHeader's own doc above). Pişti passes '#000000' here for a pitch-black bar
-  // across all of its table-background dev-tuning options, without changing Batak's color.
+  // Overrides headerGlowBackdrop's default #180a26 fill. Both Pişti and Batak now pass '#000000'
+  // here for a pitch-black bar, matching their root backgroundColor — Batak keeps its own green
+  // shadowColor glow on top of it (see darkGlowHeader's own doc above).
   darkGlowHeaderColor?: string;
 }
 
@@ -80,8 +81,8 @@ export function GameScreenLayout({
           own paddingTop gap above the header row — an absolutely positioned child ignores its
           parent's padding and anchors to the container's true top edge, same trick HandFrame
           already relies on for its own bottom-edge coverage. Full width, no margin/borderRadius —
-          anything less than edge-to-edge left the screen's own `backgroundColor` (e.g. Batak's
-          green) visible in slivers around it. */}
+          anything less than edge-to-edge left the screen's own `backgroundColor` visible in
+          slivers around it. */}
       {headerHeight > 0 &&
         (darkGlowHeader ? (
           <View
