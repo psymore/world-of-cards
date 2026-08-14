@@ -1,5 +1,6 @@
 {
   "permissions": {
+    "defaultMode": "auto",
     "allow": [
       "Bash(/d/Android/Sdk/platform-tools/adb.exe shell *)",
       "Bash(/d/Android/Sdk/platform-tools/adb.exe pull *)",
