@@ -2,7 +2,7 @@
 
 **Owner:** whoever maintains `packages/ui`. **Load:** when touching shared visual components used by more than one app.
 
-`packages/ui` holds the shared, reusable visual components consumed by both `apps/mobile` and `apps/playground`: `PlayingCard`, `SuitIcon`, `CardBackPattern`, `CourtCardFrame`, `TableFelt`, `TableShell`, `TableWoodCorners`, `TableEdgeRails`, `HeaderWoodFrame`, `HandFrame`, `AbsoluteOverlay`, `glowShadow`, `SettingsIcon`, `colorUtils`, `courtCardArt`, `fonts`, `woodPalette`, `handAreaLayout`.
+`packages/ui` holds the shared, reusable visual components consumed by both `apps/mobile` and `apps/playground`: `PlayingCard`, `SuitIcon`, `CardBackPattern`, `CourtCardFrame`, `TableFelt`, `TableShell`, `TableWoodCorners`, `TableEdgeRails`, `HeaderWoodFrame`, `HandFrame`, `AbsoluteOverlay`, `glowShadow`, `SettingsIcon`, `colorUtils`, `courtCardArt`, `fonts`, `typography`, `woodPalette`, `handAreaLayout`.
 
 ## The cross-app isolation rule
 
@@ -34,6 +34,7 @@ Specs/plans for changes that touched shared visual components used by more than 
 - Playground card browsing: `docs/superpowers/specs/2026-07-17-playground-card-browsing-design.md`
 - HomeScreen redesign (see below): `docs/superpowers/specs/2026-07-30-homescreen-redesign-design.md`
 - Table shell redesign (floating tilted table, fused seat panels): `docs/superpowers/specs/2026-08-10-table-shell-redesign-design.md`
+- Typography foundation (Cinzel/Inter type pairing, H1-H7 scale): `docs/superpowers/specs/2026-08-14-typography-foundation-design.md`
 
 ## HomeScreen
 
