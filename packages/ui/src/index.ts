@@ -45,6 +45,14 @@ export type { CourtCardFrameProps } from "./CourtCardFrame";
 export { glowShadow } from "./glowShadow";
 export { FONTS, CARD_RANK_FONT_FAMILY } from "./fonts";
 export {
+  PRIMARY_SERIF_REGULAR,
+  PRIMARY_SERIF_BOLD,
+  SECONDARY_SANS_REGULAR,
+  SECONDARY_SANS_BOLD,
+  TYPE_SCALE,
+} from "./typography";
+export type { TypeScaleEntry } from "./typography";
+export {
   WOOD_TRIM_COLOR,
   WOOD_DEFAULT_LIGHT,
   WOOD_DEFAULT_DARK,
