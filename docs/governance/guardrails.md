@@ -20,9 +20,9 @@ The one recognized exception: at the start of a bulk multi-commit workflow (suba
 
 Default to a local branch directly in the main repo (`git checkout -b <category>/<short-description>`, e.g. `ui/improve-table-view`, `feature/hard-ai-improvements`, `game/klondike-solitaire`) rather than a sibling git worktree. Only reach for a worktree if the change genuinely seems to need isolation (large/risky, or needs a clean baseline) — and ask first before setting one up.
 
-## 3. No unsolicited screenshot or visual verification
+## 3. Screenshot/visual verification: proactive, but clean up before merge
 
-Do not perform screenshot-based visual verification proactively. Only do it when explicitly asked for a visual/screenshot check. Finish UI-affecting work with typecheck/existing-test verification and say plainly that it hasn't been visually verified, rather than launching a browser/Playwright pass unprompted.
+As of 2026-08-14 (phone-connected development phase), take screenshots proactively whenever useful to verify UI-affecting work — don't wait to be asked. This supersedes the prior "only when explicitly asked" stance from 2026-07-17. Before merging a branch, delete any screenshot files produced during that work so they don't get committed or left in the working tree.
 
 ## 4. Cross-app visual-change discussion trigger
 
@@ -35,3 +35,11 @@ Before starting any animation-related task (Playground demos or `apps/mobile` an
 ## 6. Escalate to a scoped experiment after repeated targeted-fix failures
 
 When an animation-quality problem (stutter, jank) persists despite several well-reasoned, individually-justified mitigation attempts under the current engine, escalate to a scoped, isolated experiment (e.g. a different animation library) built and evaluated in `apps/playground` first, never directly in production — rather than continuing an open-ended series of further patches under the incumbent approach. Don't wait for the user to suggest this; once roughly three targeted fixes have failed to resolve a reported issue, proactively raise the scoped-experiment option as the next step. Record the outcome as an ADR with an explicit revisit trigger (see `docs/animation/ADR/` for the model instance). This is a specific instance of the more general pattern in `docs/governance/architecture-escalation.md` — see that document for when a recurring problem generally warrants stepping back from further local patches.
+
+## 7. adb safety boundary during phone-connected development
+
+Established 2026-08-14, when development began using the user's physical Android phone over adb. Unrooted `adb shell` already can't read other apps' private sandboxed data — but shared storage (`/sdcard`, i.e. Photos/DCIM, Downloads, WhatsApp media), package management (install/uninstall/clear-data of *any* app), system settings, screen capture, and input injection are all reachable and not sandboxed. Stay inside this whitelist without asking; ask first for anything outside it, every time:
+
+- **Allowed:** install/launch/stop the dev build, `logcat` (optionally filtered to its package), `input tap`/`swipe`, `screencap`/`screenrecord`, `push`/`pull` restricted to a dedicated scratch folder (e.g. `/sdcard/Download/claude-scratch/`).
+- **Never, without asking first:** `adb root`, `adb backup`, `pm uninstall`/`pm clear` on anything other than the dev build, `settings put`, or any `rm`/`push`/`pull` outside the scratch folder.
+- Before a screenshot or input-injection, confirm the dev build is actually the foreground app (`dumpsys window` or just ask) rather than assuming.
