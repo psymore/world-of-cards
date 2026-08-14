@@ -2,8 +2,10 @@
 // PistiDevTuningModal.tsx) — extracted once a second consumer needed the identical
 // stepper-row/collapsible-section/modal-shell shape, rather than each game re-authoring it.
 import React, { useEffect, useState } from 'react';
-import { Modal, StyleSheet, Text, TextInput, View } from 'react-native';
-import { PressableFeedback } from '@world-cards/ui';
+import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { MODAL_CARD_LARGE_ASPECT_RATIO, MODAL_CARD_LARGE_IMAGE, PressableFeedback } from '@world-cards/ui';
 
 const STEPPER_BUTTON_RADIUS = 16;
 
@@ -95,8 +97,20 @@ export function CollapsibleSection({ title, children }: { title: string; childre
   );
 }
 
+// Downward drag distance/velocity past which releasing the drag handle dismisses the modal
+// instead of springing back to rest — matches the general feel of native bottom-sheet swipe
+// thresholds (a deliberate, not-quite-halfway drag, or a quick flick, both count).
+const SWIPE_DISMISS_DISTANCE = 120;
+const SWIPE_DISMISS_VELOCITY = 800;
+
 // The Modal/backdrop/card/heading/Done-button chrome every dev-tuning modal shares — a caller
-// supplies only its own CollapsibleSections as children.
+// supplies only its own CollapsibleSections as children. Capped at 90vw/80vh (bounded further by
+// MODAL_CARD_LARGE_IMAGE's own aspect ratio — its content region only ever exists inside that
+// image's own glass panel, and stretching a fixed-art panel to an arbitrary box would visibly
+// distort the frame, so this fits *inside* the cap rather than filling it), scrollable (previously
+// unbounded content — CollapsibleSections left fully expanded — could render past the card's own
+// maxHeight with nothing to clip or scroll it, "extending through the bottom regions" of the
+// modal), swipeable via its own drag handle, and dismissible by tapping the backdrop outside it.
 export function DevTuningModalShell({
   visible,
   onClose,
@@ -108,25 +122,94 @@ export function DevTuningModalShell({
   title: string;
   children: React.ReactNode;
 }) {
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const maxWidth = windowWidth * 0.9;
+  const maxHeight = windowHeight * 0.8;
+  const cardWidth = Math.min(maxWidth, maxHeight * MODAL_CARD_LARGE_ASPECT_RATIO);
+  const cardHeight = cardWidth / MODAL_CARD_LARGE_ASPECT_RATIO;
+
+  const translateY = useSharedValue(0);
+  // Reset (no leftover drag offset from a previous open) whenever the modal re-opens — translateY
+  // is a shared value, so it otherwise survives across visible:false -> true transitions.
+  useEffect(() => {
+    if (visible) translateY.value = 0;
+  }, [visible, translateY]);
+
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      if (event.translationY > 0) translateY.value = event.translationY;
+    })
+    .onEnd((event) => {
+      if (event.translationY > SWIPE_DISMISS_DISTANCE || event.velocityY > SWIPE_DISMISS_VELOCITY) {
+        runOnJS(onClose)();
+      }
+      translateY.value = withSpring(0, { damping: 18 });
+    });
+
+  const dragStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
   return (
     <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.card}>
-          <Text style={styles.heading}>{title}</Text>
-          {children}
-          <PressableFeedback onPress={onClose} accessibilityRole="button" style={styles.closeButton}>
-            <Text style={styles.closeText}>Done</Text>
-          </PressableFeedback>
-        </View>
-      </View>
+      <Pressable style={styles.backdrop} onPress={onClose} testID="dev-tuning-modal-backdrop">
+        {/* A plain (non-Pressable) View wouldn't claim RN's touch responder, so taps anywhere on
+            the card — including its transparent margin outside the rounded glass panel — would
+            fall through to the backdrop's own onPress above and close the modal on every inside
+            tap. This no-op onPress exists solely to claim the responder instead. */}
+        <Pressable onPress={() => {}} style={{ width: cardWidth, maxHeight }}>
+          <Animated.View style={[styles.card, { height: cardHeight }, dragStyle]}>
+            <Image
+              source={MODAL_CARD_LARGE_IMAGE}
+              resizeMode="stretch"
+              style={[StyleSheet.absoluteFill, styles.cardImage]}
+            />
+            <GestureDetector gesture={panGesture}>
+              <View style={styles.dragHandleArea}>
+                <View style={styles.dragHandle} />
+                <Text style={styles.heading}>{title}</Text>
+              </View>
+            </GestureDetector>
+            <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+              {children}
+            </ScrollView>
+            <PressableFeedback onPress={onClose} accessibilityRole="button" style={styles.closeButton}>
+              <Text style={styles.closeText}>Done</Text>
+            </PressableFeedback>
+          </Animated.View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 24, minWidth: 300, maxHeight: '80%' },
-  heading: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
+  // No backgroundColor/borderRadius of its own — MODAL_CARD_LARGE_IMAGE (an absoluteFill sibling,
+  // painted first) is the entire visible card, gold rim and rounded corners baked in. width/height
+  // are computed inline (contain-fit against the image's own aspect ratio, capped at 90vw/80vh —
+  // see the component body) rather than living here, since they depend on the window size.
+  card: { overflow: 'hidden' },
+  // react-native-web's Image falls back to the loaded image's natural pixel size unless width/
+  // height are explicit — StyleSheet.absoluteFill alone leaves them 'auto' on web (see
+  // TableShell.tsx's own styles.fill for the same fix), which let the 874x1462-native modal-card
+  // art escape its own overflow:hidden-clipped ancestor. Explicit 100%/100% forces the fill on
+  // web while staying a no-op on native.
+  cardImage: { width: '100%', height: '100%' },
+  dragHandleArea: { alignItems: 'center', paddingTop: 14, paddingBottom: 4 },
+  // A plain code-drawn grip bar (not part of the source art) — the visual affordance that this
+  // header strip is what you drag to swipe the sheet closed, same convention as native bottom
+  // sheets. Sits above the heading so it doesn't compete with the title for attention.
+  dragHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(36, 26, 16, 0.35)',
+    marginBottom: 10,
+  },
+  heading: { fontSize: 18, fontWeight: 'bold', textAlign: 'center', color: '#241a10' },
+  scroll: { flexShrink: 1 },
+  scrollContent: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 16 },
   section: { marginBottom: 12 },
   sectionToggle: { paddingVertical: 6 },
   sectionToggleText: { fontSize: 15, fontWeight: '600' },
@@ -153,6 +236,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 6,
   },
-  closeButton: { marginTop: 20, alignSelf: 'center' },
+  closeButton: { alignSelf: 'center', paddingVertical: 10, paddingBottom: 18 },
   closeText: { fontSize: 16, color: '#2f5fa8', fontWeight: '600' },
 });

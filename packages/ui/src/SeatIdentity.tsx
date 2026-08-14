@@ -28,7 +28,8 @@ export type SeatIdentityAvatar =
   | "male-02"
   | "female-02"
   | "male-03"
-  | "female-03";
+  | "female-03"
+  | "female-01-photoroom";
 
 const AVATAR_IMAGES: Record<SeatIdentityAvatar, number> = {
   "male-01": require("../assets/avatars/avatar-male-01.png"),
@@ -37,7 +38,17 @@ const AVATAR_IMAGES: Record<SeatIdentityAvatar, number> = {
   "female-02": require("../assets/avatars/avatar-female-02.png"),
   "male-03": require("../assets/avatars/avatar-male-03.png"),
   "female-03": require("../assets/avatars/avatar-female-03.png"),
+  "female-01-photoroom": require("../assets/avatars/avatar-female01-Photoroom.png"),
 };
+
+// Unlike the other six (plain rectangular face crops, see build-avatar-assets.js — SeatIdentity's
+// own circular clip + AVATAR_FRAME_IMAGE ring below do all the framing), this one file already
+// comes with its own baked-in circular gold ring straight out of Photoroom's export, with the
+// portrait deliberately overflowing that ring's top/bottom edge. Stacking the default diamond
+// ring on top of it would double up two mismatched rings, and "cover" resizeMode would crop the
+// ring itself off the sides — so any avatar in this set instead skips the frame overlay entirely
+// (its own ring is the frame) and uses "contain" so the full circle stays visible.
+const SELF_FRAMED_AVATARS = new Set<SeatIdentityAvatar>(["female-01-photoroom"]);
 
 // The desired shape of the content row (avatar + name/tricks + badge). Not tied to any image
 // asset — there's no background plaque image anymore (see the comment above ORIENTATION_TRANSFORM
@@ -158,6 +169,7 @@ function SeatIdentityComponent({
 }: SeatIdentityProps) {
   const rotated = orientation !== "horizontal";
   const transform = ORIENTATION_TRANSFORM[orientation];
+  const selfFramed = SELF_FRAMED_AVATARS.has(avatar);
   const [anchorSize, setAnchorSize] = useState<{
     width: number;
     height: number;
@@ -248,11 +260,11 @@ function SeatIdentityComponent({
                   ? { transform: AVATAR_COUNTER_TRANSFORM[orientation] }
                   : null,
               ]}
-              resizeMode="cover"
+              resizeMode={selfFramed ? "contain" : "cover"}
               testID="seat-identity-avatar-image"
             />
           </View>
-          {turnStateFrames == null ? (
+          {selfFramed ? null : turnStateFrames == null ? (
             <Image
               source={AVATAR_FRAME_IMAGE}
               style={[

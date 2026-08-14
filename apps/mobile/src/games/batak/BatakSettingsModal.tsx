@@ -1,6 +1,6 @@
 import React from 'react';
-import { Modal, StyleSheet, Switch, Text, View } from 'react-native';
-import { PressableFeedback } from '@world-cards/ui';
+import { Image, Modal, Pressable, StyleSheet, Switch, Text, useWindowDimensions, View } from 'react-native';
+import { MODAL_CARD_SMALL_ASPECT_RATIO, MODAL_CARD_SMALL_IMAGE, PressableFeedback } from '@world-cards/ui';
 import { useSettingsStore } from '../../state/settingsStore';
 
 export interface BatakSettingsModalProps {
@@ -8,34 +8,60 @@ export interface BatakSettingsModalProps {
   onClose: () => void;
 }
 
+// Same MODAL_CARD_SMALL_IMAGE-backed, contain-fit-sized, outside-tap-to-close shape as
+// DevTuningModalShell (apps/mobile/src/components/devTuning/DevTuningControls.tsx) — this
+// modal's content is one static row, short enough that it never needs DevTuningModalShell's
+// scroll/swipe-to-dismiss machinery, so it stays a small standalone component rather than
+// sharing that shell.
 export function BatakSettingsModal({ visible, onClose }: BatakSettingsModalProps) {
   const dimUnplayableCards = useSettingsStore((s) => s.dimUnplayableCards);
   const setDimUnplayableCards = useSettingsStore((s) => s.setDimUnplayableCards);
 
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const maxWidth = windowWidth * 0.9;
+  const maxHeight = windowHeight * 0.8;
+  const cardWidth = Math.min(maxWidth, maxHeight * MODAL_CARD_SMALL_ASPECT_RATIO);
+  const cardHeight = cardWidth / MODAL_CARD_SMALL_ASPECT_RATIO;
+
   return (
     <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.card}>
-          <Text style={styles.heading}>Settings</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Dim Unplayable Cards</Text>
-            <Switch value={dimUnplayableCards} onValueChange={setDimUnplayableCards} />
+      <Pressable style={styles.backdrop} onPress={onClose} testID="batak-settings-modal-backdrop">
+        {/* No-op onPress claims the touch responder so an inside tap doesn't fall through to the
+            backdrop's own onPress above and close the modal — same reasoning as
+            DevTuningModalShell's identical wrapper. */}
+        <Pressable onPress={() => {}}>
+          <View style={[styles.card, { width: cardWidth, height: cardHeight }]}>
+            <Image
+              source={MODAL_CARD_SMALL_IMAGE}
+              resizeMode="stretch"
+              style={[StyleSheet.absoluteFill, styles.cardImage]}
+            />
+            <Text style={styles.heading}>Settings</Text>
+            <View style={styles.row}>
+              <Text style={styles.label}>Dim Unplayable Cards</Text>
+              <Switch value={dimUnplayableCards} onValueChange={setDimUnplayableCards} />
+            </View>
+            <PressableFeedback onPress={onClose} accessibilityRole="button" style={styles.closeButton}>
+              <Text style={styles.closeText}>Done</Text>
+            </PressableFeedback>
           </View>
-          <PressableFeedback onPress={onClose} accessibilityRole="button" style={styles.closeButton}>
-            <Text style={styles.closeText}>Done</Text>
-          </PressableFeedback>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 24, minWidth: 260 },
-  heading: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
+  // No backgroundColor/borderRadius of its own — MODAL_CARD_SMALL_IMAGE (an absoluteFill sibling,
+  // painted first) is the entire visible card, gold rim and rounded corners baked in.
+  card: { overflow: 'hidden', padding: 24, justifyContent: 'center' },
+  // react-native-web's Image falls back to the loaded image's natural pixel size unless width/
+  // height are explicit (see DevTuningControls.tsx's own styles.cardImage for the full reasoning).
+  cardImage: { width: '100%', height: '100%' },
+  heading: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, textAlign: 'center', color: '#241a10' },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  label: { fontSize: 15, flexShrink: 1 },
+  label: { fontSize: 15, flexShrink: 1, color: '#241a10' },
   closeButton: { marginTop: 20, alignSelf: 'center' },
   closeText: { fontSize: 16, color: '#2f5fa8', fontWeight: '600' },
 });

@@ -68,6 +68,13 @@ export { SeatIdentity } from "./SeatIdentity";
 export const AVATAR_FRAME_IDLE_IMAGE: number = require("../assets/avatars/avatar-frame-idle.png");
 export const AVATAR_FRAME_NEXT_IMAGE: number = require("../assets/avatars/avatar-frame-next.png");
 export const AVATAR_FRAME_ACTIVE_IMAGE: number = require("../assets/avatars/avatar-frame-active.png");
+// A real portrait, its own circular gold ring already baked in (Photoroom export, portrait
+// deliberately overflowing the ring's top/bottom edge) — apps/mobile's PlayerAvatar.tsx (the
+// avatar actually shown on the live table, not SeatIdentity.tsx's still-dev-only "tableShell"
+// comparison view) renders this directly in place of its old code-drawn silhouette, same asset
+// for every seat rather than a per-player set. Same re-export-as-raw-handle reasoning as the
+// AVATAR_FRAME_* images above.
+export const PLAYER_AVATAR_PHOTO_IMAGE: number = require("../assets/avatars/avatar-female01-Photoroom.png");
 export type {
   SeatIdentityProps,
   SeatIdentityOrientation,
@@ -75,6 +82,21 @@ export type {
   SeatIdentityTurnState,
   SeatIdentityTurnStateFrames,
 } from "./SeatIdentity";
+// A wood/brass/glass nameplate pill (scripts/build-name-badge-pill-asset.js, cropped from
+// BADGE-PILL-02A.png — a real alpha channel with a soft ambient glow halo, trimmed to that halo's
+// own bounding box rather than alpha-punched from scratch). apps/mobile's PlayerBadge.tsx stretches
+// this behind each seat's name/status text instead of the plain code-drawn pill it used before.
+export const NAME_BADGE_PILL_IMAGE: number = require("../assets/plaques/name-badge-pill.png");
+// Two glass/brass modal-card backgrounds (scripts/build-modal-badge-rect-assets.js, same trim-
+// only pipeline as NAME_BADGE_PILL_IMAGE above) — apps/mobile's modal shells stretch one of these
+// behind their content instead of a plain white card. "Small" (landscape, BADGE-RECT-01A-dup) is
+// for compact confirm-style dialogs; "large" (portrait, BADGE-RECT-01B) is for taller scrollable
+// panels like the dev-tuning modal.
+export const MODAL_CARD_SMALL_IMAGE: number = require("../assets/plaques/modal-card-small.png");
+export const MODAL_CARD_SMALL_ASPECT_RATIO = 942 / 630;
+export const MODAL_CARD_LARGE_IMAGE: number = require("../assets/plaques/modal-card-large.png");
+export const MODAL_CARD_LARGE_ASPECT_RATIO = 874 / 1462;
+export const NAME_BADGE_PILL_ASPECT_RATIO = 1080 / 417;
 // A carved mahogany-burgundy plaque (opaque rectangle, own black bezel baked in — not alpha-cut)
 // meant to sit as a bottom bar/sign. Same re-export-as-raw-handle reasoning as the AVATAR_FRAME_*
 // images above.

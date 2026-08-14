@@ -53,6 +53,7 @@ import type {
 import { DeselectableSurface } from "../../components/DeselectableSurface";
 import { useCardSelection } from "../../components/useCardSelection";
 import { PlayerBadge } from "../../table/PlayerBadge";
+import { turnStateForSeat } from "../../table/turnState";
 import {
   OpponentSeatGroup,
   seatLayoutStyles,
@@ -229,22 +230,24 @@ export function turnStateForPlayer(
   playerId: string,
   state: PistiState,
 ): SeatIdentityTurnState {
-  if (state.players[state.currentPlayerIndex] === playerId) return "active";
-  const nextIndex = (state.currentPlayerIndex + 1) % state.players.length;
-  if (state.players[nextIndex] === playerId) return "next";
-  return "idle";
+  return turnStateForSeat(playerId, state.players, state.currentPlayerIndex);
 }
 
 // Fixed by seat position, not derived from player identity (docs/superpowers/specs/2026-08-12-
-// pisti-table-shell-pilot-design.md Decision 6) — the simplest deterministic scheme.
+// pisti-table-shell-pilot-design.md Decision 6) — the simplest deterministic scheme. top/bottom
+// are the only two seats live in the default 2-player game (human always at "bottom", see
+// pistiSeating.ts's own header comment) — "Computer" and "You" respectively — which is why both
+// share the new self-framed avatar-female01-Photoroom.png art (SeatIdentity's
+// SELF_FRAMED_AVATARS) rather than each getting a distinct face like the 3/4-player left/right
+// seats do.
 export const AVATAR_BY_POSITION: Record<
   "top" | "left" | "right" | "bottom",
   SeatIdentityAvatar
 > = {
-  top: "female-01",
+  top: "female-01-photoroom",
   left: "male-01",
   right: "male-02",
-  bottom: "female-02",
+  bottom: "female-01-photoroom",
 };
 
 // The opponent's face-down card stack only. The nameplate half of what used to be one combined
@@ -358,7 +361,6 @@ function LegacyOpponentSeat({
       ? 0
       : Math.max(isRevealing ? hand.length - 1 : hand.length, 0);
   const capturedCount = state.table.zones[`captured-${playerId}`].cards.length;
-  const isCurrentTurn = state.players[state.currentPlayerIndex] === playerId;
 
   const { width: windowWidth } = useWindowDimensions();
   const cardMargin = isSide
@@ -397,7 +399,7 @@ function LegacyOpponentSeat({
       <PlayerBadge
         name={playerNames[playerId] ?? playerId}
         statusText={capturedStatusText(capturedCount)}
-        active={isCurrentTurn}
+        turnState={turnStateForSeat(playerId, state.players, state.currentPlayerIndex)}
         isHuman={false}
         compact={isSide}
       />
@@ -904,7 +906,7 @@ export function PistiTable({
           <PlayerBadge
             name={playerNames[humanPlayerId] ?? "You"}
             statusText={capturedStatusText(capturedHuman)}
-            active={isHumanTurn}
+            turnState={turnStateForSeat(humanPlayerId, state.players, state.currentPlayerIndex)}
             isHuman
           />
           <PistiHandFan
