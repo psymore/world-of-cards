@@ -31,7 +31,14 @@
     "plugins": [
       "expo-font",
       "expo-splash-screen",
-      "expo-image"
+      "expo-image",
+      [
+        "expo-navigation-bar",
+        {
+          "hidden": true,
+          "enforceContrast": false
+        }
+      ]
     ]
   }
 }
