@@ -32,7 +32,7 @@ const TABLE_SHELL_VERSIONS: TableShellVersion[] = [
     label: 'v1',
     // docs/references/GPT-powerful-assets-review/assets-v1/TABLE-FRAME-TRY-02-GLOW-Photoroom-holepunched.png
     frameImage: require('../../assets/table-shell-versions/v1-frame.png'),
-    // Built by scripts/build-table-shell-v1-felt.js from TABLE-FELT-PANEL-TRY-03-RED-GLOW.png,
+    // Built by scripts/assets/build-table-shell-v1-felt.js from TABLE-FELT-PANEL-TRY-03-RED-GLOW.png,
     // masked down to this frame's actual hole shape (same corner-seeded flood-fill technique as
     // the shipped v0 felt) rather than just stretched behind it — a plain stretch would have
     // bled red through the frame's outer transparent corners the same way the original v0 felt

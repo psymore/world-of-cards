@@ -82,12 +82,12 @@ export type {
   SeatIdentityTurnState,
   SeatIdentityTurnStateFrames,
 } from "./SeatIdentity";
-// A wood/brass/glass nameplate pill (scripts/build-name-badge-pill-asset.js, cropped from
+// A wood/brass/glass nameplate pill (scripts/assets/build-name-badge-pill-asset.js, cropped from
 // BADGE-PILL-02A.png — a real alpha channel with a soft ambient glow halo, trimmed to that halo's
 // own bounding box rather than alpha-punched from scratch). apps/mobile's PlayerBadge.tsx stretches
 // this behind each seat's name/status text instead of the plain code-drawn pill it used before.
 export const NAME_BADGE_PILL_IMAGE: number = require("../assets/plaques/name-badge-pill.png");
-// Two glass/brass modal-card backgrounds (scripts/build-modal-badge-rect-assets.js, same trim-
+// Two glass/brass modal-card backgrounds (scripts/assets/build-modal-badge-rect-assets.js, same trim-
 // only pipeline as NAME_BADGE_PILL_IMAGE above) — apps/mobile's modal shells stretch one of these
 // behind their content instead of a plain white card. "Small" (landscape, BADGE-RECT-01A-dup) is
 // for compact confirm-style dialogs; "large" (portrait, BADGE-RECT-01B) is for taller scrollable

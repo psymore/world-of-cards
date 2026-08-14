@@ -1,11 +1,11 @@
 // One-off dev tool: builds double-headed court-card art from raw AI-generated
 // sources in .superpowers/card-art-sources/ into apps/mobile/assets/card-art/processed/.
-// Not part of the app build — run manually: node scripts/process-card-art.js
+// Not part of the app build — run manually: node scripts/assets/process-card-art.js
 const path = require('path');
 const sharp = require('sharp');
 
-const SOURCE_DIR = path.join(__dirname, '..', '.superpowers', 'card-art-sources');
-const OUTPUT_DIR = path.join(__dirname, '..', 'apps', 'mobile', 'assets', 'card-art', 'processed');
+const SOURCE_DIR = path.join(__dirname, '..', '..', '.superpowers', 'card-art-sources');
+const OUTPUT_DIR = path.join(__dirname, '..', '..', 'apps', 'mobile', 'assets', 'card-art', 'processed');
 
 const CANVAS_WIDTH = 300;
 const CANVAS_HEIGHT = 430;

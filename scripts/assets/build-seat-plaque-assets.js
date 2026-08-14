@@ -1,10 +1,10 @@
-// scripts/build-seat-plaque-assets.js
+// scripts/assets/build-seat-plaque-assets.js
 // One-off dev tool: crops a small glass badge circle out of PANELKIT-GLASS-01A.png's flat-black
 // sheet and alpha-punches the surrounding black into real transparency, so
 // packages/ui/src/SeatIdentity.tsx can composite it over TableShell's felt/frame at runtime.
 //
 // Uses the same flood-fill connectivity masking + binary-alpha + edge-blur pipeline as
-// scripts/build-table-shell-frame.js's Task 1 (see that file's header for the full history of
+// scripts/assets/build-table-shell-frame.js's Task 1 (see that file's header for the full history of
 // why binary-mask-then-blur beats per-pixel luminance feathering). The one difference: that
 // script seeds from the CENTER to find a hole surrounded by opaque content; this one seeds from
 // a CORNER (guaranteed background) to find the background surrounding an opaque object. The crop
@@ -19,16 +19,16 @@
 // — TableShell's own baked frame art already provides a dark plaque cavity at each seat anchor,
 // so SeatIdentity's content now sits directly over that instead of a second, redundant layer.
 //
-// Not part of the app build — run manually: node scripts/build-seat-plaque-assets.js
+// Not part of the app build — run manually: node scripts/assets/build-seat-plaque-assets.js
 const path = require('path');
 const sharp = require('sharp');
 const { floodFillHoleMask } = require('./lib/floodFillHoleMask');
 const { blurAlphaChannel } = require('./lib/blurAlphaChannel');
 
 const SOURCE = path.join(
-  __dirname, '..', 'docs', 'references', 'GPT-powerful-assets-review', 'PANELKIT-GLASS-01A.png'
+  __dirname, '..', '..', 'docs', 'references', 'GPT-powerful-assets-review', 'PANELKIT-GLASS-01A.png'
 );
-const OUTPUT_DIR = path.join(__dirname, '..', 'packages', 'ui', 'assets', 'table');
+const OUTPUT_DIR = path.join(__dirname, '..', '..', 'packages', 'ui', 'assets', 'table');
 const EDGE_BLUR_RADIUS = 2;
 
 // Crop box and flood threshold were measured directly against the source sheet during design:

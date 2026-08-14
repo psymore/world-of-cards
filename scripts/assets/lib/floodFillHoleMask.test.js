@@ -1,4 +1,4 @@
-// scripts/lib/floodFillHoleMask.test.js
+// scripts/assets/lib/floodFillHoleMask.test.js
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { floodFillHoleMask, closeMaskGaps } = require('./floodFillHoleMask');

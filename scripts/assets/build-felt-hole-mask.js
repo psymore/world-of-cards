@@ -1,11 +1,11 @@
-// scripts/build-felt-hole-mask.js
+// scripts/assets/build-felt-hole-mask.js
 // One-off dev tool: masks the felt image to only render inside table-shell-frame.png's actual
 // center hole, fixing a real leak — the frame's alpha is 0 both in the true hole (where felt
 // should show) and in the area outside the wooden ring's oval silhouette (where it should not),
 // so the un-masked felt showed green through the corners past the ring, not just in the hole.
 //
 // Reuses scripts/lib/floodFillHoleMask.js unmodified, same technique as
-// scripts/build-table-shell-frame.js's original hole-punch and scripts/build-seat-plaque-assets.js's
+// scripts/assets/build-table-shell-frame.js's original hole-punch and scripts/assets/build-seat-plaque-assets.js's
 // background-punch — a corner seed, guaranteed to be in the "outer background," can never reach
 // the hole because the frame's own opaque wood ring physically blocks the path between them.
 // Unlike those two scripts, there's no luminance-derivation step here: table-shell-frame.png's
@@ -17,17 +17,17 @@
 // Depends on packages/ui/assets/table/table-shell-frame.png already being built (run
 // build-table-shell-frame.js first if that's stale).
 //
-// Not part of the app build — run manually: node scripts/build-felt-hole-mask.js
+// Not part of the app build — run manually: node scripts/assets/build-felt-hole-mask.js
 const path = require('path');
 const sharp = require('sharp');
 const { floodFillHoleMask } = require('./lib/floodFillHoleMask');
 const { blurAlphaChannel } = require('./lib/blurAlphaChannel');
 
-const FRAME = path.join(__dirname, '..', 'packages', 'ui', 'assets', 'table', 'table-shell-frame.png');
+const FRAME = path.join(__dirname, '..', '..', 'packages', 'ui', 'assets', 'table', 'table-shell-frame.png');
 const FELT_SOURCE = path.join(
-  __dirname, '..', 'docs', 'references', 'GPT-powerful-assets-review', 'FELT-GREEN-BORDERED-01.png'
+  __dirname, '..', '..', 'docs', 'references', 'GPT-powerful-assets-review', 'FELT-GREEN-BORDERED-01.png'
 );
-const OUTPUT = path.join(__dirname, '..', 'packages', 'ui', 'assets', 'table', 'felt-green-bordered-masked.png');
+const OUTPUT = path.join(__dirname, '..', '..', 'packages', 'ui', 'assets', 'table', 'felt-green-bordered-masked.png');
 
 const OUTER_BACKGROUND_ALPHA_THRESHOLD = 10;
 const EDGE_BLUR_RADIUS = 2;

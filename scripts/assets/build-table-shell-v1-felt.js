@@ -1,4 +1,4 @@
-// scripts/build-table-shell-v1-felt.js
+// scripts/assets/build-table-shell-v1-felt.js
 // One-off dev tool: masks TABLE-FELT-PANEL-TRY-03-RED-GLOW.png to only render inside
 // apps/playground/assets/table-shell-versions/v1-frame.png's actual center hole, producing
 // v1-felt.png in the same folder for the Playground's "v1" Table Shell tab.
@@ -14,16 +14,16 @@
 // reference sheets), so this only crops the felt down to the hole's shape — it does not need to
 // stretch or warp it to fit.
 //
-// Not part of the app build — run manually: node scripts/build-table-shell-v1-felt.js
+// Not part of the app build — run manually: node scripts/assets/build-table-shell-v1-felt.js
 const path = require('path');
 const sharp = require('sharp');
 const { floodFillHoleMask } = require('./lib/floodFillHoleMask');
 const { blurAlphaChannel } = require('./lib/blurAlphaChannel');
 
-const PLAYGROUND_ASSETS = path.join(__dirname, '..', 'apps', 'playground', 'assets', 'table-shell-versions');
+const PLAYGROUND_ASSETS = path.join(__dirname, '..', '..', 'apps', 'playground', 'assets', 'table-shell-versions');
 const FRAME = path.join(PLAYGROUND_ASSETS, 'v1-frame.png');
 const FELT_SOURCE = path.join(
-  __dirname, '..', 'docs', 'references', 'GPT-powerful-assets-review', 'assets-v1', 'TABLE-FELT-PANEL-TRY-03-RED-GLOW.png'
+  __dirname, '..', '..', 'docs', 'references', 'GPT-powerful-assets-review', 'assets-v1', 'TABLE-FELT-PANEL-TRY-03-RED-GLOW.png'
 );
 const OUTPUT = path.join(PLAYGROUND_ASSETS, 'v1-felt.png');
 

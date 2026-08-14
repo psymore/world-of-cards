@@ -1,4 +1,4 @@
-// scripts/build-table-frame-try-hole-punch.js
+// scripts/assets/build-table-frame-try-hole-punch.js
 // One-off dev tool: punches a real transparent hole into
 // docs/references/GPT-powerful-assets-review/assets-v1/TABLE-FRAME-TRY-02-GLOW-Photoroom.png.
 //
@@ -18,13 +18,13 @@
 // synthetic value is 0 for qualifying hole-colored pixels and 255 otherwise, so a low
 // floodThreshold picks out exactly the qualifying pixels).
 //
-// Not part of the app build — run manually: node scripts/build-table-frame-try-hole-punch.js
+// Not part of the app build — run manually: node scripts/assets/build-table-frame-try-hole-punch.js
 const path = require('path');
 const sharp = require('sharp');
 const { floodFillHoleMask } = require('./lib/floodFillHoleMask');
 const { blurAlphaChannel } = require('./lib/blurAlphaChannel');
 
-const ASSETS_V1 = path.join(__dirname, '..', 'docs', 'references', 'GPT-powerful-assets-review', 'assets-v1');
+const ASSETS_V1 = path.join(__dirname, '..', '..', 'docs', 'references', 'GPT-powerful-assets-review', 'assets-v1');
 const SOURCE = path.join(ASSETS_V1, 'TABLE-FRAME-TRY-02-GLOW-Photoroom.png');
 const OUTPUT = path.join(ASSETS_V1, 'TABLE-FRAME-TRY-02-GLOW-Photoroom-holepunched.png');
 

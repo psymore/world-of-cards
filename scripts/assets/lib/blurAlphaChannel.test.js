@@ -1,4 +1,4 @@
-// scripts/lib/blurAlphaChannel.test.js
+// scripts/assets/lib/blurAlphaChannel.test.js
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { blurAlphaChannel } = require('./blurAlphaChannel');

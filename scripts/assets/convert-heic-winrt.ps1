@@ -1,4 +1,4 @@
-# scripts/convert-heic-winrt.ps1
+# scripts/assets/convert-heic-winrt.ps1
 #
 # One-off dev tool, Windows-only: decodes a HEIC/HEIF file via the OS's own WinRT imaging
 # pipeline (Windows.Graphics.Imaging.BitmapDecoder/BitmapEncoder) and writes it out as PNG.
@@ -16,7 +16,7 @@
 # the source (Photoroom only exports PNG/JPEG/WebP — check its export-format setting if a HEIC
 # shows up unexpectedly; something else in the save/share pipeline produced it, not Photoroom).
 #
-# Usage: powershell -File scripts/convert-heic-winrt.ps1 -InputPath <path.heic> -OutputPath <path.png>
+# Usage: powershell -File scripts/assets/convert-heic-winrt.ps1 -InputPath <path.heic> -OutputPath <path.png>
 
 param(
     [Parameter(Mandatory = $true)][string]$InputPath,

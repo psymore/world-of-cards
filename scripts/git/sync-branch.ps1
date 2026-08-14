@@ -31,7 +31,7 @@
     exact action elsewhere (e.g. asked Claude to run it for you).
 
 .EXAMPLE
-    .\scripts\sync-branch.ps1 -BranchName "ui/card-hover-fix" -Message "fix(ui): correct hover state on card back"
+    .\scripts\git\sync-branch.ps1 -BranchName "ui/card-hover-fix" -Message "fix(ui): correct hover state on card back"
 #>
 
 param(

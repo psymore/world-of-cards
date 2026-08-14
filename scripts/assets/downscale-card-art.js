@@ -12,13 +12,14 @@
 // rendered somewhat larger in the future, and for high-DPI/retina displays) while still
 // cutting the pixel count dramatically versus the ~1024x1536 sources.
 //
-// Not part of the app build — run manually: node scripts/downscale-card-art.js
+// Not part of the app build — run manually: node scripts/assets/downscale-card-art.js
 const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
 
 const ROOT_DIR = path.join(
   __dirname,
+  '..',
   '..',
   'packages',
   'ui',

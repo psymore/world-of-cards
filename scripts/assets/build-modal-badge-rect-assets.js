@@ -1,4 +1,4 @@
-// scripts/build-modal-badge-rect-assets.js
+// scripts/assets/build-modal-badge-rect-assets.js
 // One-off dev tool: crops the two glass/brass rectangle badges used as modal-card backgrounds
 // (apps/mobile/src/components/devTuning/DevTuningControls.tsx's DevTuningModalShell, and the
 // smaller confirm-style dialogs) out of their own sheets.
@@ -15,13 +15,13 @@
 // this particular variant happens to live); BADGE-RECT-01A-dup is sourced from `sheets/` like the
 // other badges.
 //
-// Not part of the app build — run manually: node scripts/build-modal-badge-rect-assets.js
+// Not part of the app build — run manually: node scripts/assets/build-modal-badge-rect-assets.js
 const fs = require('fs/promises');
 const path = require('path');
 const sharp = require('sharp');
 
-const ASSETS_ROOT = path.join(__dirname, '..', 'docs', 'references', 'GPT-powerful-assets-review');
-const OUTPUT_DIR = path.join(__dirname, '..', 'packages', 'ui', 'assets', 'plaques');
+const ASSETS_ROOT = path.join(__dirname, '..', '..', 'docs', 'references', 'GPT-powerful-assets-review');
+const OUTPUT_DIR = path.join(__dirname, '..', '..', 'packages', 'ui', 'assets', 'plaques');
 const TRIM_THRESHOLD = 30;
 
 const PIECES = [

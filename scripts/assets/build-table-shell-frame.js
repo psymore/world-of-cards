@@ -1,4 +1,4 @@
-// scripts/build-table-shell-frame.js
+// scripts/assets/build-table-shell-frame.js
 // One-off dev tool: copies FRAME-C-NOFELT-01A-dup-Photoroom.png to
 // packages/ui/assets/table/table-shell-frame.png so packages/ui/src/TableShell.tsx can composite
 // it over a felt image at runtime, then re-verifies its alpha channel against the same
@@ -15,14 +15,14 @@
 // it just copies and re-verifies, so the checks still guard against a future source swap
 // breaking silently.
 //
-// Not part of the app build — run manually: node scripts/build-table-shell-frame.js
+// Not part of the app build — run manually: node scripts/assets/build-table-shell-frame.js
 const path = require('path');
 const sharp = require('sharp');
 
 const SOURCE = path.join(
-  __dirname, '..', 'docs', 'references', 'GPT-powerful-assets-review', 'FRAME-C-NOFELT-01A-dup-Photoroom.png'
+  __dirname, '..', '..', 'docs', 'references', 'GPT-powerful-assets-review', 'FRAME-C-NOFELT-01A-dup-Photoroom.png'
 );
-const OUTPUT = path.join(__dirname, '..', 'packages', 'ui', 'assets', 'table', 'table-shell-frame.png');
+const OUTPUT = path.join(__dirname, '..', '..', 'packages', 'ui', 'assets', 'table', 'table-shell-frame.png');
 
 async function main() {
   await sharp(SOURCE).png().toFile(OUTPUT);

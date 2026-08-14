@@ -1,4 +1,4 @@
-// scripts/build-name-badge-pill-asset.js
+// scripts/assets/build-name-badge-pill-asset.js
 // One-off dev tool: crops the wood/brass nameplate pill out of BADGE-PILL-02A.png's own sheet.
 //
 // Unlike build-seat-plaque-assets.js's PANELKIT-GLASS-01A source, this sheet already ships with a
@@ -9,15 +9,15 @@
 // GOLD_GLOW_IMAGE and similar glow assets are used elsewhere in this repo) while dropping the
 // long, barely-nonzero gradient tail further out that a threshold near 0 would otherwise keep.
 //
-// Not part of the app build — run manually: node scripts/build-name-badge-pill-asset.js
+// Not part of the app build — run manually: node scripts/assets/build-name-badge-pill-asset.js
 const fs = require('fs/promises');
 const path = require('path');
 const sharp = require('sharp');
 
 const SOURCE = path.join(
-  __dirname, '..', 'docs', 'references', 'GPT-powerful-assets-review', 'sheets', 'BADGE-PILL-02A.png'
+  __dirname, '..', '..', 'docs', 'references', 'GPT-powerful-assets-review', 'sheets', 'BADGE-PILL-02A.png'
 );
-const OUTPUT_PATH = path.join(__dirname, '..', 'packages', 'ui', 'assets', 'plaques', 'name-badge-pill.png');
+const OUTPUT_PATH = path.join(__dirname, '..', '..', 'packages', 'ui', 'assets', 'plaques', 'name-badge-pill.png');
 const TRIM_THRESHOLD = 30;
 
 async function main() {

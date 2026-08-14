@@ -1,4 +1,4 @@
-// scripts/lib/blurAlphaChannel.js
+// scripts/assets/lib/blurAlphaChannel.js
 // Pure box-blur over a single-channel (alpha) array. Used to soften the hard 0/255 edge that
 // results from binarizing a flood-fill mask directly into alpha (mask[i] ? 0 : 255): that
 // binary edge is geometrically correct (it follows real connectivity) but pixel-jagged, so we
