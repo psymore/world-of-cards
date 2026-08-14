@@ -17,7 +17,11 @@ const FRAME_IMAGE = require("../assets/table/default/TABLE-FRAME-MAHOGANY-BURGUN
 function DefaultTableFrameComponent() {
   return (
     <AbsoluteOverlay>
-      <Image source={FRAME_IMAGE} resizeMode="stretch" style={styles.imageFill} />
+      <Image
+        source={FRAME_IMAGE}
+        resizeMode="stretch"
+        style={styles.imageFill}
+      />
     </AbsoluteOverlay>
   );
 }

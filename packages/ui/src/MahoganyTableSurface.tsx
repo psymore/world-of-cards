@@ -36,7 +36,7 @@ const SURFACE_IMAGES: Record<TableSurfaceMaterial, number> = {
 // parent gives it rather than sizing itself. Matches the frame, the "locked" element here — the
 // interior's own native ratio doesn't need to match this exactly (see the doc comment below on
 // why a small mismatch there is harmless).
-export const TABLE_SURFACE_ASPECT_RATIO = 874 / 1672;
+export const TABLE_SURFACE_ASPECT_RATIO = 874 / 1654;
 
 export interface MahoganyTableSurfaceProps {
   // Which interior sits inside the frame's hollow window — swapping this changes nothing else
@@ -53,8 +53,10 @@ export interface MahoganyTableSurfaceProps {
 // an unrelated background.
 //
 // The frame is LOCKED (see FRAME_IMAGE's own doc comment) — its crop doesn't exactly match the
-// interior images' own native 941x1672 canvas (the frame is 874x1672, trimmed), so the frame's
-// hollow window sits at a slightly different fraction of its own canvas than where the interior
+// interior images' own native 941x1672 canvas (the frame is 874x1654, trimmed on all four edges —
+// the left/right crop already shipped, the top/bottom crop removed a residual fully-transparent
+// sliver that used to leave a visible gap at the screen's top/bottom edge once stretched), so the
+// frame's hollow window sits at a slightly different fraction of its own canvas than where the interior
 // images' opaque content sits on theirs. That's fine, not a bug: measured directly (sharp, alpha
 // channel), the interior images' opaque region already spans roughly 3%-97% of their own canvas —
 // comfortably wider on both sides than the trimmed frame's window fraction (roughly 6%-94%) — so
