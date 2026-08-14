@@ -9,7 +9,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { glowShadow } from "./glowShadow";
-import { PRIMARY_SERIF_BOLD, SECONDARY_SANS_REGULAR } from "./typography";
+import { PRIMARY_SERIF_BOLD } from "./typography";
 
 const BADGE_IMAGE = require("../assets/avatars/seat-badge.png");
 // Decorative ring (silver band, gold rim, two diamond accents) that replaces the plain
@@ -350,7 +350,6 @@ const styles = StyleSheet.create({
   },
   trickText: {
     color: "#b8b3a2",
-    fontFamily: SECONDARY_SANS_REGULAR,
     fontSize: 5.5,
     lineHeight: 7,
   },
