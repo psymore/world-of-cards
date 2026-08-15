@@ -5,7 +5,12 @@ import React, { useEffect, useState } from 'react';
 import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { MODAL_CARD_LARGE_ASPECT_RATIO, MODAL_CARD_LARGE_IMAGE, PressableFeedback } from '@world-cards/ui';
+import {
+  MODAL_CARD_LARGE_ASPECT_RATIO,
+  MODAL_CARD_LARGE_IMAGE,
+  ModalCloseButton,
+  PressableFeedback,
+} from '@world-cards/ui';
 
 const STEPPER_BUTTON_RADIUS = 16;
 
@@ -173,9 +178,7 @@ export function DevTuningModalShell({
             <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
               {children}
             </ScrollView>
-            <PressableFeedback onPress={onClose} accessibilityRole="button" style={styles.closeButton}>
-              <Text style={styles.closeText}>Done</Text>
-            </PressableFeedback>
+            <ModalCloseButton onPress={onClose} style={styles.closeButton} testID="dev-tuning-modal-close" />
           </Animated.View>
         </Pressable>
       </Pressable>
@@ -236,6 +239,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 6,
   },
-  closeButton: { alignSelf: 'center', paddingVertical: 10, paddingBottom: 18 },
-  closeText: { fontSize: 16, color: '#2f5fa8', fontWeight: '600' },
+  // Absolute against `card` (the nearest positioned ancestor — Views are position:'relative' by
+  // default in RN) rather than flowing after the ScrollView, so it stays fixed to the card's own
+  // top-right corner regardless of scroll content length. Painted after dragHandleArea in the tree,
+  // so it sits visually on top of — and wins touch priority over — that area's swipe gesture where
+  // the two overlap.
+  closeButton: { position: 'absolute', top: 10, right: 10 },
 });

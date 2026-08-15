@@ -34,6 +34,8 @@ export { SettingsIcon } from "./SettingsIcon";
 export type { SettingsIconProps } from "./SettingsIcon";
 export { PressableFeedback } from "./PressableFeedback";
 export type { PressableFeedbackProps } from "./PressableFeedback";
+export { ModalCloseButton, MODAL_CLOSE_BUTTON_IMAGE } from "./ModalCloseButton";
+export type { ModalCloseButtonProps } from "./ModalCloseButton";
 export { AbsoluteOverlay } from "./AbsoluteOverlay";
 export {
   BottomAnchoredImage,
@@ -91,7 +93,13 @@ export const NAME_BADGE_PILL_IMAGE: number = require("../assets/plaques/name-bad
 // behind their content instead of a plain white card. "Small" (landscape, BADGE-RECT-01A-dup) is
 // for compact confirm-style dialogs; "large" (portrait, BADGE-RECT-01B) is for taller scrollable
 // panels like the dev-tuning modal.
-export const MODAL_CARD_SMALL_IMAGE: number = require("../assets/plaques/modal-card-small.png");
+// "Small" now points at the green-felt/mahogany-frame candidate (2026-08-15, packages/ui/assets/
+// modal/) — the original modal-card-small.png stays on disk unused, same keep-the-unused-
+// candidates precedent as this repo's other asset swaps (e.g. the card-back image). Of the 4 new
+// candidates, only this one (plus the mahogany-wood and glass-panel-glow ones) is a genuinely
+// opaque panel — the folder's 4th, deep-charcoal-glass one is actually a transparent alpha-cut
+// frame (near-0 alpha center) and breaks this single-image stretch usage if swapped in directly.
+export const MODAL_CARD_SMALL_IMAGE: number = require("../assets/plaques/modal-card-small-green-felt.png");
 export const MODAL_CARD_SMALL_ASPECT_RATIO = 942 / 630;
 export const MODAL_CARD_LARGE_IMAGE: number = require("../assets/plaques/modal-card-large.png");
 export const MODAL_CARD_LARGE_ASPECT_RATIO = 874 / 1462;
@@ -100,7 +108,10 @@ export const NAME_BADGE_PILL_ASPECT_RATIO = 1080 / 417;
 // meant to sit as a bottom bar/sign. Same re-export-as-raw-handle reasoning as the AVATAR_FRAME_*
 // images above.
 export const MAHOGANY_PLAQUE_IMAGE: number = require("../assets/table/default/TABLE-PLAQUE-MAHOGANY-BURGUNDY-WOOD.png");
-export const MAHOGANY_PLAQUE_ASPECT_RATIO = 1537 / 1023;
+// Bottom/left/right dead transparent canvas trimmed 2026-08-15 (top kept, matching this plaque's
+// sibling variants in the same folder) — this ratio is the trimmed file's real 1449x976, not the
+// original 1537x1023.
+export const MAHOGANY_PLAQUE_ASPECT_RATIO = 1449 / 976;
 
 // A three-layer "New Design" table surface, meant to stack bottom-to-top: TABLE_BACKDROP_GLASS_
 // GOLD_GLOW_IMAGE (opaque, full-bleed ambient glass/gold-glow — the same "TRY-02-GLOW" ambient

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Image, Modal, Pressable, StyleSheet, Switch, Text, useWindowDimensions, View } from 'react-native';
-import { MODAL_CARD_SMALL_ASPECT_RATIO, MODAL_CARD_SMALL_IMAGE, PressableFeedback } from '@world-cards/ui';
+import { MODAL_CARD_SMALL_ASPECT_RATIO, MODAL_CARD_SMALL_IMAGE, ModalCloseButton } from '@world-cards/ui';
 import { useSettingsStore } from '../../state/settingsStore';
 
 export interface BatakSettingsModalProps {
@@ -41,9 +41,7 @@ export function BatakSettingsModal({ visible, onClose }: BatakSettingsModalProps
               <Text style={styles.label}>Dim Unplayable Cards</Text>
               <Switch value={dimUnplayableCards} onValueChange={setDimUnplayableCards} />
             </View>
-            <PressableFeedback onPress={onClose} accessibilityRole="button" style={styles.closeButton}>
-              <Text style={styles.closeText}>Done</Text>
-            </PressableFeedback>
+            <ModalCloseButton onPress={onClose} style={styles.closeButton} testID="batak-settings-modal-close" />
           </View>
         </Pressable>
       </Pressable>
@@ -59,9 +57,14 @@ const styles = StyleSheet.create({
   // react-native-web's Image falls back to the loaded image's natural pixel size unless width/
   // height are explicit (see DevTuningControls.tsx's own styles.cardImage for the full reasoning).
   cardImage: { width: '100%', height: '100%' },
-  heading: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, textAlign: 'center', color: '#241a10' },
+  // Gold/cream, matching this app's established dark-felt palette (e.g. BatakSetupView's title/
+  // body text) — the previous #241a10 near-black was tuned for the old light modal-card-small.png
+  // and read as near-invisible against the new dark green-felt background (2026-08-15).
+  heading: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, textAlign: 'center', color: '#f4c542' },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  label: { fontSize: 15, flexShrink: 1, color: '#241a10' },
-  closeButton: { marginTop: 20, alignSelf: 'center' },
-  closeText: { fontSize: 16, color: '#2f5fa8', fontWeight: '600' },
+  label: { fontSize: 15, flexShrink: 1, color: '#f5f0e6' },
+  // Absolute against `card` (position:'relative' by default in RN) rather than flowing below the
+  // row, so it sits fixed at the card's own top-right corner regardless of content height — same
+  // placement convention as DevTuningModalShell's own close button.
+  closeButton: { position: 'absolute', top: 10, right: 10 },
 });
