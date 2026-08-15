@@ -36,7 +36,11 @@ Before starting any animation-related task (Playground demos or `apps/mobile` an
 
 When an animation-quality problem (stutter, jank) persists despite several well-reasoned, individually-justified mitigation attempts under the current engine, escalate to a scoped, isolated experiment (e.g. a different animation library) built and evaluated in `apps/playground` first, never directly in production — rather than continuing an open-ended series of further patches under the incumbent approach. Don't wait for the user to suggest this; once roughly three targeted fixes have failed to resolve a reported issue, proactively raise the scoped-experiment option as the next step. Record the outcome as an ADR with an explicit revisit trigger (see `docs/animation/ADR/` for the model instance). This is a specific instance of the more general pattern in `docs/governance/architecture-escalation.md` — see that document for when a recurring problem generally warrants stepping back from further local patches.
 
-## 7. adb safety boundary during phone-connected development
+## 7. "CMP" shorthand: commit, merge to master, push
+
+When the user says "CMP" (and only then), that word itself is the confirmation Rule 1 requires — commit all current changes on the current branch, merge that branch into `master`, and push `master`, without a separate ask for that invocation. It commits onto the branch already checked out (unlike `scripts/git/sync-branch.ps1`, which always creates a fresh branch first) — commit, then `checkout master`, `merge --no-edit`, `push origin master`. Still stop and surface anything ambiguous (unrelated-looking uncommitted changes, a merge conflict, a diverged remote) rather than forcing through.
+
+## 8. adb safety boundary during phone-connected development
 
 Established 2026-08-14, when development began using the user's physical Android phone over adb. Unrooted `adb shell` already can't read other apps' private sandboxed data — but shared storage (`/sdcard`, i.e. Photos/DCIM, Downloads, WhatsApp media), package management (install/uninstall/clear-data of *any* app), system settings, screen capture, and input injection are all reachable and not sandboxed. Stay inside this whitelist without asking; ask first for anything outside it, every time:
 

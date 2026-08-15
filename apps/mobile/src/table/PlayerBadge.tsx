@@ -26,10 +26,10 @@ export interface PlayerBadgeProps {
 // never stretched off its own proportions.
 const PILL_WIDTH = { normal: 96, compact: 68 } as const;
 
-// PlayerAvatar's own turn-state ring (avatar-frame-idle/next/active.png, cross-faded — see
+// PlayerAvatar's own turn-state ring (avatar-frame-idle/active.png, cross-faded — see
 // PlayerAvatar.tsx) is now the turn indicator; this badge doesn't additionally glow itself the
-// way it once did for a plain `active` boolean; that would fight the richer 3-state ring for
-// attention instead of complementing it.
+// way it once did for a plain `active` boolean; that would fight the ring for attention instead
+// of complementing it.
 export function PlayerBadge({ name, statusText, turnState, isHuman, compact }: PlayerBadgeProps) {
   const size = compact ? 'compact' : 'normal';
   const pillWidth = PILL_WIDTH[size];

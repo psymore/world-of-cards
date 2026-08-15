@@ -31,24 +31,37 @@ export type SeatIdentityAvatar =
   | "female-03"
   | "female-01-photoroom";
 
+// The six dedicated face-crop images (avatar-male-01/02/03.png, avatar-female-01/02/03.png,
+// built by build-avatar-assets.js) were deleted as unused; every SeatIdentityAvatar key now
+// resolves to this same self-framed portrait for now, rather than leaving those keys dangling on
+// missing files.
+const SHARED_AVATAR_IMAGE = require("../assets/avatars/avatar-female01-Photoroom.png");
 const AVATAR_IMAGES: Record<SeatIdentityAvatar, number> = {
-  "male-01": require("../assets/avatars/avatar-male-01.png"),
-  "female-01": require("../assets/avatars/avatar-female-01.png"),
-  "male-02": require("../assets/avatars/avatar-male-02.png"),
-  "female-02": require("../assets/avatars/avatar-female-02.png"),
-  "male-03": require("../assets/avatars/avatar-male-03.png"),
-  "female-03": require("../assets/avatars/avatar-female-03.png"),
-  "female-01-photoroom": require("../assets/avatars/avatar-female01-Photoroom.png"),
+  "male-01": SHARED_AVATAR_IMAGE,
+  "female-01": SHARED_AVATAR_IMAGE,
+  "male-02": SHARED_AVATAR_IMAGE,
+  "female-02": SHARED_AVATAR_IMAGE,
+  "male-03": SHARED_AVATAR_IMAGE,
+  "female-03": SHARED_AVATAR_IMAGE,
+  "female-01-photoroom": SHARED_AVATAR_IMAGE,
 };
 
-// Unlike the other six (plain rectangular face crops, see build-avatar-assets.js — SeatIdentity's
-// own circular clip + AVATAR_FRAME_IMAGE ring below do all the framing), this one file already
-// comes with its own baked-in circular gold ring straight out of Photoroom's export, with the
-// portrait deliberately overflowing that ring's top/bottom edge. Stacking the default diamond
-// ring on top of it would double up two mismatched rings, and "cover" resizeMode would crop the
-// ring itself off the sides — so any avatar in this set instead skips the frame overlay entirely
-// (its own ring is the frame) and uses "contain" so the full circle stays visible.
-const SELF_FRAMED_AVATARS = new Set<SeatIdentityAvatar>(["female-01-photoroom"]);
+// avatar-female01-Photoroom.png already comes with its own baked-in circular gold ring straight
+// out of Photoroom's export, with the portrait deliberately overflowing that ring's top/bottom
+// edge. Stacking the default diamond ring (or a turn-state ring) on top of it would double up two
+// mismatched rings, and "cover" resizeMode would crop the ring itself off the sides — so every
+// avatar key skips the frame overlay entirely (its own ring is the frame) and uses "contain" so
+// the full circle stays visible. All seven keys share this one image now, so all seven are
+// self-framed.
+const SELF_FRAMED_AVATARS = new Set<SeatIdentityAvatar>([
+  "male-01",
+  "female-01",
+  "male-02",
+  "female-02",
+  "male-03",
+  "female-03",
+  "female-01-photoroom",
+]);
 
 // The desired shape of the content row (avatar + name/tricks + badge). Not tied to any image
 // asset — there's no background plaque image anymore (see the comment above ORIENTATION_TRANSFORM

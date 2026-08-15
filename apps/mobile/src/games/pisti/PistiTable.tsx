@@ -32,7 +32,6 @@ import {
   HAND_FRAME_BOTTOM_OVERSHOOT,
   WOOD_TRIM_COLOR,
   AVATAR_FRAME_IDLE_IMAGE,
-  AVATAR_FRAME_NEXT_IMAGE,
   AVATAR_FRAME_ACTIVE_IMAGE,
   MAHOGANY_PLAQUE_IMAGE,
   MAHOGANY_PLAQUE_ASPECT_RATIO,
@@ -74,14 +73,17 @@ import { useCardMotion } from "../../table/useCardMotion";
 import { useDevTuningStore } from "../../state/devTuningStore";
 import type { PistiTableBackground } from "../../state/devTuningStore";
 
-// The real per-state ring art (idle/next/active), replacing SeatIdentity's default glowShadow
+// The real per-state ring art (idle/active), replacing SeatIdentity's default glowShadow
 // placeholder — see docs/superpowers/specs/2026-08-12-pisti-table-shell-pilot-design.md Decision 4.
 // Sourced via named exports from @world-cards/ui rather than a direct
 // require('@world-cards/ui/assets/...') — that package's `exports` map only publishes ".", so the
-// asset subpath isn't resolvable from a consuming app.
+// asset subpath isn't resolvable from a consuming app. SeatIdentityTurnStateFrames still requires
+// a 'next' key (SeatIdentity itself keeps its own 3-state ring, see turnState.ts's header comment
+// for why the two components diverged) — mapped to the idle frame since turnStateForPlayer below
+// never actually produces 'next' anymore, this is just satisfying the shared type.
 const PISTI_TURN_STATE_FRAMES: SeatIdentityTurnStateFrames = {
   idle: AVATAR_FRAME_IDLE_IMAGE,
-  next: AVATAR_FRAME_NEXT_IMAGE,
+  next: AVATAR_FRAME_IDLE_IMAGE,
   active: AVATAR_FRAME_ACTIVE_IMAGE,
 };
 
@@ -224,8 +226,8 @@ function capturedStatusText(capturedCount: number): string {
 }
 
 // Real turn order from engine state, replacing the Playground prototype's clockwise-seat-order
-// approximation — active/next both derive from state.players/state.currentPlayerIndex, which is
-// already a plain round-robin (packages/engine/src/games/pisti/rules.ts's nextIndex derivation).
+// approximation — derives from state.players/state.currentPlayerIndex, which is already a plain
+// round-robin (packages/engine/src/games/pisti/rules.ts's nextIndex derivation).
 export function turnStateForPlayer(
   playerId: string,
   state: PistiState,

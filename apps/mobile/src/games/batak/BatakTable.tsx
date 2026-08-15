@@ -228,8 +228,7 @@ export function BatakTable({
   const isHumanTurn = state.players[state.currentPlayerIndex] === humanPlayerId;
   // Suppresses 'active' to 'idle' while a trick-completing play is staged (pendingPlay != null) —
   // engine state hasn't advanced past the player who just moved yet, so without this the seat
-  // that just played would keep reading as the active turn until the animation resolves. Doesn't
-  // touch 'next' — that's about the *following* player, unaffected by the current play settling.
+  // that just played would keep reading as the active turn until the animation resolves.
   function opponentTurnState(playerId: string): SeatTurnState {
     const raw = turnStateForSeat(playerId, state.players, state.currentPlayerIndex);
     return pendingPlay != null && raw === 'active' ? 'idle' : raw;

@@ -66,7 +66,6 @@ export { SeatIdentity } from "./SeatIdentity";
 // directly: package.json's `exports` map only publishes "." (./src/index.ts), so a consumer-side
 // require('@world-cards/ui/assets/table/avatar-frame-idle.png') is not a resolvable subpath.
 export const AVATAR_FRAME_IDLE_IMAGE: number = require("../assets/avatars/avatar-frame-idle.png");
-export const AVATAR_FRAME_NEXT_IMAGE: number = require("../assets/avatars/avatar-frame-next.png");
 export const AVATAR_FRAME_ACTIVE_IMAGE: number = require("../assets/avatars/avatar-frame-active.png");
 // A real portrait, its own circular gold ring already baked in (Photoroom export, portrait
 // deliberately overflowing the ring's top/bottom edge) — apps/mobile's PlayerAvatar.tsx (the

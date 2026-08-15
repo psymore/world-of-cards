@@ -3,11 +3,10 @@ import { Animated, Image, StyleSheet, View } from 'react-native';
 import {
   AVATAR_FRAME_ACTIVE_IMAGE,
   AVATAR_FRAME_IDLE_IMAGE,
-  AVATAR_FRAME_NEXT_IMAGE,
   PLAYER_AVATAR_PHOTO_IMAGE,
 } from '@world-cards/ui';
 
-export type PlayerAvatarTurnState = 'idle' | 'next' | 'active';
+export type PlayerAvatarTurnState = 'idle' | 'active';
 
 export interface PlayerAvatarProps {
   accent?: boolean;
@@ -27,13 +26,15 @@ const DIMENSIONS = {
 
 const TURN_STATE_FRAMES: Record<PlayerAvatarTurnState, number> = {
   idle: AVATAR_FRAME_IDLE_IMAGE,
-  next: AVATAR_FRAME_NEXT_IMAGE,
   active: AVATAR_FRAME_ACTIVE_IMAGE,
 };
-const TURN_STATES: PlayerAvatarTurnState[] = ['idle', 'next', 'active'];
-// Matches SeatIdentity.tsx's own TURN_STATE_CROSSFADE_MS — same three-frame ring set, same feel.
+const TURN_STATES: PlayerAvatarTurnState[] = ['idle', 'active'];
+// Matches SeatIdentity.tsx's own TURN_STATE_CROSSFADE_MS — same cross-fade feel, though
+// SeatIdentity's own ring set still has a third 'next' frame (see turnState.ts's header comment
+// for why this component dropped it while SeatIdentity, a separate dev-only comparison view, did
+// not).
 const CROSSFADE_MS = 350;
-// The ring art (avatar-frame-idle/next/active.png) is a thick decorative band, authored to sit
+// The ring art (avatar-frame-idle/active.png) is a thick decorative band, authored to sit
 // well outside a plain face crop — drawn at the photo's own box size it would mostly overlap
 // PLAYER_AVATAR_PHOTO_IMAGE's own baked-in ring instead of surrounding it. Scaling the ring layer
 // up (paint-only, via transform — the outer View stays at DIMENSIONS[size] so this doesn't change
@@ -54,11 +55,9 @@ function PlayerAvatarComponent({ size = 'normal', turnState = 'idle' }: PlayerAv
   // initialized directly to the starting turnState (not always 0) so the first render shows the
   // right ring immediately instead of fading in from nothing.
   const idleOpacity = useRef(new Animated.Value(turnState === 'idle' ? 1 : 0)).current;
-  const nextOpacity = useRef(new Animated.Value(turnState === 'next' ? 1 : 0)).current;
   const activeOpacity = useRef(new Animated.Value(turnState === 'active' ? 1 : 0)).current;
   const opacities: Record<PlayerAvatarTurnState, Animated.Value> = {
     idle: idleOpacity,
-    next: nextOpacity,
     active: activeOpacity,
   };
 
@@ -72,11 +71,11 @@ function PlayerAvatarComponent({ size = 'normal', turnState = 'idle' }: PlayerAv
         }),
       ),
     ).start();
-    // opacities is rebuilt every render from the same three ref-backed Animated.Values, so it
+    // opacities is rebuilt every render from the same two ref-backed Animated.Values, so it
     // isn't a stable dependency — depending on the refs directly avoids re-running this on every
     // render, same reasoning as SeatIdentity.tsx's identical effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [turnState, idleOpacity, nextOpacity, activeOpacity]);
+  }, [turnState, idleOpacity, activeOpacity]);
 
   return (
     <View style={{ width: ringSize, height: ringSize }} testID="player-avatar">

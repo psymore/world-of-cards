@@ -89,17 +89,15 @@ describe('turnStateForPlayer', () => {
     expect(turnStateForPlayer('human', state)).toBe('active');
   });
 
-  it('marks the next player in turn order as next', () => {
-    expect(turnStateForPlayer('ai', state)).toBe('next');
-  });
-
   it('marks everyone else idle', () => {
+    expect(turnStateForPlayer('ai', state)).toBe('idle');
     const threePlayerState = { ...state, players: ['human', 'ai', 'ai2'], currentPlayerIndex: 0 };
     expect(turnStateForPlayer('ai2', threePlayerState)).toBe('idle');
   });
 
-  it('wraps around to the first player when the current player is last', () => {
+  it('follows the current player when it wraps around to the first seat', () => {
     const lastPlayerState = { ...state, players: ['human', 'ai'], currentPlayerIndex: 1 };
-    expect(turnStateForPlayer('human', lastPlayerState)).toBe('next');
+    expect(turnStateForPlayer('ai', lastPlayerState)).toBe('active');
+    expect(turnStateForPlayer('human', lastPlayerState)).toBe('idle');
   });
 });
