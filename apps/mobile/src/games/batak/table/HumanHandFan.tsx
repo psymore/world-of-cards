@@ -158,6 +158,10 @@ export function HumanHandFan({
   const devBottomOverlap = useDevTuningStore((s) => s.bottomOverlap);
   const devBottomSpacingPx = useDevTuningStore((s) => s.bottomSpacingPx);
   const devArcDegrees = useDevTuningStore((s) => s.arcDegrees);
+  const devTopOffsetX = useDevTuningStore((s) => s.topOffsetX);
+  const devTopOffsetY = useDevTuningStore((s) => s.topOffsetY);
+  const devBottomOffsetX = useDevTuningStore((s) => s.bottomOffsetX);
+  const devBottomOffsetY = useDevTuningStore((s) => s.bottomOffsetY);
 
   // Resolves each row's real rail config. The per-row overlap baseline (STANDARD_TOP_OVERLAP /
   // STANDARD_BOTTOM_OVERLAP / COMPACT_TOP_OVERLAP / COMPACT_BOTTOM_OVERLAP, batakRailFan.ts)
@@ -184,12 +188,31 @@ export function HumanHandFan({
     };
   }
 
+  // Dev-only per-row position nudge, layered on *after* slotPosition's fan geometry rather than
+  // folded into RailAngleConfig/slotPosition themselves — those stay row-agnostic and shared with
+  // Pişti's identical rail math (railFan.ts), so a Batak-only dev-tuning concept has no business
+  // inside them. No-op in production (__DEV__ false) and whenever a row's offset hasn't been
+  // touched from the panel (null), matching configForRow's own null-means-untouched convention.
+  function applyDevOffset(
+    target: { x: number; y: number; angleDeg: number },
+    row: "top" | "bottom",
+  ): { x: number; y: number; angleDeg: number } {
+    if (!__DEV__) return target;
+    const offsetX = (row === "top" ? devTopOffsetX : devBottomOffsetX) ?? 0;
+    const offsetY = (row === "top" ? devTopOffsetY : devBottomOffsetY) ?? 0;
+    if (offsetX === 0 && offsetY === 0) return target;
+    return { ...target, x: target.x + offsetX, y: target.y + offsetY };
+  }
+
   return (
     <View style={styles.handFan} ref={handFanRef} onLayout={onHandFanLayout} testID="human-hand">
       {slots.map((slot) => {
         const rowConfig = configForRow(slot.row);
-        const restTarget = slotPosition(slot, rowConfig, 0);
-        const liftedTarget = slotPosition(slot, rowConfig, SELECTED_LIFT_DISTANCE);
+        const restTarget = applyDevOffset(slotPosition(slot, rowConfig, 0), slot.row);
+        const liftedTarget = applyDevOffset(
+          slotPosition(slot, rowConfig, SELECTED_LIFT_DISTANCE),
+          slot.row,
+        );
         const isDeparting = departingCard?.cardId === slot.card.id;
         return (
           <BatakHandCard

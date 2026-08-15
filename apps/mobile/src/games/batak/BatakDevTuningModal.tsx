@@ -28,6 +28,11 @@ const ARC_MIN = 0;
 // well past where that cap stops binding for any real hand size, so this is a practical ceiling,
 // not an arbitrary one.
 const ARC_MAX = 180;
+const OFFSET_STEP = 2;
+// Roughly one card width (CARD_DIMS.normal.width = 94) in either direction — enough to visibly
+// nudge a row for alignment debugging without letting it drift off the table.
+const OFFSET_MIN = -120;
+const OFFSET_MAX = 120;
 
 const OPTION_BUTTON_RADIUS = 8;
 
@@ -57,6 +62,14 @@ export function BatakDevTuningModal({ visible, onClose }: BatakDevTuningModalPro
   const setBottomSpacingPx = useDevTuningStore((s) => s.setBottomSpacingPx);
   const arcDegrees = useDevTuningStore((s) => s.arcDegrees);
   const setArcDegrees = useDevTuningStore((s) => s.setArcDegrees);
+  const topOffsetX = useDevTuningStore((s) => s.topOffsetX);
+  const setTopOffsetX = useDevTuningStore((s) => s.setTopOffsetX);
+  const topOffsetY = useDevTuningStore((s) => s.topOffsetY);
+  const setTopOffsetY = useDevTuningStore((s) => s.setTopOffsetY);
+  const bottomOffsetX = useDevTuningStore((s) => s.bottomOffsetX);
+  const setBottomOffsetX = useDevTuningStore((s) => s.setBottomOffsetX);
+  const bottomOffsetY = useDevTuningStore((s) => s.bottomOffsetY);
+  const setBottomOffsetY = useDevTuningStore((s) => s.setBottomOffsetY);
 
   return (
     <DevTuningModalShell visible={visible} onClose={onClose} title="Dev Tuning">
@@ -146,6 +159,38 @@ export function BatakDevTuningModal({ visible, onClose }: BatakDevTuningModalPro
           min={ARC_MIN}
           max={ARC_MAX}
           onChange={setArcDegrees}
+        />
+        <StepperRow
+          label="Top X"
+          value={topOffsetX ?? 0}
+          step={OFFSET_STEP}
+          min={OFFSET_MIN}
+          max={OFFSET_MAX}
+          onChange={setTopOffsetX}
+        />
+        <StepperRow
+          label="Top Y"
+          value={topOffsetY ?? 0}
+          step={OFFSET_STEP}
+          min={OFFSET_MIN}
+          max={OFFSET_MAX}
+          onChange={setTopOffsetY}
+        />
+        <StepperRow
+          label="Bottom X"
+          value={bottomOffsetX ?? 0}
+          step={OFFSET_STEP}
+          min={OFFSET_MIN}
+          max={OFFSET_MAX}
+          onChange={setBottomOffsetX}
+        />
+        <StepperRow
+          label="Bottom Y"
+          value={bottomOffsetY ?? 0}
+          step={OFFSET_STEP}
+          min={OFFSET_MIN}
+          max={OFFSET_MAX}
+          onChange={setBottomOffsetY}
         />
       </CollapsibleSection>
     </DevTuningModalShell>

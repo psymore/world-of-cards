@@ -57,6 +57,12 @@ export interface DevTuningState {
   bottomOverlap: number | null;
   topSpacingPx: number | null;
   bottomSpacingPx: number | null;
+  // Per-row position nudge (px), added to that row's fan on top of its rail geometry — same
+  // null-means-untouched convention as the fields above. Batak-only, like topOverlap/bottomOverlap.
+  topOffsetX: number | null;
+  topOffsetY: number | null;
+  bottomOffsetX: number | null;
+  bottomOffsetY: number | null;
   // Shared across both rows (not split top/bottom) — matches how STANDARD_RAIL_CONFIG/
   // COMPACT_RAIL_CONFIG already treat arcDegrees as one value for the whole hand, not a per-row one.
   arcDegrees: number | null;
@@ -73,6 +79,10 @@ export interface DevTuningState {
   setBottomOverlap: (v: number) => void;
   setTopSpacingPx: (v: number) => void;
   setBottomSpacingPx: (v: number) => void;
+  setTopOffsetX: (v: number) => void;
+  setTopOffsetY: (v: number) => void;
+  setBottomOffsetX: (v: number) => void;
+  setBottomOffsetY: (v: number) => void;
   setArcDegrees: (v: number) => void;
   setPistiOverlap: (v: number) => void;
   setPistiSpacingPx: (v: number) => void;
@@ -90,6 +100,10 @@ export const useDevTuningStore = create<DevTuningState>((set) => ({
   bottomOverlap: null,
   topSpacingPx: null,
   bottomSpacingPx: null,
+  topOffsetX: null,
+  topOffsetY: null,
+  bottomOffsetX: null,
+  bottomOffsetY: null,
   arcDegrees: null,
   pistiOverlap: null,
   pistiSpacingPx: null,
@@ -101,6 +115,10 @@ export const useDevTuningStore = create<DevTuningState>((set) => ({
   setBottomOverlap: (bottomOverlap) => set({ bottomOverlap }),
   setTopSpacingPx: (topSpacingPx) => set({ topSpacingPx }),
   setBottomSpacingPx: (bottomSpacingPx) => set({ bottomSpacingPx }),
+  setTopOffsetX: (topOffsetX) => set({ topOffsetX }),
+  setTopOffsetY: (topOffsetY) => set({ topOffsetY }),
+  setBottomOffsetX: (bottomOffsetX) => set({ bottomOffsetX }),
+  setBottomOffsetY: (bottomOffsetY) => set({ bottomOffsetY }),
   setArcDegrees: (arcDegrees) => set({ arcDegrees }),
   setPistiOverlap: (pistiOverlap) => set({ pistiOverlap }),
   setPistiSpacingPx: (pistiSpacingPx) => set({ pistiSpacingPx }),
