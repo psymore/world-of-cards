@@ -36,6 +36,22 @@ export { PressableFeedback } from "./PressableFeedback";
 export type { PressableFeedbackProps } from "./PressableFeedback";
 export { ModalCloseButton, MODAL_CLOSE_BUTTON_IMAGE } from "./ModalCloseButton";
 export type { ModalCloseButtonProps } from "./ModalCloseButton";
+export { IconButton } from "./IconButton";
+export type { IconButtonProps } from "./IconButton";
+// Cut from packages/ui/assets/reference-sheets/icons-home.png (2026-08-15, "Icon Style Library").
+// Decorative-icon upgrade for existing home/exit navigation (BatakSetupView/PistiSetupView's
+// "‹ Home" link, GameScreenLayout's "Exit" button) — replaces their text-only look, same onPress
+// handlers as before, no new navigation wired.
+export const ICON_HOME_IMAGE: number = require("../assets/icons/icon-home.png");
+// Same sheet/pass as ICON_HOME_IMAGE — GameScreenLayout's settings gear, upgraded from the plain
+// vector SettingsIcon to match the home icon's illustrated-gold fidelity now sitting right next
+// to it in the header.
+export const ICON_SETTINGS_IMAGE: number = require("../assets/icons/icon-settings.png");
+// Same sheet/pass — a small gold star, used as a per-difficulty rating glyph (1/2/3 stars for
+// Easy/Medium/Hard) on the setup screens rather than plain text alone.
+export const ICON_STAR_IMAGE: number = require("../assets/icons/icon-star.png");
+export { PlaqueButton, TAG_PLAQUE_IMAGE, TAG_PLAQUE_ASPECT_RATIO } from "./PlaqueButton";
+export type { PlaqueButtonProps } from "./PlaqueButton";
 export { AbsoluteOverlay } from "./AbsoluteOverlay";
 export {
   BottomAnchoredImage,
