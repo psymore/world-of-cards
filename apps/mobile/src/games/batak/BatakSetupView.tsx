@@ -1,9 +1,20 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { PressableFeedback, TableFelt } from '@world-cards/ui';
+import {
+  BODY_REGULAR,
+  BODY_SEMIBOLD,
+  DISPLAY_BOLD,
+  IconButton,
+  ICON_HOME_IMAGE,
+  PressableFeedback,
+  TableFelt,
+} from '@world-cards/ui';
 import type { Difficulty } from '@world-cards/engine';
 import { useSettingsStore } from '../../state/settingsStore';
+import { DifficultyStars } from '../../components/DifficultyStars';
 import type { BatakVariant } from './batakVariant';
+
+const HOME_ICON_SIZE = 32;
 
 export interface BatakSetupViewProps {
   defaultDifficulty: Difficulty;
@@ -35,9 +46,13 @@ export function BatakSetupView({ defaultDifficulty, onStart, onBack }: BatakSetu
       <TableFelt />
       <View style={styles.header}>
         <Text style={styles.pageTitle}>Batak</Text>
-        <PressableFeedback onPress={onBack} accessibilityRole="button" hitSlop={8}>
-          <Text style={styles.backLink}>‹ Home</Text>
-        </PressableFeedback>
+        <IconButton
+          source={ICON_HOME_IMAGE}
+          size={HOME_ICON_SIZE}
+          onPress={onBack}
+          accessibilityLabel="Home"
+          testID="batak-setup-home-button"
+        />
       </View>
 
       <Text style={styles.title}>Choose a variant</Text>
@@ -62,7 +77,10 @@ export function BatakSetupView({ defaultDifficulty, onStart, onBack }: BatakSetu
           style={[styles.option, value === defaultDifficulty && styles.optionDefault]}
           overlayBorderRadius={8}
         >
-          <Text style={styles.optionText}>{label}</Text>
+          <View style={styles.difficultyRow}>
+            <Text style={styles.optionText}>{label}</Text>
+            <DifficultyStars difficulty={value} />
+          </View>
           {value === defaultDifficulty && <Text style={styles.defaultBadge}>Last played</Text>}
         </PressableFeedback>
       ))}
@@ -79,15 +97,21 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   pageTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: DISPLAY_BOLD,
+    fontSize: 26,
     color: '#f4c542',
     letterSpacing: 1,
     textShadowColor: '#7a5c00',
     textShadowRadius: 6,
   },
-  backLink: { fontSize: 15, fontWeight: '600', color: '#cbb98a' },
-  title: { fontSize: 18, fontWeight: '600', marginBottom: 16, marginTop: 8, textAlign: 'center', color: '#f5f0e6' },
+  title: {
+    fontFamily: BODY_SEMIBOLD,
+    fontSize: 18,
+    marginBottom: 16,
+    marginTop: 8,
+    textAlign: 'center',
+    color: '#f5f0e6',
+  },
   option: {
     backgroundColor: 'rgba(255,255,255,0.09)',
     borderWidth: 1,
@@ -98,7 +122,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   optionDefault: { borderColor: '#f4c542', backgroundColor: 'rgba(244, 197, 66, 0.2)' },
-  optionText: { fontSize: 18, color: '#eee' },
-  variantDescription: { fontSize: 13, color: '#cbb98a', marginTop: 2 },
-  defaultBadge: { fontSize: 12, color: '#f4c542', marginTop: 2 },
+  difficultyRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  optionText: { fontFamily: BODY_REGULAR, fontSize: 18, color: '#eee' },
+  variantDescription: { fontFamily: BODY_REGULAR, fontSize: 13, color: '#cbb98a', marginTop: 2 },
+  defaultBadge: { fontFamily: BODY_SEMIBOLD, fontSize: 12, color: '#f4c542', marginTop: 2 },
 });

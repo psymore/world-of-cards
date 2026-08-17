@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+import { BODY_REGULAR, BODY_SEMIBOLD } from '@world-cards/ui';
 
 // Shared by every "center of the table" phase display (BiddingCenter, TrumpWaitingCenter,
 // TrumpSuitPicker, TrickCenter) — one file so the 4 call sites can't drift on font size/color.
@@ -14,12 +15,12 @@ export const centerPanelStyles = StyleSheet.create({
     zIndex: 10,
   },
   centerHeading: {
+    fontFamily: BODY_SEMIBOLD,
     fontSize: 16,
-    fontWeight: '700',
     color: '#f5f0e6',
     textAlign: 'center',
   },
-  centerLine: { fontSize: 14, color: '#f5f0e6', textAlign: 'center' },
+  centerLine: { fontFamily: BODY_REGULAR, fontSize: 14, color: '#f5f0e6', textAlign: 'center' },
   trumpRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   suitRow: { flexDirection: 'row', gap: 12 },
   suitButton: {

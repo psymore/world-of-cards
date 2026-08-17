@@ -26,7 +26,7 @@ describe('GameScreenLayout', () => {
         <Text>board</Text>
       </GameScreenLayout>
     );
-    fireEvent.press(screen.getByText('Exit'));
+    fireEvent.press(screen.getByTestId('game-exit-button'));
 
     expect(alertSpy).toHaveBeenCalled();
     expect(onExit).not.toHaveBeenCalled();
@@ -46,7 +46,7 @@ describe('GameScreenLayout', () => {
         <Text>board</Text>
       </GameScreenLayout>
     );
-    fireEvent.press(screen.getByText('Exit'));
+    fireEvent.press(screen.getByTestId('game-exit-button'));
 
     expect(onExit).toHaveBeenCalledTimes(1);
 

@@ -42,6 +42,8 @@ import {
   TABLE_FRAME_MAHOGANY_BURGUNDY_WIDTH,
   TABLE_FRAME_MAHOGANY_BURGUNDY_HEIGHT,
   BottomAnchoredImage,
+  BODY_REGULAR,
+  BODY_SEMIBOLD,
 } from "@world-cards/ui";
 import type {
   SeatIdentityTurnState,
@@ -1350,12 +1352,12 @@ const styles = StyleSheet.create({
     top: -24,
     left: -32,
     width: 140,
+    fontFamily: BODY_SEMIBOLD,
     fontSize: 12,
-    fontWeight: "700",
     color: "#fff8dc",
     textAlign: "center",
   },
-  pileCount: { marginTop: 8, fontSize: 13, color: "#f5f0e6" },
+  pileCount: { fontFamily: BODY_REGULAR, marginTop: 8, fontSize: 13, color: "#f5f0e6" },
   // Overlays the table surface's top edge instead of reserving its own strip below it — the
   // screen is just top-bar-then-table now (no separate banner row), so transient status text
   // ("Pişti! +10") floats over the felt near the top opponent instead of pushing the table down.

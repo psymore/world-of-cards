@@ -6,7 +6,7 @@
 // Batak: bid/tricks) since that part is genuinely game-specific.
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { NAME_BADGE_PILL_ASPECT_RATIO, NAME_BADGE_PILL_IMAGE } from '@world-cards/ui';
+import { BODY_SEMIBOLD, NAME_BADGE_PILL_ASPECT_RATIO, NAME_BADGE_PILL_IMAGE } from '@world-cards/ui';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import type { SeatTurnState } from './turnState';
 
@@ -70,8 +70,8 @@ const styles = StyleSheet.create({
   // web while staying a no-op on native.
   pillImage: { width: '100%', height: '100%' },
   playerLabel: {
+    fontFamily: BODY_SEMIBOLD,
     fontSize: 11,
-    fontWeight: '700',
     color: '#241a10',
     textAlign: 'center',
     paddingHorizontal: 8,

@@ -9,9 +9,9 @@ import { AbsoluteOverlay } from "./AbsoluteOverlay";
 // the untrimmed original. Only the interior (SURFACE_IMAGES below) is meant to vary between
 // games/looks — the frame itself does not change without a deliberate follow-up request.
 const FRAME_IMAGE = require("../assets/table/default/TABLE-FRAME-MAHOGANY-BURGUNDY-photoroom-trimmed.png");
-// Same texture TableFelt.tsx itself uses — reused here (not re-required from a duplicate path)
-// so "classicFelt" always matches whatever TableFelt renders elsewhere, with no risk of the two
-// drifting to different assets later.
+// The original felt texture (not the 2026-08-15 NEW-TABLE-DEFAULT-GREEN-FELT swap below) — kept
+// as its own distinct, genuinely "classic" option now that greenFelt is the live in-game default
+// (devTuningStore.ts), rather than silently pointing at the same file as another named option.
 const CLASSIC_FELT_IMAGE = require("../assets/table/alternatives/green.png");
 const GREEN_FELT_IMAGE = require("../assets/table/default/NEW-TABLE-DEFAULT-GREEN-FELT.png");
 const NIGHT_BLUE_FELT_IMAGE = require("../assets/table/default/NEW-TABLE-DEFAULT-NIGHT-BLUE.png");

@@ -1,6 +1,12 @@
 import React from 'react';
 import { Image, Modal, Pressable, StyleSheet, Switch, Text, useWindowDimensions, View } from 'react-native';
-import { MODAL_CARD_SMALL_ASPECT_RATIO, MODAL_CARD_SMALL_IMAGE, ModalCloseButton } from '@world-cards/ui';
+import {
+  BODY_REGULAR,
+  DISPLAY_BOLD,
+  MODAL_CARD_SMALL_ASPECT_RATIO,
+  MODAL_CARD_SMALL_IMAGE,
+  ModalCloseButton,
+} from '@world-cards/ui';
 import { useSettingsStore } from '../../state/settingsStore';
 
 export interface BatakSettingsModalProps {
@@ -60,9 +66,9 @@ const styles = StyleSheet.create({
   // Gold/cream, matching this app's established dark-felt palette (e.g. BatakSetupView's title/
   // body text) — the previous #241a10 near-black was tuned for the old light modal-card-small.png
   // and read as near-invisible against the new dark green-felt background (2026-08-15).
-  heading: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, textAlign: 'center', color: '#f4c542' },
+  heading: { fontFamily: DISPLAY_BOLD, fontSize: 20, marginBottom: 16, textAlign: 'center', color: '#f4c542' },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  label: { fontSize: 15, flexShrink: 1, color: '#f5f0e6' },
+  label: { fontFamily: BODY_REGULAR, fontSize: 15, flexShrink: 1, color: '#f5f0e6' },
   // Absolute against `card` (position:'relative' by default in RN) rather than flowing below the
   // row, so it sits fixed at the card's own top-right corner regardless of content height — same
   // placement convention as DevTuningModalShell's own close button.

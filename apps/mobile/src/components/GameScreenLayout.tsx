@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Alert, LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { HeaderWoodFrame, PressableFeedback, SettingsIcon } from '@world-cards/ui';
+import { DISPLAY_BOLD, HeaderWoodFrame, IconButton, ICON_HOME_IMAGE, ICON_SETTINGS_IMAGE } from '@world-cards/ui';
+
+const HOME_ICON_SIZE = 30;
+const SETTINGS_ICON_SIZE = 30;
 
 export interface GameScreenLayoutProps {
   title: string;
@@ -65,13 +68,21 @@ export function GameScreenLayout({
       <View style={styles.headerActions}>
         {extraHeaderActions}
         {onSettingsPress && (
-          <PressableFeedback onPress={onSettingsPress} accessibilityRole="button" testID="game-settings-button">
-            <SettingsIcon />
-          </PressableFeedback>
+          <IconButton
+            source={ICON_SETTINGS_IMAGE}
+            size={SETTINGS_ICON_SIZE}
+            onPress={onSettingsPress}
+            accessibilityLabel="Settings"
+            testID="game-settings-button"
+          />
         )}
-        <PressableFeedback onPress={handleExitPress} accessibilityRole="button">
-          <Text style={styles.exit}>Exit</Text>
-        </PressableFeedback>
+        <IconButton
+          source={ICON_HOME_IMAGE}
+          size={HOME_ICON_SIZE}
+          onPress={handleExitPress}
+          accessibilityLabel="Exit to home"
+          testID="game-exit-button"
+        />
       </View>
     </View>
   );
@@ -123,9 +134,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 6,
   },
-  title: { fontSize: 16, fontWeight: 'bold' },
+  title: { fontFamily: DISPLAY_BOLD, fontSize: 18 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  exit: { fontSize: 21, color: '#c0392b' },
   // paddingTop gives the table a little breathing room below the header bar, separate from the
   // header row's own paddingBottom above (which is internal to the header row's own content).
   content: { flex: 1, paddingTop: 12 },
