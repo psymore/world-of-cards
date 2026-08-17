@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { DISPLAY_BOLD } from '@world-cards/ui';
 
 export const HomeWordmark = React.memo(function HomeWordmark() {
   return (
@@ -13,7 +14,9 @@ export const HomeWordmark = React.memo(function HomeWordmark() {
 const styles = StyleSheet.create({
   container: { alignItems: 'center', marginTop: 12 },
   word: {
-    fontFamily: 'PTSerif-Regular',
+    // Cinzel, matching typography.png's own "WORLD OF CARDS" display-font example almost
+    // verbatim — this app's actual wordmark, replacing the pre-typography-system PTSerif-Regular.
+    fontFamily: DISPLAY_BOLD,
     fontSize: 26,
     color: '#f4c542',
     letterSpacing: 3,

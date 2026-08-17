@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
-import { PressableFeedback } from '@world-cards/ui';
+import { BODY_REGULAR, BODY_SEMIBOLD, PressableFeedback } from '@world-cards/ui';
 import type { GameCategory } from '@world-cards/engine';
 import { MiniCardFan } from './MiniCardFan';
 import { accentColorForCategory, categoryLabel, playerRangeLabel } from './gameDisplay';
@@ -78,6 +78,9 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
   },
   textBlock: { flex: 1 },
-  name: { fontSize: 14, fontWeight: '600', color: '#f2e6ff', letterSpacing: 0.3 },
-  subtitle: { fontSize: 11, color: '#f2e6ff', opacity: 0.55, marginTop: 2 },
+  // #f2e6ff (lavender) was a leftover from this screen's pre-gold-palette purple design phase —
+  // replaced with the same gold/cream pairing established everywhere else (SeatIdentity,
+  // BatakSetupView, the modals touched in this same pass).
+  name: { fontFamily: BODY_SEMIBOLD, fontSize: 14, color: '#f4c542', letterSpacing: 0.3 },
+  subtitle: { fontFamily: BODY_REGULAR, fontSize: 11, color: '#f5f0e6', opacity: 0.75, marginTop: 2 },
 });
