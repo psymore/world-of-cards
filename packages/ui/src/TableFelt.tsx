@@ -2,7 +2,12 @@ import React from "react";
 import { Image, StyleSheet } from "react-native";
 import { AbsoluteOverlay } from "./AbsoluteOverlay";
 
-const FELT_IMAGE = require("../assets/table/alternatives/green.png");
+// 2026-08-15: swapped to the richer NEW-TABLE-DEFAULT-GREEN-FELT source, cropped to a plain
+// rectangle (that file's own rounded corners/transparent margin are meant for its other role as
+// MahoganyTableSurface's framed interior — a full-bleed `cover` background needs opaque corners,
+// not a transparent rounded-rect floating on black). The old alternatives/green.png stays on disk
+// unused.
+const FELT_IMAGE = require("../assets/table/default/NEW-TABLE-DEFAULT-GREEN-FELT-fullbleed.png");
 
 // A photo-textured green felt, reusable by any game with a tabletop playing surface, not just
 // Pişti. Pure decoration: no props, painted once, never redone by game state changes. Replaces

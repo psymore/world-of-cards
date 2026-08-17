@@ -46,9 +46,9 @@ export interface DevTuningState {
   // Which interior MahoganyTableSurface renders inside the mahogany frame — shared across both
   // games (like tableBackground above), since the frame+interior split is itself game-agnostic.
   // Only visible when a game's own background selection actually renders MahoganyTableSurface
-  // ('frame' for Batak, 'frameOnly' for Pişti); otherwise this is inert. Defaults to 'classicFelt'
-  // so picking the Default Frame background doesn't itself change the felt's look until this is
-  // explicitly changed too.
+  // ('frame' for Batak, 'frameOnly' for Pişti); otherwise this is inert. Defaults to 'greenFelt'
+  // (2026-08-15) — the actual shipped in-game felt for both games now, not just a dev-tuning
+  // candidate; 'classicFelt' is the pre-2026-08-15 look, kept as an opt-in comparison.
   tableSurfaceMaterial: TableSurfaceMaterial;
   // null means "not yet overridden by the panel" — HumanHandFan then falls back to whichever rail
   // config (Standard or Compact) is actually live for that hand, instead of a baked-in
@@ -95,7 +95,7 @@ export interface DevTuningState {
 export const useDevTuningStore = create<DevTuningState>((set) => ({
   tableBackground: 'frame',
   pistiTableBackground: 'frameOnly',
-  tableSurfaceMaterial: 'classicFelt',
+  tableSurfaceMaterial: 'greenFelt',
   topOverlap: null,
   bottomOverlap: null,
   topSpacingPx: null,
