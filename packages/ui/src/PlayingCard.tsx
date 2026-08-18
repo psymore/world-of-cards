@@ -13,6 +13,8 @@ import type { Card, Suit } from "@world-cards/engine";
 import { SuitIcon } from "./SuitIcon";
 import { glowShadow } from "./glowShadow";
 import { COURT_CARD_ART } from "./courtCardArt";
+import { COURT_CARD_ART_V2, CARD_FACE_BACKGROUND_V2_IMAGE } from "./courtCardArtV2";
+import { useCardFaceStyleStore } from "./cardFaceStyleStore";
 import { CARD_RANK_FONT_FAMILY } from "./fonts";
 import { CourtCardFrame } from "./CourtCardFrame";
 
@@ -150,11 +152,13 @@ function CardBorders({
   borders,
   outerRadius,
   backgroundColor,
+  backgroundImage,
   children,
 }: {
   borders: PlayingCardBorderSpec[];
   outerRadius: number;
   backgroundColor: string;
+  backgroundImage?: ImageSourcePropType;
   children: React.ReactNode;
 }) {
   const radii: number[] = [];
@@ -170,6 +174,14 @@ function CardBorders({
         styles.frameInnerRing,
         { backgroundColor, borderRadius: radius },
       ]}>
+      {backgroundImage != null && (
+        <Image
+          testID="playing-card-face-background"
+          source={backgroundImage}
+          resizeMode="stretch"
+          style={styles.faceBackgroundImage}
+        />
+      )}
       {children}
     </View>
   );
@@ -196,6 +208,7 @@ function CardFrame({
   testID,
   dims,
   backgroundColor,
+  backgroundImage,
   highlighted,
   style,
   cardRadius,
@@ -205,6 +218,7 @@ function CardFrame({
   testID: string;
   dims: StyleProp<ViewStyle>;
   backgroundColor: string;
+  backgroundImage?: ImageSourcePropType;
   highlighted?: boolean;
   style?: StyleProp<ViewStyle>;
   cardRadius: number;
@@ -224,7 +238,8 @@ function CardFrame({
       <CardBorders
         borders={borders}
         outerRadius={cardRadius}
-        backgroundColor={backgroundColor}>
+        backgroundColor={backgroundColor}
+        backgroundImage={backgroundImage}>
         {children}
       </CardBorders>
     </View>
@@ -237,6 +252,7 @@ function CenterArt({
   isSmall,
   overlayImage,
   courtArt,
+  centeredArt,
   isFaceCard,
   contentScale,
 }: {
@@ -245,6 +261,10 @@ function CenterArt({
   isSmall: boolean;
   overlayImage: PlayingCardOverlayImage | null | undefined;
   courtArt: ImageSourcePropType | undefined;
+  // v3 only: the same baked v2 K/Q/J art (courtCardArtV2.ts), shown smaller and "contain"-fit
+  // instead of v2's edge-to-edge stretch — the v2 parchment background stays visible as a margin
+  // around it rather than being fully replaced by the art's own baked frame.
+  centeredArt: ImageSourcePropType | undefined;
   isFaceCard: boolean;
   contentScale: number;
 }) {
@@ -291,6 +311,19 @@ function CenterArt({
         resizeMode="contain"
         style={[styles.overlay, overlayStyle]}
       />
+    );
+  }
+
+  if (centeredArt != null) {
+    return (
+      <View style={styles.v3ArtFrame}>
+        <Image
+          testID="court-card-art-v3"
+          source={centeredArt}
+          style={styles.v3ArtImage}
+          resizeMode="contain"
+        />
+      </View>
     );
   }
 
@@ -343,6 +376,7 @@ function PlayingCardComponent({
 }: PlayingCardProps) {
   const isSmall = size === "small";
   const dims = isSmall ? styles.small : styles.normal;
+  const cardFaceStyle = useCardFaceStyleStore((s) => s.cardFaceStyle);
 
   if (faceDown || !card) {
     return (
@@ -371,20 +405,52 @@ function PlayingCardComponent({
   const suitColor = isRed ? SUIT_COLOR.red : SUIT_COLOR.black;
   const isFaceCard =
     card.rank === "K" || card.rank === "Q" || card.rank === "J";
+  const isV2 = cardFaceStyle === "v2";
+  const isV3 = cardFaceStyle === "v3";
+  // v2 and v3 both draw from the same baked K/Q/J art (courtCardArtV2.ts) and the same parchment
+  // background/no-border/shadow treatment — they differ only in how that art is presented: v2
+  // stretches it edge-to-edge as the card's entire background (see fullBleedArt below), v3 shows
+  // it smaller and centered, contain-fit, over the parchment background instead (see centeredArt
+  // below). isFaceCardArt is the raw lookup shared by both.
+  const isV2Family = isV2 || isV3;
+  const faceCardArt =
+    isV2Family && overlayImage === undefined && isFaceCard && card.suit != null
+      ? COURT_CARD_ART_V2[`${card.rank}-${card.suit}`]
+      : undefined;
+  // v2 only: replaces CardFrame's entire background, so CenterArt/CourtCardFrame below are
+  // skipped for that card entirely (their v1 layout assumes a plain background behind them).
+  const fullBleedArt = isV2 ? faceCardArt : undefined;
+  // v3 only: same art, shown inside CenterArt instead of replacing the background.
+  const centeredArt = isV3 ? faceCardArt : undefined;
+  // v1's per-suit court art: used as-is in v1 mode, and as Jack's per-suit fallback in v2/v3 mode
+  // for the 3 suits courtCardArtV2.ts deliberately left uncovered (its own doc comment explains
+  // why) — but never for non-face-card ranks under v2/v3, where both intentionally keep today's
+  // plain suit watermark (just over the new parchment background) rather than mixing in v1's Ace
+  // art.
   const courtArt =
-    overlayImage === undefined && card.suit != null
+    faceCardArt === undefined &&
+    overlayImage === undefined &&
+    card.suit != null &&
+    (!isV2Family || isFaceCard)
       ? COURT_CARD_ART[`${card.rank}-${card.suit}`]
       : undefined;
+  const faceBackgroundImage =
+    fullBleedArt ?? (isV2Family ? CARD_FACE_BACKGROUND_V2_IMAGE : undefined);
+  // v1's white/grey rings read as digital-print chrome next to v2/v3's parchment/gold art — every
+  // v2/v3 card (not just the K/Q/J ones with their own baked frame) drops them in favor of a soft
+  // drop shadow instead, closer to a physical card resting on the felt.
+  const faceBorders = isV2Family ? [] : borders;
 
   return (
     <CardFrame
       testID="playing-card-face"
       dims={dims}
       backgroundColor="#fff"
+      backgroundImage={faceBackgroundImage}
       highlighted={highlighted}
-      style={style}
+      style={[style, isV2Family && styles.v2CardShadow]}
       cardRadius={cardRadius}
-      borders={borders}>
+      borders={faceBorders}>
       <CornerIndex
         rank={card.rank}
         suit={card.suit}
@@ -402,17 +468,20 @@ function PlayingCardComponent({
         mirrored
         contentScale={contentScale}
       />
-      <View testID="playing-card-center-art" style={styles.centerArt}>
-        <CenterArt
-          card={card}
-          suitColor={suitColor}
-          isSmall={isSmall}
-          overlayImage={overlayImage}
-          courtArt={courtArt}
-          isFaceCard={isFaceCard}
-          contentScale={contentScale}
-        />
-      </View>
+      {fullBleedArt == null && (
+        <View testID="playing-card-center-art" style={styles.centerArt}>
+          <CenterArt
+            card={card}
+            suitColor={suitColor}
+            isSmall={isSmall}
+            overlayImage={overlayImage}
+            courtArt={courtArt}
+            centeredArt={centeredArt}
+            isFaceCard={isFaceCard}
+            contentScale={contentScale}
+          />
+        </View>
+      )}
       {courtArt != null && isFaceCard && <CourtCardFrame size={size} />}
     </CardFrame>
   );
@@ -435,6 +504,17 @@ const styles = StyleSheet.create({
   // that already signals "selected" (see SelectableCard) — the glow alone is enough.
   highlighted: {
     ...glowShadow("#f4c542", 6),
+  },
+  // A plain, low-key drop shadow standing in for v1's white/grey border rings (suppressed
+  // whenever this applies — see faceBorders in PlayingCardComponent) — small and neutral rather
+  // than a colored glow, so it reads as "a card resting on the felt" and doesn't compete with
+  // `highlighted` above, which both can layer with here since they're separate style objects.
+  v2CardShadow: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
   },
   // zIndex is explicit (not left to default child order) because centerArt's court-card Image
   // is added after these in the tree and would otherwise paint over the corner index on native
@@ -516,6 +596,11 @@ const styles = StyleSheet.create({
   // own 81%) since resizeMode="stretch" (above) no longer preserves the source art's aspect
   // ratio for face cards — first-pass value, tune once checked live.
   courtArtImageEnlarged: { width: "81%", height: "95%" },
+  // v3 only — noticeably smaller than v1/v2's own courtArtFrame (70%/75%): the art already carries
+  // its own gold frame baked in, so this is a small centered medallion sitting on the v2 parchment
+  // background rather than a court-art insert meant to fill most of the card.
+  v3ArtFrame: { width: "58%", height: "62%", alignItems: "center", justifyContent: "center" },
+  v3ArtImage: { width: "100%", height: "100%" },
   red: { color: "#c0392b" },
   overlay: { position: "absolute" },
   // Explicit width/height (not just StyleSheet.absoluteFill's position:absolute + inset:0) is
@@ -532,5 +617,18 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: "100%",
     height: "100%",
+  },
+  // Same absolute-fill-plus-explicit-100%-sizing reasoning as backArt above (react-native-web
+  // Image needs explicit width/height, not just inset:0, to fill its container). zIndex 0 (below
+  // CornerIndex's explicit zIndex: 1) so v2's corner rank/suit still paints on top of it.
+  faceBackgroundImage: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
+    zIndex: 0,
   },
 });

@@ -60,6 +60,8 @@ export {
 export type { BottomAnchoredImageProps } from "./BottomAnchoredImage";
 export { CourtCardFrame } from "./CourtCardFrame";
 export type { CourtCardFrameProps } from "./CourtCardFrame";
+export { useCardFaceStyleStore } from "./cardFaceStyleStore";
+export type { CardFaceStyle, CardFaceStyleState } from "./cardFaceStyleStore";
 export { glowShadow } from "./glowShadow";
 export { FONTS, CARD_RANK_FONT_FAMILY } from "./fonts";
 export {
