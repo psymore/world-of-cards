@@ -1,12 +1,13 @@
 // apps/mobile/src/games/pisti/PistiDevTuningModal.tsx
 import React from 'react';
 import { StyleSheet, Text } from 'react-native';
-import { CARD_DIMS, PressableFeedback } from '@world-cards/ui';
+import { CARD_DIMS, PressableFeedback, useCardFaceStyleStore } from '@world-cards/ui';
 import { useDevTuningStore } from '../../state/devTuningStore';
 import type { PistiTableBackground } from '../../state/devTuningStore';
 import { PISTI_RAIL_CONFIG } from './table/pistiRailFan';
 import { CollapsibleSection, DevTuningModalShell, StepperRow } from '../../components/devTuning/DevTuningControls';
 import { TABLE_SURFACE_MATERIAL_OPTIONS } from '../../components/devTuning/tableSurfaceMaterialOptions';
+import { CARD_FACE_STYLE_OPTIONS } from '../../components/devTuning/cardFaceStyleOptions';
 
 export interface PistiDevTuningModalProps {
   visible: boolean;
@@ -51,6 +52,8 @@ export function PistiDevTuningModal({ visible, onClose }: PistiDevTuningModalPro
   const setPistiTableBackground = useDevTuningStore((s) => s.setPistiTableBackground);
   const tableSurfaceMaterial = useDevTuningStore((s) => s.tableSurfaceMaterial);
   const setTableSurfaceMaterial = useDevTuningStore((s) => s.setTableSurfaceMaterial);
+  const cardFaceStyle = useCardFaceStyleStore((s) => s.cardFaceStyle);
+  const setCardFaceStyle = useCardFaceStyleStore((s) => s.setCardFaceStyle);
   const overlap = useDevTuningStore((s) => s.pistiOverlap);
   const setOverlap = useDevTuningStore((s) => s.setPistiOverlap);
   const spacingPx = useDevTuningStore((s) => s.pistiSpacingPx);
@@ -92,6 +95,26 @@ export function PistiDevTuningModal({ visible, onClose }: PistiDevTuningModalPro
               style={[styles.optionRow, isSelected && styles.optionRowSelected]}
               overlayBorderRadius={OPTION_BUTTON_RADIUS}
               testID={`pisti-dev-tuning-surface-material-${option.value}`}>
+              <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                {(isSelected ? '● ' : '○ ') + option.label}
+              </Text>
+            </PressableFeedback>
+          );
+        })}
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Card Style">
+        {CARD_FACE_STYLE_OPTIONS.map((option) => {
+          const isSelected = option.value === cardFaceStyle;
+          return (
+            <PressableFeedback
+              key={option.value}
+              onPress={() => setCardFaceStyle(option.value)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isSelected }}
+              style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+              overlayBorderRadius={OPTION_BUTTON_RADIUS}
+              testID={`pisti-dev-tuning-card-face-style-${option.value}`}>
               <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
                 {(isSelected ? '● ' : '○ ') + option.label}
               </Text>

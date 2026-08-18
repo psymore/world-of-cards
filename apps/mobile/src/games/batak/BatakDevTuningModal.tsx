@@ -1,12 +1,13 @@
 // apps/mobile/src/games/batak/BatakDevTuningModal.tsx
 import React from 'react';
 import { StyleSheet, Text } from 'react-native';
-import { CARD_DIMS, PressableFeedback } from '@world-cards/ui';
+import { CARD_DIMS, PressableFeedback, useCardFaceStyleStore } from '@world-cards/ui';
 import { useDevTuningStore } from '../../state/devTuningStore';
 import type { DevTableBackground } from '../../state/devTuningStore';
 import { STANDARD_RAIL_CONFIG, STANDARD_TOP_OVERLAP, STANDARD_BOTTOM_OVERLAP } from './table/batakRailFan';
 import { CollapsibleSection, DevTuningModalShell, StepperRow } from '../../components/devTuning/DevTuningControls';
 import { TABLE_SURFACE_MATERIAL_OPTIONS } from '../../components/devTuning/tableSurfaceMaterialOptions';
+import { CARD_FACE_STYLE_OPTIONS } from '../../components/devTuning/cardFaceStyleOptions';
 
 export interface BatakDevTuningModalProps {
   visible: boolean;
@@ -52,6 +53,8 @@ export function BatakDevTuningModal({ visible, onClose }: BatakDevTuningModalPro
   const setTableBackground = useDevTuningStore((s) => s.setTableBackground);
   const tableSurfaceMaterial = useDevTuningStore((s) => s.tableSurfaceMaterial);
   const setTableSurfaceMaterial = useDevTuningStore((s) => s.setTableSurfaceMaterial);
+  const cardFaceStyle = useCardFaceStyleStore((s) => s.cardFaceStyle);
+  const setCardFaceStyle = useCardFaceStyleStore((s) => s.setCardFaceStyle);
   const topOverlap = useDevTuningStore((s) => s.topOverlap);
   const setTopOverlap = useDevTuningStore((s) => s.setTopOverlap);
   const bottomOverlap = useDevTuningStore((s) => s.bottomOverlap);
@@ -105,6 +108,26 @@ export function BatakDevTuningModal({ visible, onClose }: BatakDevTuningModalPro
               style={[styles.optionRow, isSelected && styles.optionRowSelected]}
               overlayBorderRadius={OPTION_BUTTON_RADIUS}
               testID={`batak-dev-tuning-surface-material-${option.value}`}>
+              <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                {(isSelected ? '● ' : '○ ') + option.label}
+              </Text>
+            </PressableFeedback>
+          );
+        })}
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Card Style">
+        {CARD_FACE_STYLE_OPTIONS.map((option) => {
+          const isSelected = option.value === cardFaceStyle;
+          return (
+            <PressableFeedback
+              key={option.value}
+              onPress={() => setCardFaceStyle(option.value)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isSelected }}
+              style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+              overlayBorderRadius={OPTION_BUTTON_RADIUS}
+              testID={`batak-dev-tuning-card-face-style-${option.value}`}>
               <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
                 {(isSelected ? '● ' : '○ ') + option.label}
               </Text>
