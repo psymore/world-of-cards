@@ -99,6 +99,10 @@ export interface BatakTableProps {
   // the card diagonally in sync with its vertical departure instead of straight up. Null the rest
   // of the time.
   localDeparture?: { cardId: string; deltaX: number } | null;
+  // Fires when the departing card's local-departure animation actually completes — see
+  // HumanHandFan's own doc comment and
+  // docs/animation/audits/BatakPlayTravelHandoff-Audit.md.
+  onDepartureComplete?: () => void;
   // The angle each currently-in-trick card is resting/gathering at, keyed by playerId — see
   // BatakScreen's own doc comment on this state for why it exists (preserving hand rotation
   // instead of snapping cards flat once they land).
@@ -205,6 +209,7 @@ export function BatakTable({
   gatheringTrick,
   pendingBury,
   localDeparture,
+  onDepartureComplete,
   restingRotations,
   dealPhase,
 }: BatakTableProps) {
@@ -247,6 +252,15 @@ export function BatakTable({
   // taps during this brief window doesn't need selection to actually clear, so it gets its own,
   // narrower gate instead of widening isHumanInteractive itself.
   const canInteractWithHand = isHumanInteractive && localDeparture == null;
+  // TEMPORARY DEBUG INSTRUMENTATION — see docs/domains/games/batak/known-issues.md "Animation
+  // stutter after several tricks" investigation. Traces why the hand can go permanently
+  // non-interactive after the first human play.
+  useEffect(() => {
+    if (!__DEV__) return;
+    console.log(
+      `[BATAK-PERF] interactivity: isHumanTurn=${isHumanTurn} isHumanInteractive=${isHumanInteractive} canInteractWithHand=${canInteractWithHand} pendingPlay=${pendingPlay != null} gatheringTrick=${gatheringTrick != null} pendingBury=${pendingBury != null} localDeparture=${localDeparture != null}`,
+    );
+  }, [isHumanTurn, isHumanInteractive, canInteractWithHand, pendingPlay, gatheringTrick, pendingBury, localDeparture]);
 
   const isHumanBidderInKittyExchange = state.phase === 'kitty-exchange' && state.bidWinner === humanPlayerId;
   const burySlots = useBurySlots(
@@ -599,6 +613,7 @@ export function BatakTable({
           registerHandMotion={registerHandMotion}
           compact={compact}
           departingCard={localDeparture ?? null}
+          onDepartureComplete={onDepartureComplete}
           handFanRef={handFanRef}
           onHandFanLayout={handleHandFanLayout}
         />

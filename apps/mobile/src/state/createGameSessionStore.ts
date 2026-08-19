@@ -13,7 +13,17 @@ export function createGameSessionStore<TState extends GameState, TMove>(
   return create<GameSessionStore<TState, TMove>>((set, get) => ({
     state: initialState,
     performMove: (move: TMove) => {
+      // TEMPORARY DEBUG INSTRUMENTATION — see docs/domains/games/batak/known-issues.md
+      // "Animation stutter after several tricks" investigation. Flags a JS-thread block on the
+      // rule-engine transition itself (as opposed to rendering/animation).
+      const start = __DEV__ ? performance.now() : 0;
       const next = ruleEngine.performMove(get().state, move);
+      if (__DEV__) {
+        const elapsed = performance.now() - start;
+        if (elapsed > 8) {
+          console.log(`[BATAK-PERF] performMove took ${elapsed.toFixed(1)}ms`);
+        }
+      }
       set({ state: next });
     },
   }));

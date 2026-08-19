@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useLayoutEffect, useRef } from "react";
 import { Animated, EasingFunction } from "react-native";
 import { useReducedMotion } from "../components/useReducedMotion";
 import { CARD_TRAVEL_DURATION_MS, CARD_TRAVEL_EASING } from "./travelAnimation";
@@ -50,7 +50,14 @@ function useAnimatedProgress(
   const progress = useRef(new Animated.Value(0)).current;
   const reducedMotion = useReducedMotion();
 
-  useEffect(() => {
+  // useLayoutEffect, not useEffect: this component is frequently mounted mid-flight, taking over
+  // from a card that was already moving (e.g. Batak's local-departure handoff — see
+  // docs/animation/audits/BatakPlayTravelHandoff-Audit.md). useEffect fires after the first
+  // paint, so the mount would render one static frame at `originOffset` before .start() ever
+  // runs — a real, confirmed-on-device visible freeze the fraction of a second before motion
+  // resumes, not just a theoretical one. useLayoutEffect starts the animation before that first
+  // paint instead of after it, closing the gap.
+  useLayoutEffect(() => {
     if (reducedMotion) {
       progress.setValue(1);
       return;
