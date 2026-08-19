@@ -73,6 +73,11 @@ export interface BatakHandCardProps {
   departureDeltaX: number;
   localDepartureDistance: number;
   localDepartureDurationMs: number;
+  // Fires once the local-departure leg's own animation actually completes (via useCardMotion's
+  // onComplete, not a sibling JS-thread timer) — see BatakScreen.tsx's handleDepartureComplete
+  // and docs/animation/audits/BatakPlayTravelHandoff-Audit.md. Passed uniformly to every hand
+  // card, but only the one actually departing (isDeparting) ever calls it.
+  onDepartureComplete?: () => void;
   onPress: () => void;
   // Hands the parent this card's own motion controller (setTarget/getValues) once, on mount —
   // HumanHandFan uses this to retarget the card on every reflow, and BatakTable's
@@ -94,6 +99,7 @@ function BatakHandCardComponent({
   departureDeltaX,
   localDepartureDistance,
   localDepartureDurationMs,
+  onDepartureComplete,
   onPress,
   registerMotion,
 }: BatakHandCardProps) {
@@ -213,6 +219,7 @@ function BatakHandCardComponent({
       y: current.y - localDepartureDistance,
       scale: LOCAL_DEPARTURE_SCALE,
       timing: { duration: localDepartureDurationMs, easing: Easing.in(Easing.linear) },
+      onComplete: onDepartureComplete,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDeparting, reducedMotion]);

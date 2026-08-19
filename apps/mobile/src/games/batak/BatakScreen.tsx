@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { PressableFeedback } from "@world-cards/ui";
 import type { Difficulty, PlayerId, RNG } from "@world-cards/engine";
@@ -16,6 +16,7 @@ import { GameResultModal } from "../../components/GameResultModal";
 import { useReducedMotion } from "../../components/useReducedMotion";
 import { useAITurn } from "../../hooks/useAITurn";
 import { useDealSequence } from "../../hooks/useDealSequence";
+import { useFrameDropMonitor } from "../../hooks/useFrameDropMonitor";
 import { CARD_TRAVEL_DURATION_MS } from "../../table/travelAnimation";
 import { BatakSetupView } from "./BatakSetupView";
 import { BatakTable, PendingBatakPlay, GatheringTrick } from "./BatakTable";
@@ -187,24 +188,60 @@ function ActiveGame({
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [devTuningVisible, setDevTuningVisible] = useState(false);
   const pendingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const localDepartureTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
   const gatherTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const buryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Guards commitMove's "play" branch against a rapid double-tap/re-selection dispatching a
+  // second play before the UI's own interactivity gating (legalCardIds, derived from
+  // pendingPlay/localDeparture/gatheringTrick all being null) has re-rendered to disable it —
+  // that gating is React state, which doesn't update synchronously within the same tick a second
+  // gesture event can land in. A ref instead of state specifically because it must be visible
+  // immediately to a re-entrant call, not after a render. Set true for the whole staged
+  // animation (local departure through the final performMove), not just the synchronous part.
+  const playInFlightRef = useRef(false);
+  // Set by commitMove's local-departure branch, invoked by handleDepartureComplete once
+  // BatakHandCard's own departure animation actually finishes — replaces a prior
+  // setTimeout(LOCAL_DEPARTURE_DURATION_MS) that raced a JS-thread timer against the UI-thread
+  // Reanimated animation of the same nominal duration. See
+  // docs/animation/audits/BatakPlayTravelHandoff-Audit.md.
+  const pendingDepartureCompleteRef = useRef<(() => void) | null>(null);
+  // Safety net for pendingDepartureCompleteRef: on-device testing (2026-08-19) confirmed
+  // useCardMotion's onComplete callback can silently fail to fire (Reanimated's withTiming
+  // completion callback has no delivery guarantee — e.g. under UI-thread contention), which
+  // leaves pendingDepartureCompleteRef populated forever and localDeparture permanently non-null,
+  // soft-locking the human's hand (canInteractWithHand requires localDeparture == null) with no
+  // recovery short of restarting the app. This timer fires the same completion logic if
+  // onComplete hasn't already done so by (nominal duration + grace); handleDepartureComplete nulls
+  // pendingDepartureCompleteRef on first invocation, so whichever of the two fires first wins and
+  // the other is a no-op — not a double-fire risk. The onComplete callback stays the primary,
+  // accurate path (this backstop's fixed delay is exactly the guess-based race the audit's fix
+  // was meant to eliminate); it only exists to bound the failure mode when that path is dropped.
+  const departureBackstopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dealPhase = useDealSequence();
   const reducedMotion = useReducedMotion();
+  useFrameDropMonitor("BatakScreen", __DEV__);
 
   const aiStrategy = batakDescriptor.aiStrategies[difficulty];
 
   useEffect(() => {
     return () => {
       if (pendingTimeoutRef.current) clearTimeout(pendingTimeoutRef.current);
-      if (localDepartureTimeoutRef.current)
-        clearTimeout(localDepartureTimeoutRef.current);
       if (gatherTimeoutRef.current) clearTimeout(gatherTimeoutRef.current);
       if (buryTimeoutRef.current) clearTimeout(buryTimeoutRef.current);
+      if (departureBackstopTimeoutRef.current) clearTimeout(departureBackstopTimeoutRef.current);
     };
+  }, []);
+
+  // Stable across renders (see BatakTable.tsx's own playWithMeasuredOrigin doc comment for the
+  // same "keep a ref, expose a stable callback" pattern) — passed down through
+  // BatakTable/HumanHandFan/BatakHandCard as onDepartureComplete, invoked once by whichever hand
+  // card's local-departure animation actually finishes.
+  const handleDepartureComplete = useCallback(() => {
+    if (departureBackstopTimeoutRef.current) {
+      clearTimeout(departureBackstopTimeoutRef.current);
+      departureBackstopTimeoutRef.current = null;
+    }
+    pendingDepartureCompleteRef.current?.();
+    pendingDepartureCompleteRef.current = null;
   }, []);
 
   function commitMove(
@@ -233,12 +270,24 @@ function ActiveGame({
     // animation has something to animate from for every play; bid/pass/selectTrump still commit
     // instantly since engine state already reflects them visibly with nothing to bridge.
     if (move.type === "play") {
+      if (playInFlightRef.current) {
+        // A play is already staged/mid-flight — ignore this one rather than starting a second
+        // overlapping animation+performMove sequence for a card the engine may have already
+        // moved out of its hand zone by the time this one's own delayed performMove would fire.
+        // See playInFlightRef's own doc comment above.
+        return;
+      }
       const hand = state.table.zones[`hand-${playerId}`].cards;
       const card = hand.find(c => c.id === move.cardId);
       if (!card) {
-        performMove(move);
+        // The card is already gone from this player's hand — a stale/duplicate call for a play
+        // already committed elsewhere. Ignore rather than calling performMove, which would throw
+        // (packages/engine/src/core/table.ts's moveCard: "card not found in zone") — the crash
+        // this whole guard exists to prevent. Not expected to be reachable now that
+        // playInFlightRef blocks re-entrant calls above; kept as defense in depth.
         return;
       }
+      playInFlightRef.current = true;
       // Generalized from the old hardcoded `=== 3` (which only worked for the fixed 4-player
       // game): a trick completes once every player but the current one has already played.
       const isTrickCompleting =
@@ -276,6 +325,7 @@ function ActiveGame({
             [playerId]: originRotateDeg ?? 0,
           }));
           if (!isTrickCompleting) {
+            playInFlightRef.current = false;
             performMove(move);
             return;
           }
@@ -310,11 +360,13 @@ function ActiveGame({
             // GatherCard.tsx), so there's nothing left to wait for — arming the full-duration
             // timer here would just leave an empty trick center for CARD_TRAVEL_DURATION_MS
             // before the score updates, with no animation happening to justify the wait.
+            playInFlightRef.current = false;
             performMove(move);
             setGatheringTrick(null);
             setRestingRotations({});
           } else {
             gatherTimeoutRef.current = setTimeout(() => {
+              playInFlightRef.current = false;
               performMove(move);
               setGatheringTrick(null);
               setRestingRotations({});
@@ -354,7 +406,9 @@ function ActiveGame({
         const departureFraction = LOCAL_DEPARTURE_DISTANCE / measuredOrigin.y;
         const departureDeltaX = measuredOrigin.x * departureFraction;
         setLocalDeparture({ cardId: move.cardId, deltaX: departureDeltaX });
-        localDepartureTimeoutRef.current = setTimeout(() => {
+        // Invoked by handleDepartureComplete once BatakHandCard's own local-departure animation
+        // actually finishes (see useCardMotion's onComplete) — not a JS-thread duration guess.
+        pendingDepartureCompleteRef.current = () => {
           setLocalDeparture(null);
           armPendingPlay(
             {
@@ -364,7 +418,15 @@ function ActiveGame({
             CARD_TRAVEL_DURATION_MS - LOCAL_DEPARTURE_DURATION_MS,
             delay - LOCAL_DEPARTURE_DURATION_MS,
           );
-        }, LOCAL_DEPARTURE_DURATION_MS);
+        };
+        // Backstop: see departureBackstopTimeoutRef's own doc comment above. Grace margin is
+        // deliberately generous (not a tight race against the animation's own duration) — its job
+        // is only to bound an already-dropped callback's failure mode, not to compete with
+        // onComplete for which one "wins" on the happy path.
+        departureBackstopTimeoutRef.current = setTimeout(
+          handleDepartureComplete,
+          LOCAL_DEPARTURE_DURATION_MS + 250,
+        );
         return;
       }
 
@@ -447,6 +509,7 @@ function ActiveGame({
         gatheringTrick={gatheringTrick}
         pendingBury={pendingBury}
         localDeparture={localDeparture}
+        onDepartureComplete={handleDepartureComplete}
         restingRotations={restingRotations}
         dealPhase={dealPhase}
       />

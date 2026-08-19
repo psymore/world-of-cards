@@ -121,6 +121,7 @@ export function HumanHandFan({
   playEntrance,
   compact = false,
   departingCard = null,
+  onDepartureComplete,
   registerHandMotion,
   handFanRef,
   onHandFanLayout,
@@ -137,6 +138,11 @@ export function HumanHandFan({
   // The card currently running its local-departure leg (BatakScreen.tsx) and the horizontal
   // component of that leg's motion, or null the rest of the time.
   departingCard?: { cardId: string; deltaX: number } | null;
+  // Fires when the departing card's local-departure animation actually completes — see
+  // BatakHandCard's own doc comment and
+  // docs/animation/audits/BatakPlayTravelHandoff-Audit.md. Passed uniformly to every card;
+  // only the one currently departing ever invokes it.
+  onDepartureComplete?: () => void;
   // Hands the caller (BatakTable) each card's live motion controller as it mounts/unmounts —
   // replaces the old handCardRefs-based measureInWindow approach entirely.
   registerHandMotion: (cardId: string, motion: ReturnType<typeof useCardMotion> | null) => void;
@@ -230,6 +236,7 @@ export function HumanHandFan({
             departureDeltaX={isDeparting && departingCard ? departingCard.deltaX : 0}
             localDepartureDistance={LOCAL_DEPARTURE_DISTANCE}
             localDepartureDurationMs={LOCAL_DEPARTURE_DURATION_MS}
+            onDepartureComplete={onDepartureComplete}
             onPress={() => selectCard(slot.card.id)}
             registerMotion={registerHandMotion}
           />

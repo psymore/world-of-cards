@@ -37,7 +37,17 @@ export function useAITurn<TState extends GameState, TMove>({
     timeoutRef.current = setTimeout(() => {
       const legalMoves = ruleEngine.getLegalMoves(state, currentPlayerId);
       if (legalMoves.length === 0) return;
+      // TEMPORARY DEBUG INSTRUMENTATION — see
+      // docs/domains/games/batak/known-issues.md "Animation stutter after several tricks"
+      // investigation. Flags a slow AI decision (e.g. minimax) blocking the JS thread.
+      const start = __DEV__ ? performance.now() : 0;
       const move = aiStrategy.chooseMove(state, currentPlayerId, legalMoves, rng);
+      if (__DEV__) {
+        const elapsed = performance.now() - start;
+        if (elapsed > 16) {
+          console.log(`[BATAK-PERF] AI chooseMove (${currentPlayerId}) took ${elapsed.toFixed(1)}ms`);
+        }
+      }
       onMoveRef.current(move, currentPlayerId);
     }, thinkingDelayMs);
 
