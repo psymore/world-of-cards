@@ -8,8 +8,8 @@ import {
   ICON_HOME_IMAGE,
   PressableFeedback,
   TableFelt,
-} from '@world-cards/ui';
-import type { Difficulty } from '@world-cards/engine';
+} from '@world-of-cards/ui';
+import type { Difficulty } from '@world-of-cards/engine';
 import { useSettingsStore } from '../../state/settingsStore';
 import { DifficultyStars } from '../../components/DifficultyStars';
 import type { BatakVariant } from './batakVariant';

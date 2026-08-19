@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { createDeck } from '@world-cards/engine';
-import type { Card } from '@world-cards/engine';
+import { createDeck } from '@world-of-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 import { SimpleCard, SIMPLE_CARD_HEIGHT } from '../components/SimpleCard';
 import { computeFanSlot, computeFanWidth, FanLayoutConfig, FanSlot } from '../components/fanLayout';
 import { FanConfigControls } from '../components/FanConfigControls';

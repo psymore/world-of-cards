@@ -1,5 +1,5 @@
 import type { ImageSourcePropType } from 'react-native';
-import type { Rank, Suit } from '@world-cards/engine';
+import type { Rank, Suit } from '@world-of-cards/engine';
 
 // The 2026-08-18 "New card art" batch: unlike COURT_CARD_ART (courtCardArt.ts, dedicated art per
 // suit), this set is suit-agnostic — one full card image (background + gold frame + portrait

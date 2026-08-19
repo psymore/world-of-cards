@@ -2,7 +2,7 @@
 
 **Owner:** Project owner. **Scope:** repo-wide — when a recurring problem stops being a domain-level Known Issue and becomes an architecture-level question. **Load:** whenever a recurring-problem signal is suspected (see the five triggers below), in addition to whatever domain/task-level docs are already loaded — never instead of them.
 
-This document is the canonical source for the escalation model designed in `architecture/phase-2-knowledge-architecture-design.md` §7. It operationalizes, for World Cards specifically, the generic Decision Checklist and Architectural Compass already defined in `architecture/WKA v0.1 Architecture.md` / `WKA Bootstrap Baseline v0.1.md` ("Does it change architecture? → Candidate ADR"). Those documents describe the *shape* of that decision; this document is the concrete, repo-specific signal set that should make Claude actually stop and apply that checklist, instead of continuing to patch.
+This document is the canonical source for the escalation model designed in `architecture/phase-2-knowledge-architecture-design.md` §7. It operationalizes, for World of Cards specifically, the generic Decision Checklist and Architectural Compass already defined in `architecture/WKA v0.1 Architecture.md` / `WKA Bootstrap Baseline v0.1.md` ("Does it change architecture? → Candidate ADR"). Those documents describe the *shape* of that decision; this document is the concrete, repo-specific signal set that should make Claude actually stop and apply that checklist, instead of continuing to patch.
 
 ---
 

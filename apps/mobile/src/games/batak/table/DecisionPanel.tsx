@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { WOOD_TRIM_COLOR } from '@world-cards/ui';
+import { WOOD_TRIM_COLOR } from '@world-of-cards/ui';
 import { PlatformWoodBackground } from './PlatformWoodBackground';
 
 // WOOD_TRIM_COLOR at 85% opacity (matching WOOD_TRIM_STROKE_OPACITY), as an 8-digit hex-alpha

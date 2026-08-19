@@ -1,8 +1,8 @@
 import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
-import type { BatakMove } from '@world-cards/engine/games/batak';
-import { glowShadow, PressableFeedback } from '@world-cards/ui';
+import type { BatakMove } from '@world-of-cards/engine/games/batak';
+import { glowShadow, PressableFeedback } from '@world-of-cards/ui';
 import { DecisionPanel } from './DecisionPanel';
 
 // Baldur's Gate 3-inspired bid button palette

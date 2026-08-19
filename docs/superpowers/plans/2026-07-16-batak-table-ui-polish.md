@@ -43,7 +43,7 @@
 
 **Interfaces:**
 - Consumes: `AbsoluteOverlay` (`./AbsoluteOverlay`), `shadeColor` (`./colorUtils`) — both already exported from `packages/ui/src/index.ts` internals, used the same way `TableWoodCorners.tsx` already uses them.
-- Produces: `export const CORNER_WEDGE_SIZE = 140` from `TableWoodCorners.tsx`; `export const TableEdgeRails: React.MemoExoticComponent<...>` and `export interface TableEdgeRailsProps { woodColor?: string }` from the new file, both re-exported via `packages/ui/src/index.ts` so `BatakTable.tsx` can `import { TableEdgeRails } from "@world-cards/ui"`.
+- Produces: `export const CORNER_WEDGE_SIZE = 140` from `TableWoodCorners.tsx`; `export const TableEdgeRails: React.MemoExoticComponent<...>` and `export interface TableEdgeRailsProps { woodColor?: string }` from the new file, both re-exported via `packages/ui/src/index.ts` so `BatakTable.tsx` can `import { TableEdgeRails } from "@world-of-cards/ui"`.
 
 - [ ] **Step 1: Export the wedge size constant from `TableWoodCorners.tsx`**
 
@@ -181,7 +181,7 @@ import {
   TableFelt,
   TableWoodCorners,
   glowShadow,
-} from "@world-cards/ui";
+} from "@world-of-cards/ui";
 ```
 
 to:
@@ -194,7 +194,7 @@ import {
   TableWoodCorners,
   TableEdgeRails,
   glowShadow,
-} from "@world-cards/ui";
+} from "@world-of-cards/ui";
 ```
 
 And in the `BatakTable` component's render (currently around line 568-569):
@@ -823,7 +823,7 @@ Change the full file from:
 ```tsx
 import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
-import { PlayingCard, PlayingCardProps } from '@world-cards/ui';
+import { PlayingCard, PlayingCardProps } from '@world-of-cards/ui';
 import { useReducedMotion } from './useReducedMotion';
 
 export interface SelectableCardProps extends PlayingCardProps {
@@ -880,7 +880,7 @@ export function SelectableCard({
         {disabled && (
           // Dark scrim marking the card as "not currently tappable" while keeping its art fully
           // visible underneath (richer than dimming the whole card via opacity). A plain local
-          // View rather than @world-cards/ui's AbsoluteOverlay: the scrim needs the card's
+          // View rather than @world-of-cards/ui's AbsoluteOverlay: the scrim needs the card's
           // rounded corners on the colored layer itself, which AbsoluteOverlay (a transparent
           // square fill wrapper) would only add as a second nested view. style.pointerEvents
           // (not the deprecated prop form) guarantees it never swallows touches, even though the
@@ -913,7 +913,7 @@ to:
 ```tsx
 import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
-import { PlayingCard, PlayingCardProps } from '@world-cards/ui';
+import { PlayingCard, PlayingCardProps } from '@world-of-cards/ui';
 import { useReducedMotion } from './useReducedMotion';
 
 export interface SelectableCardHitSlop {
@@ -1000,7 +1000,7 @@ export function SelectableCard({
         {disabled && (
           // Dark scrim marking the card as "not currently tappable" while keeping its art fully
           // visible underneath (richer than dimming the whole card via opacity). A plain local
-          // View rather than @world-cards/ui's AbsoluteOverlay: the scrim needs the card's
+          // View rather than @world-of-cards/ui's AbsoluteOverlay: the scrim needs the card's
           // rounded corners on the colored layer itself, which AbsoluteOverlay (a transparent
           // square fill wrapper) would only add as a second nested view. style.pointerEvents
           // (not the deprecated prop form) guarantees it never swallows touches, even though the

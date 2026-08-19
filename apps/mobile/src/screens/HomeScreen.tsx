@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { getGames } from '@world-cards/engine';
-import { BODY_REGULAR, TableFelt } from '@world-cards/ui';
+import { getGames } from '@world-of-cards/engine';
+import { BODY_REGULAR, TableFelt } from '@world-of-cards/ui';
 import { HeroCard } from './home/HeroCard';
 import { HomeWordmark } from './home/HomeWordmark';
 import { GameMenuRow } from './home/GameMenuRow';

@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react-native';
 import { useAITurn } from './useAITurn';
-import type { GameState, RuleEngine, AIStrategy, RNG } from '@world-cards/engine';
+import type { GameState, RuleEngine, AIStrategy, RNG } from '@world-of-cards/engine';
 
 interface FakeState extends GameState {
   count: number;

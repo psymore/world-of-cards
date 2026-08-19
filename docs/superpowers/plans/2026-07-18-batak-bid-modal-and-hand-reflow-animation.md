@@ -504,9 +504,9 @@ In `apps/mobile/src/games/batak/BatakScreen.tsx`, the top imports currently read
 
 ```tsx
 import React, { useEffect, useRef, useState } from 'react';
-import type { Difficulty, PlayerId, RNG } from '@world-cards/engine';
-import { createRng } from '@world-cards/engine';
-import { batakDescriptor, BatakState, BatakMove } from '@world-cards/engine/games/batak';
+import type { Difficulty, PlayerId, RNG } from '@world-of-cards/engine';
+import { createRng } from '@world-of-cards/engine';
+import { batakDescriptor, BatakState, BatakMove } from '@world-of-cards/engine/games/batak';
 import { createGameSessionStore } from '../../state/createGameSessionStore';
 import { useSettingsStore } from '../../state/settingsStore';
 import { GameScreenLayout } from '../../components/GameScreenLayout';
@@ -523,9 +523,9 @@ Add `LayoutAnimation` to a new `react-native` import, and import `useReducedMoti
 ```tsx
 import React, { useEffect, useRef, useState } from 'react';
 import { LayoutAnimation } from 'react-native';
-import type { Difficulty, PlayerId, RNG } from '@world-cards/engine';
-import { createRng } from '@world-cards/engine';
-import { batakDescriptor, BatakState, BatakMove } from '@world-cards/engine/games/batak';
+import type { Difficulty, PlayerId, RNG } from '@world-of-cards/engine';
+import { createRng } from '@world-of-cards/engine';
+import { batakDescriptor, BatakState, BatakMove } from '@world-of-cards/engine/games/batak';
 import { createGameSessionStore } from '../../state/createGameSessionStore';
 import { useSettingsStore } from '../../state/settingsStore';
 import { GameScreenLayout } from '../../components/GameScreenLayout';

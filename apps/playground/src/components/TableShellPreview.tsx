@@ -6,7 +6,7 @@ import {
   TABLE_SHELL_ASPECT_RATIO,
   TableShell,
   TableSeatPosition,
-} from '@world-cards/ui';
+} from '@world-of-cards/ui';
 import { SEAT_SAMPLE, ACTIVE_TURN_CYCLE, turnStateFor } from './seatPreviewSample';
 
 type TableShellVersionId = 'v0' | 'v1';

@@ -145,7 +145,7 @@ cd packages/ui && npx tsc --noEmit
 - [ ] **Step 7: Run the full suite**
 
 ```bash
-cd d:/CodeSpace/world-cards && npm test
+cd d:/CodeSpace/world-of-cards && npm test
 ```
 
 Expected: unchanged pass count (this is a purely additive, default-preserving change).
@@ -167,7 +167,7 @@ git commit -m "feat(ui): add additive contentScale prop to PlayingCard"
 - Modify: `apps/playground/src/animation/AnimationPlaygroundScreen.tsx` (register the new demo)
 
 **Interfaces:**
-- Consumes: `PlayingCard`/`CARD_DIMS` from `@world-cards/ui` (Task 1's `contentScale` prop), `createDeck`/`createRng`/`shuffle` from `@world-cards/engine`, `LabeledSlider` from `../components/LabeledSlider`.
+- Consumes: `PlayingCard`/`CARD_DIMS` from `@world-of-cards/ui` (Task 1's `contentScale` prop), `createDeck`/`createRng`/`shuffle` from `@world-of-cards/engine`, `LabeledSlider` from `../components/LabeledSlider`.
 - Produces: nothing consumed programmatically by later tasks — this task's real output is the tuned numeric values you choose interactively, which Task 3 hardcodes.
 
 - [ ] **Step 1: Register the demo in `types.ts`**
@@ -237,8 +237,8 @@ Shows a reference in-hand-size card next to a tunable trick-size card (scale + c
 ```tsx
 import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { PlayingCard, CARD_DIMS } from '@world-cards/ui';
-import { createDeck, createRng, shuffle } from '@world-cards/engine';
+import { PlayingCard, CARD_DIMS } from '@world-of-cards/ui';
+import { createDeck, createRng, shuffle } from '@world-of-cards/engine';
 import { LabeledSlider } from '../components/LabeledSlider';
 
 // Starting point: the real CARD_DIMS ratio (small.width / normal.width ≈ 0.745) for the outer
@@ -753,7 +753,7 @@ Cover: `PlayingCard.contentScale`'s ownership (Rendering layer, additive), the l
 cd apps/mobile && npx tsc --noEmit
 cd apps/playground && npx tsc --noEmit
 cd packages/ui && npx tsc --noEmit
-cd d:/CodeSpace/world-cards && npm test
+cd d:/CodeSpace/world-of-cards && npm test
 ```
 
 Expected: all clean, same test count as before this plan started (no new tests, per the standing policy).

@@ -30,7 +30,7 @@ architecture/                                  [FOUNDATION LAYER — Purpose, Qu
   WKA_Design_Baseline_v0.1.md                   (unchanged — generic WKA meta-model)
   phase-1-knowledge-audit.md                    (this analysis's own record — kept, not a live doc)
   phase-2-knowledge-architecture-design.md      (this document)
-  world-cards-purpose.md                        [NEW] World Cards' own Purpose + Quality Attributes,
+  world-of-cards-purpose.md                        [NEW] World of Cards' own Purpose + Quality Attributes,
                                                  instantiating the generic WKA Foundation Layer for this
                                                  specific project. Rarely changes.
 
@@ -57,7 +57,7 @@ docs/
       README.md                                  Same convention as docs/animation/ADR/README.md:
                                                    when a decision is Governance-shaped (cross-domain,
                                                    time-bound, reversible) vs. Foundation-shaped
-                                                   (belongs in architecture/world-cards-purpose.md instead).
+                                                   (belongs in architecture/world-of-cards-purpose.md instead).
       TEMPLATE.md                                 Copy of docs/animation/ADR/TEMPLATE.md's shape.
 
   domains/                                       [KNOWLEDGE DOMAINS]
@@ -136,7 +136,7 @@ memory/*.md + MEMORY.md                            Not part of the repo tree (li
 
 | Document / area | Owner (decides changes) | Updated by | Read by | Load frequency |
 |---|---|---|---|---|
-| `architecture/world-cards-purpose.md` | Project owner (user) | Rare, deliberate edits only | Anyone onboarding, or proposing an architecture-shaped change | Rarely |
+| `architecture/world-of-cards-purpose.md` | Project owner (user) | Rare, deliberate edits only | Anyone onboarding, or proposing an architecture-shaped change | Rarely |
 | `docs/00-DocumentationMap.md` | Whoever adds/removes a domain or artifact type | Whenever the tree structure itself changes | Anyone navigating unfamiliar territory | Rarely (stable once correct) |
 | `docs/governance/engineering-principles.md` | Project owner | When a standing convention changes (rare) or a new one is established (e.g. the 2026-07-07 testing-policy precedent) | Anyone about to write code, tests, or a new game module | Before implementation |
 | `docs/governance/guardrails.md` | Project owner, via direct correction (same mechanism as today) | Every time the user gives feedback that should generalize beyond the current task | Always | **Always loaded** |
@@ -163,7 +163,7 @@ memory/*.md + MEMORY.md                            Not part of the repo tree (li
 
 ### Recommended sections (in order)
 
-1. **Header** — one or two sentences: what World Cards is, pointer to `architecture/world-cards-purpose.md` for the full Purpose/Quality Attributes statement. (Not the Purpose statement itself.)
+1. **Header** — one or two sentences: what World of Cards is, pointer to `architecture/world-of-cards-purpose.md` for the full Purpose/Quality Attributes statement. (Not the Purpose statement itself.)
 2. **`@AGENTS.md` include** — unchanged, stays at the top exactly as today.
 3. **"Where things live" table** — the routing table: knowledge category → path → when to read it. This is the single most load-bearing section; it should look like a condensed version of §4 below, not a copy of the whole ownership map.
 4. **"Before you start" checklist** — 3–5 lines, mirroring `docs/animation/00-DocumentationMap.md`'s "Recommended Reading Order" but repo-wide: e.g. "Touching a specific game? Read `docs/domains/games/<game>/overview.md`. Touching animation? Start at `docs/animation/00-DocumentationMap.md`. About to commit/merge or start a big refactor? Re-check `docs/governance/guardrails.md`. Noticing the same fix for the third time? Check `docs/governance/architecture-escalation.md`."
@@ -185,7 +185,7 @@ Always loaded, in full, every session — which is only acceptable *because* of 
 | **Always** | `AGENTS.md`, `CLAUDE.md` | Every session, unconditionally |
 | **Before implementation** (a lightweight second "always," gated only by "about to write or change something") | `docs/governance/guardrails.md`, `docs/governance/engineering-principles.md` | Before writing code, tests, or making a structural decision — not needed for a pure Q&A/read-only session |
 | **Domain-loaded** | `docs/domains/<domain>/*`, or `docs/animation/*` for animation work | Only when the task touches that domain |
-| **Architecture-loaded** (its own tier — rarer than domain, more expensive to read) | `architecture/*` (the generic WKA docs + `world-cards-purpose.md`) | Only when the change is genuinely architecture-shaped per WKA's own Decision Checklist — i.e., almost never for routine feature work |
+| **Architecture-loaded** (its own tier — rarer than domain, more expensive to read) | `architecture/*` (the generic WKA docs + `world-of-cards-purpose.md`) | Only when the change is genuinely architecture-shaped per WKA's own Decision Checklist — i.e., almost never for routine feature work |
 | **Task-loaded** | `docs/superpowers/specs/<feature>.md`, `docs/superpowers/plans/<feature>.md`, the relevant domain's `known-issues.md` entry (never `docs/status/known-issues.md` for the detail itself — see §5.1), relevant `docs/domains/<domain>/decisions.md` entries, relevant ADRs | Only for the specific feature/decision/bug at hand |
 | **Session-start** | `docs/status/roadmap.md`, `docs/status/known-issues.md` (as the index, to see what's already flagged before starting something new) | When planning next work, not needed mid-task |
 | **Escalation-triggered** (see §7 — new in this revision) | `docs/governance/architecture-escalation.md`, then `architecture/`'s Decision Checklist/Architectural Compass, then the owning domain's (or `docs/governance/`'s) `ADR/README.md` | Only when one of the five triggers in §7 fires — i.e., rarely, and only ever *in addition to* the tiers above, never instead of them |
@@ -294,7 +294,7 @@ These questions are ordered from most-permanent to most-transient/specific delib
 
 Sections 1–6 correctly partition knowledge once it exists, but leave one loop open: what tells Claude that a recurring problem has stopped being a domain-level Known Issue and has become an architecture-level question? Without an explicit signal, every domain's `known-issues.md` will quietly absorb pattern-level problems as a growing list of individually-patched symptoms — precisely the failure mode `docs/animation/animation-architecture-constitution.md` §1 already names in its own history ("a single shape repeats... each was a boundary-crossing assumption that was never written down").
 
-This section operationalizes, for World Cards specifically, the generic Decision Checklist and Architectural Compass already defined in `architecture/WKA v0.1 Architecture.md` / `WKA Bootstrap Baseline v0.1.md` ("Does it change architecture? → Candidate ADR"). Those documents describe the *shape* of that decision; the five triggers below are the concrete, repo-specific signals that should make Claude actually stop and apply that checklist, instead of continuing to patch.
+This section operationalizes, for World of Cards specifically, the generic Decision Checklist and Architectural Compass already defined in `architecture/WKA v0.1 Architecture.md` / `WKA Bootstrap Baseline v0.1.md` ("Does it change architecture? → Candidate ADR"). Those documents describe the *shape* of that decision; the five triggers below are the concrete, repo-specific signals that should make Claude actually stop and apply that checklist, instead of continuing to patch.
 
 ### The feedback loop
 
@@ -407,7 +407,7 @@ New architectural improvements — including tidying naming, resolving stylistic
 | **1** | Create `docs/governance/guardrails.md`, `docs/governance/engineering-principles.md`, and `docs/governance/architecture-escalation.md`; populate from `CLAUDE.md` + reconcile against overlapping `memory/feedback_*.md` entries per §8 | Nothing | **Low.** Small, mechanical extraction of already-identified, already-stable content. Highest value-per-effort step — do first. |
 | **2** | Create `docs/status/roadmap.md` and `docs/status/known-issues.md` (as an **index only**, per §5.1); populate `known-issues.md` with links, not copied detail | Step 1 (so it's clear what's a guardrail vs. an issue before this step runs) | **Low.** Mechanical extraction; the only judgment call is the §5 test plus the §5.1 index-vs-store discipline, both already pre-applied above for every currently-known item. |
 | **3** | Create `docs/domains/<domain>/overview.md` + `decisions.md` (+ `known-issues.md` where applicable, holding the actual detail) for engine, mobile-expo, ui-visual-system, games/pisti, games/batak; split `CLAUDE.md`'s changelog narrative across them | Steps 1–2 (guardrails/known-issues already extracted, so the remaining narrative is purely domain-specific decision history) | **Medium.** The main risk is information loss or misfiling where one changelog entry touches multiple domains at once (e.g. an entry that changes both engine state and mobile UI in the same sub-project) — mitigate by copying verbatim into the *primary* domain first and cross-linking from the secondary one, rather than splitting the prose itself. |
-| **4** | Create `architecture/world-cards-purpose.md` and `docs/00-DocumentationMap.md` | Steps 1–3 (the map can only be written accurately once it knows what it's mapping to) | **Low-medium.** Low technical risk; the only real risk is the map becoming stale the moment step 5 changes `CLAUDE.md` again — write it last among the "content" steps, right before step 5. |
+| **4** | Create `architecture/world-of-cards-purpose.md` and `docs/00-DocumentationMap.md` | Steps 1–3 (the map can only be written accurately once it knows what it's mapping to) | **Low-medium.** Low technical risk; the only real risk is the map becoming stale the moment step 5 changes `CLAUDE.md` again — write it last among the "content" steps, right before step 5. |
 | **— Safety Checkpoint —** | **Required gate before Step 5 — see full checklist below.** Not itself a content step; a verification pass. | Steps 1–4 complete | N/A — this step exists specifically to catch the risk in Step 5 before it happens. |
 | **5** | Rewrite `CLAUDE.md` to its final navigation-only form (§3) | All of steps 1–4 **and** a passed Safety Checkpoint | **Highest.** This is the one file every session depends on unconditionally. |
 | **6 (optional, deferred)** | Reconcile `.github/copilot-instructions.md` per §9 | Steps 1 (guardrails must exist to reference) | **Low risk, but explicitly out of scope unless requested** — a separate, deliberately scoped decision, not a dependency of anything above. |

@@ -4,9 +4,9 @@
 
 **Goal:** Replace HomeScreen's purple-marquee background and the Pişti/Batak setup screens' flat navy background with the existing `TableFelt` component (the same emerald felt texture the in-game tables already use), and restyle the setup screens' option boxes from opaque navy to translucent glass, unifying Home → Setup → Table under one visual identity.
 
-**Architecture:** No new components, no new assets. `TableFelt` (from `@world-cards/ui`) is rendered as the first child of each screen's root container, exactly the pattern `PistiTable.tsx`/`BatakTable.tsx` already use for the in-game table. Two files that only served the old purple identity (`HomeBackground.tsx`, `BaizeStrip.tsx`) are deleted outright rather than left dead. Setup-screen option-box styles get their color values changed in place — no structural change.
+**Architecture:** No new components, no new assets. `TableFelt` (from `@world-of-cards/ui`) is rendered as the first child of each screen's root container, exactly the pattern `PistiTable.tsx`/`BatakTable.tsx` already use for the in-game table. Two files that only served the old purple identity (`HomeBackground.tsx`, `BaizeStrip.tsx`) are deleted outright rather than left dead. Setup-screen option-box styles get their color values changed in place — no structural change.
 
-**Tech Stack:** React Native, TypeScript, `@world-cards/ui` (existing `TableFelt` component), Jest + React Native Testing Library (`jest-expo` preset) for regression checks only — no new tests, per the repo's standing testing policy.
+**Tech Stack:** React Native, TypeScript, `@world-of-cards/ui` (existing `TableFelt` component), Jest + React Native Testing Library (`jest-expo` preset) for regression checks only — no new tests, per the repo's standing testing policy.
 
 ## Global Constraints
 
@@ -26,7 +26,7 @@
 - Test (regression only, no new tests): `apps/mobile/src/screens/HomeScreen.test.tsx`
 
 **Interfaces:**
-- Consumes: `TableFelt` exported from `@world-cards/ui` (`export { TableFelt } from './TableFelt';` in `packages/ui/src/index.ts:5`) — a zero-prop `React.memo` component that renders a full-bleed, `pointerEvents: 'none'` felt image via `AbsoluteOverlay`.
+- Consumes: `TableFelt` exported from `@world-of-cards/ui` (`export { TableFelt } from './TableFelt';` in `packages/ui/src/index.ts:5`) — a zero-prop `React.memo` component that renders a full-bleed, `pointerEvents: 'none'` felt image via `AbsoluteOverlay`.
 - Produces: nothing new consumed elsewhere — `HomeBackground` and `BaizeStrip` have no other importers (confirmed: only `HomeScreen.tsx` imports either).
 
 - [ ] **Step 1: Confirm no other file imports `HomeBackground` or `BaizeStrip`**
@@ -41,8 +41,8 @@ Replace the full file contents of `apps/mobile/src/screens/HomeScreen.tsx` with:
 ```tsx
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { getGames } from '@world-cards/engine';
-import { TableFelt } from '@world-cards/ui';
+import { getGames } from '@world-of-cards/engine';
+import { TableFelt } from '@world-of-cards/ui';
 import { HeroCard } from './home/HeroCard';
 import { HomeWordmark } from './home/HomeWordmark';
 import { GameMenuRow } from './home/GameMenuRow';
@@ -102,7 +102,7 @@ rm apps/mobile/src/screens/home/BaizeStrip.tsx
 - [ ] **Step 4: Run HomeScreen's existing tests to confirm no regression**
 
 Run: `npx jest apps/mobile/src/screens/HomeScreen.test.tsx`
-Expected: both existing tests pass unmodified (`'World Cards'` text and `'No games installed yet'` / tap-to-select assertions don't reference background markup or colors).
+Expected: both existing tests pass unmodified (`'World of Cards'` text and `'No games installed yet'` / tap-to-select assertions don't reference background markup or colors).
 
 - [ ] **Step 5: Commit**
 
@@ -123,15 +123,15 @@ Do not push, do not merge — local commit on `ui/home-setup-emerald-felt` only.
 - Test (regression only, no new tests): `apps/mobile/src/games/pisti/PistiSetupView.test.tsx`
 
 **Interfaces:**
-- Consumes: `TableFelt` from `@world-cards/ui`, same as Task 1.
+- Consumes: `TableFelt` from `@world-of-cards/ui`, same as Task 1.
 - Produces: nothing consumed by later tasks — Task 3 (Batak) makes the analogous but independent change to a different file.
 
 - [ ] **Step 1: Edit `PistiSetupView.tsx`**
 
-Add `TableFelt` to the existing `@world-cards/ui` import (it currently only imports `PressableFeedback`):
+Add `TableFelt` to the existing `@world-of-cards/ui` import (it currently only imports `PressableFeedback`):
 
 ```tsx
-import { PressableFeedback, TableFelt } from '@world-cards/ui';
+import { PressableFeedback, TableFelt } from '@world-of-cards/ui';
 ```
 
 Render `<TableFelt />` as the first child inside the root `View`, immediately before `styles.header`:
@@ -213,15 +213,15 @@ Do not push, do not merge — local commit on `ui/home-setup-emerald-felt` only.
 - Modify: `apps/mobile/src/games/batak/BatakSetupView.tsx`
 
 **Interfaces:**
-- Consumes: `TableFelt` from `@world-cards/ui`, same as Tasks 1–2.
+- Consumes: `TableFelt` from `@world-of-cards/ui`, same as Tasks 1–2.
 - Produces: nothing consumed elsewhere.
 
 - [ ] **Step 1: Edit `BatakSetupView.tsx`**
 
-Add `TableFelt` to the existing `@world-cards/ui` import:
+Add `TableFelt` to the existing `@world-of-cards/ui` import:
 
 ```tsx
-import { PressableFeedback, TableFelt } from '@world-cards/ui';
+import { PressableFeedback, TableFelt } from '@world-of-cards/ui';
 ```
 
 Render `<TableFelt />` as the first child inside the root `View`, immediately before `styles.header`:

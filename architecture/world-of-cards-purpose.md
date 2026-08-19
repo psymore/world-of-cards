@@ -1,14 +1,14 @@
-# World Cards — Purpose
+# World of Cards — Purpose
 
 **Owner:** Project owner. **Load:** onboarding, or when a change is genuinely architecture-shaped (per the WKA Decision Checklist in `WKA v0.1 Architecture.md`) — not every session.
 
-This document instantiates the generic WKA Foundation Layer (`WKA Bootstrap Baseline v0.1.md`, `WKA v0.1 Architecture.md`, `WKA_Design_Baseline_v0.1.md`) for World Cards specifically. It does not redefine or duplicate those documents' generic concepts — it states this project's own Purpose and Quality Attributes, the way those documents say every WKA-based project should.
+This document instantiates the generic WKA Foundation Layer (`WKA Bootstrap Baseline v0.1.md`, `WKA v0.1 Architecture.md`, `WKA_Design_Baseline_v0.1.md`) for World of Cards specifically. It does not redefine or duplicate those documents' generic concepts — it states this project's own Purpose and Quality Attributes, the way those documents say every WKA-based project should.
 
 ---
 
 ## Purpose
 
-World Cards is a cross-platform mobile platform for traditional card games, built on Expo/React Native/TypeScript, designed to scale to 100+ games over years. The engine and UI are architected so that adding a new game is an additive operation — two new folders and a registry entry — never a change to shared plumbing.
+World of Cards is a cross-platform mobile platform for traditional card games, built on Expo/React Native/TypeScript, designed to scale to 100+ games over years. The engine and UI are architected so that adding a new game is an additive operation — two new folders and a registry entry — never a change to shared plumbing.
 
 ## Quality Attributes
 

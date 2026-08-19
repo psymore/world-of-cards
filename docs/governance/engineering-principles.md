@@ -30,7 +30,7 @@ Zustand usage in `apps/mobile` follows a one-global-store (settings) + one-short
 
 As of 2026-07-07, writing tests up front adds too much time to this project's pace for most work. The default is to **not** write new tests proactively, especially for mobile UI components/screens — ask before adding one.
 
-**The one standing exception:** the engine core — the Card Engine, `RuleEngine`/`AIStrategy` implementations, and `simulateGames`-based invariant checks — stays test-covered by default, since correctness there is load-bearing for every game built on top of it. Every game should get simulation tests via `@world-cards/engine/testing`'s `simulateGames`, asserting card-conservation invariants over hundreds of simulated games.
+**The one standing exception:** the engine core — the Card Engine, `RuleEngine`/`AIStrategy` implementations, and `simulateGames`-based invariant checks — stays test-covered by default, since correctness there is load-bearing for every game built on top of it. Every game should get simulation tests via `@world-of-cards/engine/testing`'s `simulateGames`, asserting card-conservation invariants over hundreds of simulated games.
 
 This policy is about not writing *new* tests proactively — existing tests still get run for regression-checking as a matter of course.
 

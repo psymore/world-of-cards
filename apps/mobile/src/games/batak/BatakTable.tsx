@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import type { BatakState, BatakMove } from '@world-cards/engine/games/batak';
-import { ruleConstants } from '@world-cards/engine/games/batak';
+import type { BatakState, BatakMove } from '@world-of-cards/engine/games/batak';
+import { ruleConstants } from '@world-of-cards/engine/games/batak';
 import {
   TableFelt,
   GeminiTableBackground,
@@ -13,7 +13,7 @@ import {
   HAND_BADGE_HEIGHT,
   HAND_FRAME_REVEAL_MARGIN,
   HAND_FRAME_BOTTOM_OVERSHOOT,
-} from '@world-cards/ui';
+} from '@world-of-cards/ui';
 import { DeselectableSurface } from '../../components/DeselectableSurface';
 import { useDevTuningStore } from '../../state/devTuningStore';
 import { useCardSelection } from '../../components/useCardSelection';

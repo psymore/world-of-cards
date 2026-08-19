@@ -1,6 +1,6 @@
 import React from 'react';
 import Svg, { Circle, G, Path } from 'react-native-svg';
-import type { Suit } from '@world-cards/engine';
+import type { Suit } from '@world-of-cards/engine';
 
 export interface SuitIconProps {
   suit: Suit;

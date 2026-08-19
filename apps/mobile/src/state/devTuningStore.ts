@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { TableSurfaceMaterial } from '@world-cards/ui';
+import type { TableSurfaceMaterial } from '@world-of-cards/ui';
 
 // 'frame' pairs TableFelt with the shared, game-agnostic DefaultTableFrame overlay
 // (packages/ui/src/DefaultTableFrame.tsx) — the same carved-wood border Pişti ships as its own

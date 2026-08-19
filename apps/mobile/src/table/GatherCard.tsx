@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet } from 'react-native';
-import type { Card } from '@world-cards/engine';
-import { PlayingCard, CARD_DIMS } from '@world-cards/ui';
+import type { Card } from '@world-of-cards/engine';
+import { PlayingCard, CARD_DIMS } from '@world-of-cards/ui';
 import { useReducedMotion } from '../components/useReducedMotion';
 import { CARD_TRAVEL_DURATION_MS, CARD_TRAVEL_EASING } from './travelAnimation';
 

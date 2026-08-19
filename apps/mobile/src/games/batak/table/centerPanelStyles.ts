@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { BODY_REGULAR, BODY_SEMIBOLD } from '@world-cards/ui';
+import { BODY_REGULAR, BODY_SEMIBOLD } from '@world-of-cards/ui';
 
 // Shared by every "center of the table" phase display (BiddingCenter, TrumpWaitingCenter,
 // TrumpSuitPicker, TrickCenter) — one file so the 4 call sites can't drift on font size/color.

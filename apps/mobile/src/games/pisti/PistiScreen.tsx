@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
-import { createRng, RNG, Difficulty, PlayerId, Card } from '@world-cards/engine';
-import { pistiDescriptor, PistiState, PistiMove } from '@world-cards/engine/games/pisti';
-import { PressableFeedback } from '@world-cards/ui';
+import { createRng, RNG, Difficulty, PlayerId, Card } from '@world-of-cards/engine';
+import { pistiDescriptor, PistiState, PistiMove } from '@world-of-cards/engine/games/pisti';
+import { PressableFeedback } from '@world-of-cards/ui';
 import { createGameSessionStore } from '../../state/createGameSessionStore';
 import { useSettingsStore } from '../../state/settingsStore';
 import { GameScreenLayout } from '../../components/GameScreenLayout';

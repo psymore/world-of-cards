@@ -99,7 +99,7 @@ Single screen, no navigation library needed (`App.tsx` renders `PlaygroundScreen
 
 ```
 apps/playground/
-  package.json          # name: world-cards-playground
+  package.json          # name: world-of-cards-playground
   app.json
   tsconfig.json
   App.tsx                # renders PlaygroundScreen
@@ -115,9 +115,9 @@ apps/playground/
       cardGroups.ts         # getCardGroup(rank)
 ```
 
-New dependencies (all confined to `apps/playground/package.json`): `expo-document-picker`, `expo-file-system`, `@react-native-community/slider`, `react-native-svg`, `zustand`, `@react-native-async-storage/async-storage`, `@world-cards/engine` (workspace link).
+New dependencies (all confined to `apps/playground/package.json`): `expo-document-picker`, `expo-file-system`, `@react-native-community/slider`, `react-native-svg`, `zustand`, `@react-native-async-storage/async-storage`, `@world-of-cards/engine` (workspace link).
 
-Root `package.json` gains one script: `"playground": "npm run start --workspace=world-cards-playground"`, matching the existing `"mobile"` script.
+Root `package.json` gains one script: `"playground": "npm run start --workspace=world-of-cards-playground"`, matching the existing `"mobile"` script.
 
 ## Testing
 

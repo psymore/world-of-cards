@@ -6,7 +6,7 @@
 
 **Architecture:** A pure `trickWinnerIndex` export lets `BatakScreen` know the winner before calling `performMove` (which resolves the trick atomically). A new `GatherCard` component (sibling to the existing `TravelCard`) combines a two-layer flip with an outward directional travel + fade. `BatakScreen` snapshots the completed trick into new `gatheringTrick` state after its existing hold pause, and only commits the move once the gather animation finishes.
 
-**Tech Stack:** TypeScript, React Native `Animated` API (native driver), existing `@world-cards/engine` and `@world-cards/ui` workspace packages.
+**Tech Stack:** TypeScript, React Native `Animated` API (native driver), existing `@world-of-cards/engine` and `@world-of-cards/ui` workspace packages.
 
 ## Global Constraints
 
@@ -26,19 +26,19 @@
 
 **Interfaces:**
 - Consumes: `trickWinnerIndex(trick: Card[], trumpSuit: Suit): number` — already defined and exported from `packages/engine/src/games/batak/rules.ts:153`, already covered by multi-candidate trick-resolution tests in `rules.test.ts` (no logic changes, no new logic tests needed here).
-- Produces: `trickWinnerIndex` importable from `@world-cards/engine/games/batak`, for Task 3 to use in `BatakScreen.tsx`.
+- Produces: `trickWinnerIndex` importable from `@world-of-cards/engine/games/batak`, for Task 3 to use in `BatakScreen.tsx`.
 
 - [ ] **Step 1: Write the failing test**
 
 Add to `apps/mobile/src/games/batak/engineImport.smoke.test.ts` (append to the existing file, keep the existing `it` block untouched):
 
 ```ts
-import { batakDescriptor, trickWinnerIndex } from '@world-cards/engine/games/batak';
-import type { BatakState, BatakMove } from '@world-cards/engine/games/batak';
-import { createRng } from '@world-cards/engine';
-import type { Card } from '@world-cards/engine';
+import { batakDescriptor, trickWinnerIndex } from '@world-of-cards/engine/games/batak';
+import type { BatakState, BatakMove } from '@world-of-cards/engine/games/batak';
+import { createRng } from '@world-of-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 
-describe('@world-cards/engine/games/batak subpath', () => {
+describe('@world-of-cards/engine/games/batak subpath', () => {
   it('resolves batakDescriptor with a working rule engine', () => {
     // ...existing test body, unchanged...
   });
@@ -60,7 +60,7 @@ describe('@world-cards/engine/games/batak subpath', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx jest apps/mobile/src/games/batak/engineImport.smoke.test.ts`
-Expected: FAIL — `trickWinnerIndex` is not exported from `@world-cards/engine/games/batak` (TypeScript error / undefined import).
+Expected: FAIL — `trickWinnerIndex` is not exported from `@world-of-cards/engine/games/batak` (TypeScript error / undefined import).
 
 - [ ] **Step 3: Add the export**
 
@@ -99,7 +99,7 @@ git commit -m "Export trickWinnerIndex from the Batak engine subpath"
 - Create: `apps/mobile/src/table/GatherCard.tsx`
 
 **Interfaces:**
-- Consumes: `PlayingCard` from `@world-cards/ui` (props: `card`, `faceDown`, `size`), `Card` type from `@world-cards/engine`, `useReducedMotion()` from `../components/useReducedMotion`, `CARD_TRAVEL_DURATION_MS`/`CARD_TRAVEL_EASING` from `./travelAnimation`.
+- Consumes: `PlayingCard` from `@world-of-cards/ui` (props: `card`, `faceDown`, `size`), `Card` type from `@world-of-cards/engine`, `useReducedMotion()` from `../components/useReducedMotion`, `CARD_TRAVEL_DURATION_MS`/`CARD_TRAVEL_EASING` from `./travelAnimation`.
 - Produces: `GatherCard({ card, destinationOffset }: GatherCardProps)` — a self-contained animated component, for Task 3 to render inside `BatakTable.tsx`'s `TrickCenter`.
 
   ```ts
@@ -118,8 +118,8 @@ Create `apps/mobile/src/table/GatherCard.tsx`:
 ```tsx
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet } from 'react-native';
-import type { Card } from '@world-cards/engine';
-import { PlayingCard } from '@world-cards/ui';
+import type { Card } from '@world-of-cards/engine';
+import { PlayingCard } from '@world-of-cards/ui';
 import { useReducedMotion } from '../components/useReducedMotion';
 import { CARD_TRAVEL_DURATION_MS, CARD_TRAVEL_EASING } from './travelAnimation';
 
@@ -402,7 +402,7 @@ not a hard gate.
 In `apps/mobile/src/games/batak/BatakScreen.tsx`, update imports:
 
 ```ts
-import { batakDescriptor, BatakState, BatakMove, trickWinnerIndex } from '@world-cards/engine/games/batak';
+import { batakDescriptor, BatakState, BatakMove, trickWinnerIndex } from '@world-of-cards/engine/games/batak';
 ```
 
 ```ts
@@ -583,4 +583,4 @@ git commit -m "Animate Batak's trick-gathering: flip + travel to the winning sea
 
 - **Spec coverage:** winner-before-commit (Task 1, Task 3 Step 8) ✓; new `GatherCard` flip+travel component (Task 2) ✓; hold→gather→commit sequencing (Task 3 Steps 6-8) ✓; rendering integration in `TrickCenter` (Task 3 Steps 1-4) ✓; interactivity-gate correctness during the new window (Task 3 Steps 2, 9) ✓; reduced-motion handling (Task 2 Step 1) ✓; explicitly-out-of-scope items (Pişti, measured positions, sequential flip, new tests, proactive screenshots) — none of this plan's tasks touch those ✓.
 - **Placeholder scan:** none — every step has literal code or exact commands.
-- **Type consistency:** `GatheringTrick.entries[].card` is `Card` (from `@world-cards/engine`) throughout Task 2/3; `GatherCardProps.destinationOffset` and `PendingBatakPlay.originOffset` both use the same `{ x: number; y: number }` shape as the rest of this codebase's travel offsets (`revealOriginOffset`'s return type). `trickWinnerIndex`'s signature (`Card[], Suit`) matches both its Task 1 test call and its Task 3 usage.
+- **Type consistency:** `GatheringTrick.entries[].card` is `Card` (from `@world-of-cards/engine`) throughout Task 2/3; `GatherCardProps.destinationOffset` and `PendingBatakPlay.originOffset` both use the same `{ x: number; y: number }` shape as the rest of this codebase's travel offsets (`revealOriginOffset`'s return type). `trickWinnerIndex`'s signature (`Card[], Suit`) matches both its Task 1 test call and its Task 3 usage.

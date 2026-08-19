@@ -5,8 +5,8 @@ import {
   TABLE_SURFACE_ASPECT_RATIO,
   SeatIdentity,
   TableSeatPosition,
-} from '@world-cards/ui';
-import type { TableSurfaceMaterial } from '@world-cards/ui';
+} from '@world-of-cards/ui';
+import type { TableSurfaceMaterial } from '@world-of-cards/ui';
 import { SEAT_SAMPLE, ACTIVE_TURN_CYCLE, turnStateFor } from './seatPreviewSample';
 
 const MATERIAL_OPTIONS: { value: TableSurfaceMaterial; label: string }[] = [

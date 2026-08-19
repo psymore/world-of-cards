@@ -44,7 +44,7 @@ Contents moved verbatim from `apps/mobile/src/games/pisti/pistiSeating.ts` (no b
 
 ## 3. `BatakTable.tsx`
 
-Renders one continuous table across all three phases, reusing `TableFelt`/`TableWoodCorners`/`PlayerAvatar`/`SuitIcon` from `@world-cards/ui` exactly as-is (no changes to that package).
+Renders one continuous table across all three phases, reusing `TableFelt`/`TableWoodCorners`/`PlayerAvatar`/`SuitIcon` from `@world-of-cards/ui` exactly as-is (no changes to that package).
 
 **Seat badges (all phases):** name + a phase-appropriate status —
 - `bidding`: current bid amount, `"Pass"`, or `"—"` (hasn't acted yet), read from `state.bids[playerId]`.

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Slider from '@react-native-community/slider';
-import type { Rank, Suit } from '@world-cards/engine';
+import type { Rank, Suit } from '@world-of-cards/engine';
 import type { CardGroup } from '../types';
 import { MAX_CARD_BORDERS } from '../types';
 import { usePlaygroundStore } from '../state/playgroundStore';
-import { PlayingCard } from '@world-cards/ui';
+import { PlayingCard } from '@world-of-cards/ui';
 import { toPlayingCardOverrides } from '../utils/toPlayingCardOverrides';
 import { getCardGroup, formatCardLabel } from '../utils/cardGroups';
 import { ORDERED_DECK } from '../utils/orderedDeck';

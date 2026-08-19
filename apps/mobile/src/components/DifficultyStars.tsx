@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import { ICON_STAR_IMAGE } from '@world-cards/ui';
-import type { Difficulty } from '@world-cards/engine';
+import { ICON_STAR_IMAGE } from '@world-of-cards/ui';
+import type { Difficulty } from '@world-of-cards/engine';
 
 const FILLED_STARS: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
 const MAX_STARS = 3;

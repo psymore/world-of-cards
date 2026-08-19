@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { AIStrategy, GameState, PlayerId, RNG, RuleEngine } from '@world-cards/engine';
+import type { AIStrategy, GameState, PlayerId, RNG, RuleEngine } from '@world-of-cards/engine';
 
 export interface UseAITurnOptions<TState extends GameState, TMove> {
   state: TState;

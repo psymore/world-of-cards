@@ -31,7 +31,7 @@ No new dependency, no route persistence — a plain `useState<'design' | 'animat
 
 ## Module layout
 
-New, fully self-contained folder — it does not import `@world-cards/ui`'s `PlayingCard`/`SuitIcon` or anything from `apps/mobile`. It does import `@world-cards/engine`'s root exports (`createDeck`, `shuffle`, `createRng`, `Card`, `Suit`, `Rank`) since `apps/playground` already depends on the engine package and reusing its deck/shuffle/RNG utilities avoids reinventing a shuffle algorithm.
+New, fully self-contained folder — it does not import `@world-of-cards/ui`'s `PlayingCard`/`SuitIcon` or anything from `apps/mobile`. It does import `@world-of-cards/engine`'s root exports (`createDeck`, `shuffle`, `createRng`, `Card`, `Suit`, `Rank`) since `apps/playground` already depends on the engine package and reusing its deck/shuffle/RNG utilities avoids reinventing a shuffle algorithm.
 
 ```
 apps/playground/src/animation/
@@ -102,7 +102,7 @@ Mirrors `ANIMATION_ARCHITECTURE.md`'s own Demo 01–06 structure exactly — thi
 
 The `ANIMATION_ARCHITECTURE.md` "Playground Scope" section wants real 4-player turn order and an infinite deal loop, but explicitly excludes bidding, trump, and "trick logic" (i.e., no winner computation). Rather than wiring in `packages/engine`'s real `batakGame` (whose `'play'` validation requires a trump suit to exist), `useDealLoop` is a small local reducer scoped entirely to this playground:
 
-1. `createDeck({deckCount: 1, includeJokers: false})` + `shuffle(deck, rng)` (both reused from `@world-cards/engine`), deal 13 cards to each of 4 seats.
+1. `createDeck({deckCount: 1, includeJokers: false})` + `shuffle(deck, rng)` (both reused from `@world-of-cards/engine`), deal 13 cards to each of 4 seats.
 2. Turn pointer cycles `0 → 1 → 2 → 3 → 0 → …` continuously. Confirmed with the user: this rotation never changes based on who "wins" a trick — there is no winner computation at all, since trick logic is explicitly out of scope. It's a fixed round-robin purely to generate a continuous stream of realistic "play a card" events to animate.
 3. A play appends to a `currentTrick` array; once it reaches 4 entries, the 4 cards briefly rest at the trick center (this is where Demo 06 reuses Demo 05's transform-to-resting-size motion), then are cleared (a simple fade/gather, not a new mechanic to design — reuses the existing motion primitive with a destination *off* the visible table).
 4. Once every seat's hand is empty (after 13 rounds), reshuffle and redeal automatically — the infinite loop the doc asks for.

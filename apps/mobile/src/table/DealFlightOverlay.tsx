@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
-import { PlayingCard } from '@world-cards/ui';
+import { PlayingCard } from '@world-of-cards/ui';
 import { revealOriginOffset } from './seating';
 import type { RevealOrigin } from './seating';
 

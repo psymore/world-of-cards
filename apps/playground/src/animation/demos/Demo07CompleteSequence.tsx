@@ -15,7 +15,7 @@ import {
   Text,
   View,
 } from "react-native";
-import type { Card } from "@world-cards/engine";
+import type { Card } from "@world-of-cards/engine";
 import {
   SimpleCard,
   SIMPLE_CARD_HEIGHT,

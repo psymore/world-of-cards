@@ -282,7 +282,7 @@ git commit -m "feat(ui): SeatIdentity takes caller-formatted statusText instead 
 - Test: `apps/mobile/src/games/pisti/PistiTable.test.tsx`
 
 **Interfaces:**
-- Consumes: `PistiState` (`@world-cards/engine/games/pisti`) — has `players: string[]`, `currentPlayerIndex: number`.
+- Consumes: `PistiState` (`@world-of-cards/engine/games/pisti`) — has `players: string[]`, `currentPlayerIndex: number`.
 - Produces: `turnStateForPlayer(playerId: string, state: PistiState): SeatIdentityTurnState`, `AVATAR_BY_POSITION: Record<TableSeatPosition, SeatIdentityAvatar>` — both exported from `PistiTable.tsx`, consumed by Task 4.
 
 - [ ] **Step 1: Write the failing test**
@@ -324,10 +324,10 @@ Expected: FAIL — `turnStateForPlayer` is not exported from `PistiTable.tsx` ye
 
 - [ ] **Step 3: Implement in `PistiTable.tsx`**
 
-Add this import to the existing `@world-cards/ui` import block (alongside `PlayingCard`, `TableFelt`, etc. — full replacement of that import happens in Task 4, so for now just add to it):
+Add this import to the existing `@world-of-cards/ui` import block (alongside `PlayingCard`, `TableFelt`, etc. — full replacement of that import happens in Task 4, so for now just add to it):
 
 ```tsx
-import type { SeatIdentityTurnState, SeatIdentityAvatar } from '@world-cards/ui';
+import type { SeatIdentityTurnState, SeatIdentityAvatar } from '@world-of-cards/ui';
 ```
 
 Add near the top of the file, after the existing `capturedStatusText` function:
@@ -373,7 +373,7 @@ git commit -m "feat(pisti): add turnStateForPlayer and AVATAR_BY_POSITION helper
 - Modify: `apps/mobile/src/games/pisti/PistiTable.tsx`
 
 **Interfaces:**
-- Consumes: `turnStateForPlayer`, `AVATAR_BY_POSITION` (Task 3); `TableShell`, `SeatIdentity`, `SeatIdentityTurnStateFrames` (`@world-cards/ui`, `SeatIdentity` props: `name`, `statusText`, `orientation?`, `avatar?`, `turnState?`, `turnStateFrames?`).
+- Consumes: `turnStateForPlayer`, `AVATAR_BY_POSITION` (Task 3); `TableShell`, `SeatIdentity`, `SeatIdentityTurnStateFrames` (`@world-of-cards/ui`, `SeatIdentity` props: `name`, `statusText`, `orientation?`, `avatar?`, `turnState?`, `turnStateFrames?`).
 - Produces: the final rendered `PistiTable` tree, consumed by Task 5's tests/visual pass.
 
 - [ ] **Step 1: Replace `OpponentSeat` with two pieces**
@@ -442,7 +442,7 @@ function renderOpponentNameplate(seat: Seat, state: PistiState, playerNames: Rec
 
 This references `SeatIdentity` and `PISTI_TURN_STATE_FRAMES`, added in the next step below — both are in this same task, so there's no ordering gap to worry about (unlike the earlier draft of this plan, which split these across two tasks with no independent test boundary between them; merged here since a reviewer couldn't meaningfully approve one without the other).
 
-- [ ] **Step 2: Update the `@world-cards/ui` import**
+- [ ] **Step 2: Update the `@world-of-cards/ui` import**
 
 Replace:
 
@@ -459,7 +459,7 @@ import {
   HAND_FRAME_REVEAL_MARGIN,
   HAND_FRAME_BOTTOM_OVERSHOOT,
   WOOD_TRIM_COLOR,
-} from '@world-cards/ui';
+} from '@world-of-cards/ui';
 ```
 
 with:
@@ -477,8 +477,8 @@ import {
   HAND_FRAME_REVEAL_MARGIN,
   HAND_FRAME_BOTTOM_OVERSHOOT,
   WOOD_TRIM_COLOR,
-} from '@world-cards/ui';
-import type { SeatIdentityTurnState, SeatIdentityAvatar, SeatIdentityTurnStateFrames } from '@world-cards/ui';
+} from '@world-of-cards/ui';
+import type { SeatIdentityTurnState, SeatIdentityAvatar, SeatIdentityTurnStateFrames } from '@world-of-cards/ui';
 ```
 
 (This drops `TableFelt`/`GeminiTableBackground` — Pişti no longer has a separate dev-tuning background toggle; that toggle stays meaningful for Batak, which still uses `TableFelt`.)
@@ -493,15 +493,15 @@ Remove the now-unused `devTuningStore` import and its one call site (the `devTab
 
 - [ ] **Step 3: Add the turn-state-frames constant**
 
-Near the top of the file, after the `@world-cards/ui` imports:
+Near the top of the file, after the `@world-of-cards/ui` imports:
 
 ```tsx
 // The real per-state ring art (idle/next/active), replacing SeatIdentity's default glowShadow
 // placeholder — see docs/superpowers/specs/2026-08-12-pisti-table-shell-pilot-design.md Decision 4.
 const PISTI_TURN_STATE_FRAMES: SeatIdentityTurnStateFrames = {
-  idle: require('@world-cards/ui/assets/table/avatar-frame-idle.png'),
-  next: require('@world-cards/ui/assets/table/avatar-frame-next.png'),
-  active: require('@world-cards/ui/assets/table/avatar-frame-active.png'),
+  idle: require('@world-of-cards/ui/assets/table/avatar-frame-idle.png'),
+  next: require('@world-of-cards/ui/assets/table/avatar-frame-next.png'),
+  active: require('@world-of-cards/ui/assets/table/avatar-frame-active.png'),
 };
 ```
 
@@ -516,7 +516,7 @@ export const AVATAR_FRAME_ACTIVE_IMAGE = require('../assets/table/avatar-frame-a
 to `packages/ui/src/index.ts`, then in `PistiTable.tsx`:
 
 ```tsx
-import { AVATAR_FRAME_IDLE_IMAGE, AVATAR_FRAME_NEXT_IMAGE, AVATAR_FRAME_ACTIVE_IMAGE } from '@world-cards/ui';
+import { AVATAR_FRAME_IDLE_IMAGE, AVATAR_FRAME_NEXT_IMAGE, AVATAR_FRAME_ACTIVE_IMAGE } from '@world-of-cards/ui';
 
 const PISTI_TURN_STATE_FRAMES: SeatIdentityTurnStateFrames = {
   idle: AVATAR_FRAME_IDLE_IMAGE,

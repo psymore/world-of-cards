@@ -6,14 +6,14 @@
 
 **Architecture:** New small, HomeScreen-only presentational components under `apps/mobile/src/screens/home/`, composed by a rewritten `HomeScreen.tsx`. No `packages/engine` changes. One small `packages/ui` addition (exporting an existing internal color constant). No shared-component extraction — this is a deliberately distinct visual identity from the game tables, per the spec.
 
-**Tech Stack:** React Native (Expo SDK 57), existing `react-native-svg` (gradients — see Global Constraints), new `expo-image` dependency (hero card image), existing `expo-font`-loaded PT Serif, existing `@world-cards/ui` `glowShadow`/`SuitIcon`.
+**Tech Stack:** React Native (Expo SDK 57), existing `react-native-svg` (gradients — see Global Constraints), new `expo-image` dependency (hero card image), existing `expo-font`-loaded PT Serif, existing `@world-of-cards/ui` `glowShadow`/`SuitIcon`.
 
 ## Global Constraints
 
 - **Spec:** `docs/superpowers/specs/2026-07-30-homescreen-redesign-design.md` — read it first; this plan implements it exactly.
 - **No new automated tests for this decorative UI work**, per the project's standing 2026-07-07 testing policy (CLAUDE.md). `HomeScreen.test.tsx` is updated only enough to keep passing, not expanded. This applies even to the small pure helper functions in Task 2 — they're display formatting for a screen, not engine core logic, so the policy's "ask before adding a test" default applies; don't add tests unless asked.
 - **Gradients: use `react-native-svg`'s `<LinearGradient>`, NOT `experimental_backgroundImage`.** The `expo-native-ui` skill's current guidance recommends CSS gradients via `experimental_backgroundImage`, but its own docs state that requires React Native's New Architecture *and* is explicitly unavailable in Expo Go. This app runs via plain Expo Go (`apps/mobile/package.json` has no `expo-dev-client`), and `react-native-svg`'s gradient support is already proven working in this exact app (`PlatformWoodBackground.tsx`, `TableWoodCorners.tsx`, `BidControls.tsx`). Follow that established, working pattern.
-- **Shadows: use the existing `glowShadow(color, radius)` helper from `@world-cards/ui`** (legacy `shadowColor`/`shadowOffset`/`shadowOpacity`/`shadowRadius` + `elevation`), not the `expo-native-ui` skill's current recommendation of CSS `boxShadow`. `glowShadow` is this repo's established, working, shared convention (used by `PlayingCard`, `PlayerBadge`, `BidControls`) — switching just this screen to a second shadow system would create inconsistency for no benefit. Worth a future repo-wide look, not decided here.
+- **Shadows: use the existing `glowShadow(color, radius)` helper from `@world-of-cards/ui`** (legacy `shadowColor`/`shadowOffset`/`shadowOpacity`/`shadowRadius` + `elevation`), not the `expo-native-ui` skill's current recommendation of CSS `boxShadow`. `glowShadow` is this repo's established, working, shared convention (used by `PlayingCard`, `PlayerBadge`, `BidControls`) — switching just this screen to a second shadow system would create inconsistency for no benefit. Worth a future repo-wide look, not decided here.
 - **Images: use `expo-image`'s `Image`** (new dependency — `npx expo install expo-image`) for the hero card, per current official Expo guidance. No existing convention conflicts with this (nothing in `apps/mobile` currently imports RN core's `Image`), so this is a clean adoption.
 - **Styling: keep `StyleSheet.create`**, matching every existing file in this app — don't switch to inline styles.
 - Every new component under `apps/mobile/src/screens/home/` is `React.memo`'d, matching this repo's established convention for decorative/presentational components (`SuitIcon`, `PlayerAvatar`, `TableFelt`, etc.).
@@ -82,7 +82,7 @@ git commit -m "feat(mobile): source hero card art for HomeScreen redesign"
 - Modify: `packages/ui/src/index.ts` (line 1)
 
 **Interfaces:**
-- Produces: `SUIT_COLOR: { red: string; black: string }`, importable as `import { SUIT_COLOR } from '@world-cards/ui'`. Consumed by Task 4's `MiniCardFan`.
+- Produces: `SUIT_COLOR: { red: string; black: string }`, importable as `import { SUIT_COLOR } from '@world-of-cards/ui'`. Consumed by Task 4's `MiniCardFan`.
 
 - [ ] **Step 1: Export the existing constant**
 
@@ -143,13 +143,13 @@ git commit -m "feat(ui): export SUIT_COLOR for reuse outside PlayingCard"
 - Create: `apps/mobile/src/screens/home/gameDisplay.ts`
 
 **Interfaces:**
-- Consumes: `GameCategory` type from `@world-cards/engine`.
+- Consumes: `GameCategory` type from `@world-of-cards/engine`.
 - Produces: `categoryLabel(category: GameCategory): string`, `accentColorForCategory(category: GameCategory): string`, `playerRangeLabel(minPlayers: number, maxPlayers: number): string`. Consumed by Task 5's `GameMenuRow`.
 
 - [ ] **Step 1: Write the file**
 
 ```ts
-import type { GameCategory } from '@world-cards/engine';
+import type { GameCategory } from '@world-of-cards/engine';
 
 const CATEGORY_LABEL: Record<GameCategory, string> = {
   fishing: 'Fishing',
@@ -208,7 +208,7 @@ git commit -m "feat(mobile): add HomeScreen game-display formatting helpers"
 - Create: `apps/mobile/src/screens/home/MiniCardFan.tsx`
 
 **Interfaces:**
-- Consumes: `SuitIcon`, `SUIT_COLOR` from `@world-cards/ui` (Task 2).
+- Consumes: `SuitIcon`, `SUIT_COLOR` from `@world-of-cards/ui` (Task 2).
 - Produces: `MiniCardFan` component (zero props), a fixed-size ~3-card fan (spade/heart/club, natural suit coloring). Consumed by Task 5's `GameMenuRow`.
 
 - [ ] **Step 1: Write the component**
@@ -216,8 +216,8 @@ git commit -m "feat(mobile): add HomeScreen game-display formatting helpers"
 ```tsx
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { SuitIcon, SUIT_COLOR } from '@world-cards/ui';
-import type { Suit } from '@world-cards/engine';
+import { SuitIcon, SUIT_COLOR } from '@world-of-cards/ui';
+import type { Suit } from '@world-of-cards/engine';
 
 const FAN_SUITS: Array<{ suit: Suit; color: string }> = [
   { suit: 'spades', color: SUIT_COLOR.black },
@@ -280,7 +280,7 @@ git commit -m "feat(mobile): add MiniCardFan component for HomeScreen menu rows"
 - Create: `apps/mobile/src/screens/home/GameMenuRow.tsx`
 
 **Interfaces:**
-- Consumes: `MiniCardFan` (Task 4), `categoryLabel`/`accentColorForCategory`/`playerRangeLabel` (Task 3), `GameCategory` from `@world-cards/engine`.
+- Consumes: `MiniCardFan` (Task 4), `categoryLabel`/`accentColorForCategory`/`playerRangeLabel` (Task 3), `GameCategory` from `@world-of-cards/engine`.
 - Produces: `GameMenuRow` component, props `{ displayName: string; category: GameCategory; minPlayers: number; maxPlayers: number; onPress: () => void; testID?: string }`. Consumed by Task 7's `HomeScreen.tsx`.
 
 - [ ] **Step 1: Write the component**
@@ -288,7 +288,7 @@ git commit -m "feat(mobile): add MiniCardFan component for HomeScreen menu rows"
 ```tsx
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type { GameCategory } from '@world-cards/engine';
+import type { GameCategory } from '@world-of-cards/engine';
 import { MiniCardFan } from './MiniCardFan';
 import { accentColorForCategory, categoryLabel, playerRangeLabel } from './gameDisplay';
 
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
 });
 ```
 
-Note: `BaizeStrip` does not reuse `@world-cards/ui`'s `AbsoluteOverlay` — that component always fills its entire parent (`StyleSheet.absoluteFill`), which doesn't fit a strip pinned only to the bottom edge. It follows the same "decorative, `pointerEvents: none`, memoized" convention by hand instead.
+Note: `BaizeStrip` does not reuse `@world-of-cards/ui`'s `AbsoluteOverlay` — that component always fills its entire parent (`StyleSheet.absoluteFill`), which doesn't fit a strip pinned only to the bottom edge. It follows the same "decorative, `pointerEvents: none`, memoized" convention by hand instead.
 
 - [ ] **Step 3: Typecheck**
 
@@ -469,7 +469,7 @@ git commit -m "feat(mobile): add HomeScreen background gradient and baize strip"
 - Modify: `apps/mobile/package.json` (add `expo-image`)
 
 **Interfaces:**
-- Consumes: `glowShadow` from `@world-cards/ui`, `apps/mobile/assets/hero-card-queen-of-hearts.png` (Task 1), `packages/ui/src/fonts.ts`'s `'PTSerif-Regular'` font family name (already loaded app-wide via `expo-font` in `App.tsx` — no wiring needed here, just reference the family name string).
+- Consumes: `glowShadow` from `@world-of-cards/ui`, `apps/mobile/assets/hero-card-queen-of-hearts.png` (Task 1), `packages/ui/src/fonts.ts`'s `'PTSerif-Regular'` font family name (already loaded app-wide via `expo-font` in `App.tsx` — no wiring needed here, just reference the family name string).
 - Produces: `HeroCard` and `HomeWordmark` components (both zero props). Consumed by Task 8's `HomeScreen.tsx`.
 
 - [ ] **Step 1: Install `expo-image`**
@@ -484,7 +484,7 @@ cd apps/mobile && npx expo install expo-image
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
-import { glowShadow } from '@world-cards/ui';
+import { glowShadow } from '@world-of-cards/ui';
 
 const heroCardImage = require('../../../assets/hero-card-queen-of-hearts.png');
 
@@ -524,7 +524,7 @@ import { StyleSheet, Text, View } from 'react-native';
 export const HomeWordmark = React.memo(function HomeWordmark() {
   return (
     <View style={styles.container}>
-      <Text style={styles.word}>World Cards</Text>
+      <Text style={styles.word}>World of Cards</Text>
       <View style={styles.rule} />
     </View>
   );
@@ -571,7 +571,7 @@ git commit -m "feat(mobile): add HomeScreen hero card and wordmark components"
 - Modify: `apps/mobile/src/screens/HomeScreen.test.tsx`
 
 **Interfaces:**
-- Consumes: `HomeBackground`, `BaizeStrip` (Task 6), `HeroCard`, `HomeWordmark` (Task 7), `GameMenuRow` (Task 5), `getGames()` from `@world-cards/engine` (existing, unchanged).
+- Consumes: `HomeBackground`, `BaizeStrip` (Task 6), `HeroCard`, `HomeWordmark` (Task 7), `GameMenuRow` (Task 5), `getGames()` from `@world-of-cards/engine` (existing, unchanged).
 - Produces: the same `HomeScreenProps` contract as today (`{ onSelectGame: (gameId: string) => void }`) — no consumer of `HomeScreen` (`RootNavigator.tsx`) needs to change.
 
 - [ ] **Step 1: Rewrite `HomeScreen.tsx`**
@@ -579,7 +579,7 @@ git commit -m "feat(mobile): add HomeScreen hero card and wordmark components"
 ```tsx
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { getGames } from '@world-cards/engine';
+import { getGames } from '@world-of-cards/engine';
 import { HomeBackground } from './home/HomeBackground';
 import { HeroCard } from './home/HeroCard';
 import { HomeWordmark } from './home/HomeWordmark';
@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
 
 - [ ] **Step 2: Update `HomeScreen.test.tsx`**
 
-The two existing tests query `screen.getByText('World Cards')` (now rendered by `HomeWordmark`, unchanged text) and `screen.getByText('Fake Game')` / `screen.getByText('No games installed yet')` (now rendered by `GameMenuRow`/the empty-state branch, unchanged text) — both should keep passing unmodified. Run them first to confirm before making any edits:
+The two existing tests query `screen.getByText('World of Cards')` (now rendered by `HomeWordmark`, unchanged text) and `screen.getByText('Fake Game')` / `screen.getByText('No games installed yet')` (now rendered by `GameMenuRow`/the empty-state branch, unchanged text) — both should keep passing unmodified. Run them first to confirm before making any edits:
 
 ```bash
 cd apps/mobile && npx jest HomeScreen.test.tsx
@@ -697,7 +697,7 @@ Add an `entranceDelayMs` prop and drive opacity/translateY off a mount-time `Ani
 ```tsx
 import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
-import type { GameCategory } from '@world-cards/engine';
+import type { GameCategory } from '@world-of-cards/engine';
 import { MiniCardFan } from './MiniCardFan';
 import { accentColorForCategory, categoryLabel, playerRangeLabel } from './gameDisplay';
 import { useReducedMotion } from '../../components/useReducedMotion';

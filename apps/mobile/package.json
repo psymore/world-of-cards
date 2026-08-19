@@ -1,13 +1,13 @@
 {
-  "name": "world-cards-mobile",
+  "name": "world-of-cards-mobile",
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/native": "^7.3.7",
     "@react-navigation/native-stack": "^7.17.9",
-    "@world-cards/engine": "*",
-    "@world-cards/ui": "*",
+    "@world-of-cards/engine": "*",
+    "@world-of-cards/ui": "*",
     "expo": "~57.0.2",
     "expo-font": "~57.0.0",
     "expo-image": "~57.0.1",

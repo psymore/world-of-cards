@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { DISPLAY_BOLD, HeaderWoodFrame, IconButton, ICON_HOME_IMAGE, ICON_SETTINGS_IMAGE } from '@world-cards/ui';
+import { DISPLAY_BOLD, HeaderWoodFrame, IconButton, ICON_HOME_IMAGE, ICON_SETTINGS_IMAGE } from '@world-of-cards/ui';
 
 const HOME_ICON_SIZE = 30;
 const SETTINGS_ICON_SIZE = 30;

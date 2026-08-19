@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { createDeck } from '@world-cards/engine';
+import { createDeck } from '@world-of-cards/engine';
 import { Hand } from '../components/Hand';
 import { LabeledSlider } from '../components/LabeledSlider';
 import { SIMPLE_CARD_WIDTH } from '../components/SimpleCard';

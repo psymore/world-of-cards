@@ -28,12 +28,12 @@
 
 **Interfaces:**
 - Consumes: nothing (first task)
-- Produces: a working npm workspace with two members (`world-cards-mobile` at `apps/mobile`, `@world-cards/engine` at `packages/engine`) that `npm install` resolves from the root, and an Expo app that still boots via Expo Go exactly as it did before this task.
+- Produces: a working npm workspace with two members (`world-of-cards-mobile` at `apps/mobile`, `@world-of-cards/engine` at `packages/engine`) that `npm install` resolves from the root, and an Expo app that still boots via Expo Go exactly as it did before this task.
 
 - [ ] **Step 1: Move the existing Expo app into `apps/mobile/`**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
+cd "d:/CodeSpace/world-of-cards"
 mkdir -p apps/mobile packages/engine/src
 git mv App.tsx apps/mobile/App.tsx
 git mv index.ts apps/mobile/index.ts
@@ -48,11 +48,11 @@ rm -rf node_modules .expo
 
 - [ ] **Step 2: Rename the moved app's package and add the engine dependency**
 
-Edit `apps/mobile/package.json` — change `"name": "world-cards"` to `"name": "world-cards-mobile"`, and add `"@world-cards/engine": "*"` to `dependencies`:
+Edit `apps/mobile/package.json` — change `"name": "world-of-cards"` to `"name": "world-of-cards-mobile"`, and add `"@world-of-cards/engine": "*"` to `dependencies`:
 
 ```json
 {
-  "name": "world-cards-mobile",
+  "name": "world-of-cards-mobile",
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
@@ -60,7 +60,7 @@ Edit `apps/mobile/package.json` — change `"name": "world-cards"` to `"name": "
     "expo-status-bar": "~57.0.0",
     "react": "19.2.3",
     "react-native": "0.86.0",
-    "@world-cards/engine": "*"
+    "@world-of-cards/engine": "*"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
@@ -102,14 +102,14 @@ module.exports = config;
 
 ```json
 {
-  "name": "world-cards",
+  "name": "world-of-cards",
   "private": true,
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "mobile": "npm run start --workspace=world-cards-mobile",
+    "mobile": "npm run start --workspace=world-of-cards-mobile",
     "test": "jest"
   },
   "devDependencies": {
@@ -125,7 +125,7 @@ Create `packages/engine/package.json`:
 
 ```json
 {
-  "name": "@world-cards/engine",
+  "name": "@world-of-cards/engine",
   "version": "0.1.0",
   "private": true,
   "main": "src/index.ts",
@@ -168,18 +168,18 @@ export {};
 
 - [ ] **Step 6: Install and verify the workspace resolves**
 
-Run: `cd "d:/CodeSpace/world-cards" && npm install`
-Expected: install completes; `node_modules/@world-cards/engine` exists as a workspace link to `packages/engine`.
+Run: `cd "d:/CodeSpace/world-of-cards" && npm install`
+Expected: install completes; `node_modules/@world-of-cards/engine` exists as a workspace link to `packages/engine`.
 
 - [ ] **Step 7: Verify the mobile app still boots**
 
-Run: `cd "d:/CodeSpace/world-cards/apps/mobile" && npx expo start`
+Run: `cd "d:/CodeSpace/world-of-cards/apps/mobile" && npx expo start`
 Expected: dev server starts without Metro resolution errors; scan the QR code with Expo Go and confirm the existing placeholder screen ("Open up App.tsx...") still renders. Stop the server (Ctrl+C) once confirmed.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
+cd "d:/CodeSpace/world-of-cards"
 git add -A
 git commit -m "Convert repo to npm workspaces monorepo (apps/mobile + packages/engine)"
 ```
@@ -202,9 +202,9 @@ git commit -m "Convert repo to npm workspaces monorepo (apps/mobile + packages/e
 - [ ] **Step 1: Add test dependencies**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
-npm install --save-dev --workspace=@world-cards/engine ts-jest @types/jest
-npm install --save-dev --workspace=world-cards-mobile jest-expo @testing-library/react-native react-test-renderer @types/jest
+cd "d:/CodeSpace/world-of-cards"
+npm install --save-dev --workspace=@world-of-cards/engine ts-jest @types/jest
+npm install --save-dev --workspace=world-of-cards-mobile jest-expo @testing-library/react-native react-test-renderer @types/jest
 ```
 
 - [ ] **Step 2: Create the root multi-project Jest config**
@@ -284,13 +284,13 @@ describe('App', () => {
 
 - [ ] **Step 7: Run both projects and verify they pass**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest`
 Expected: both `engine` and `mobile` projects report passing tests (2 test suites, 2 tests, all passing).
 
 - [ ] **Step 8: Remove the temporary engine sanity test**
 
 ```bash
-rm "d:/CodeSpace/world-cards/packages/engine/src/sanity.test.ts"
+rm "d:/CodeSpace/world-of-cards/packages/engine/src/sanity.test.ts"
 ```
 
 (The mobile `App.test.tsx` stays — it's a real regression test for the app shell, not a throwaway.)
@@ -298,7 +298,7 @@ rm "d:/CodeSpace/world-cards/packages/engine/src/sanity.test.ts"
 - [ ] **Step 9: Commit**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
+cd "d:/CodeSpace/world-of-cards"
 git add -A
 git commit -m "Add Jest multi-project testing infrastructure"
 ```
@@ -359,7 +359,7 @@ describe('rng', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest packages/engine/src/core/rng.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest packages/engine/src/core/rng.test.ts`
 Expected: FAIL with "Cannot find module './rng'"
 
 - [ ] **Step 3: Write the implementation**
@@ -400,13 +400,13 @@ export function rngFromState(state: RngState): RNG {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest packages/engine/src/core/rng.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest packages/engine/src/core/rng.test.ts`
 Expected: PASS (4 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
+cd "d:/CodeSpace/world-of-cards"
 git add packages/engine/src/core/rng.ts packages/engine/src/core/rng.test.ts
 git commit -m "Add seeded RNG for deterministic shuffles and AI"
 ```
@@ -510,7 +510,7 @@ describe('createRankComparator', () => {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest packages/engine/src/core/deck.test.ts packages/engine/src/core/ranking.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest packages/engine/src/core/deck.test.ts packages/engine/src/core/ranking.test.ts`
 Expected: FAIL with "Cannot find module './deck'" and "Cannot find module './ranking'"
 
 - [ ] **Step 3: Write the implementation**
@@ -575,13 +575,13 @@ export function createRankComparator(order: Rank[]): (a: Rank, b: Rank) => numbe
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest packages/engine/src/core/deck.test.ts packages/engine/src/core/ranking.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest packages/engine/src/core/deck.test.ts packages/engine/src/core/ranking.test.ts`
 Expected: PASS (5 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
+cd "d:/CodeSpace/world-of-cards"
 git add packages/engine/src/core/types.ts packages/engine/src/core/deck.ts packages/engine/src/core/deck.test.ts packages/engine/src/core/ranking.ts packages/engine/src/core/ranking.test.ts
 git commit -m "Add Card/Deck primitives and rank comparator utility"
 ```
@@ -655,7 +655,7 @@ describe('table operations', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest packages/engine/src/core/table.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest packages/engine/src/core/table.test.ts`
 Expected: FAIL with "Cannot find module './table'"
 
 - [ ] **Step 3: Write the implementation**
@@ -735,13 +735,13 @@ export function allCards(table: TableState): Card[] {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest packages/engine/src/core/table.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest packages/engine/src/core/table.test.ts`
 Expected: PASS (6 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
+cd "d:/CodeSpace/world-of-cards"
 git add packages/engine/src/core/table.ts packages/engine/src/core/table.test.ts
 git commit -m "Add Zone/TableState operations: moveCard, dealToZones, allCards"
 ```
@@ -850,7 +850,7 @@ describe('cardDraftGame (rule engine fixture)', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest packages/engine/src/rules/__fixtures__/cardDraftGame.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest packages/engine/src/rules/__fixtures__/cardDraftGame.test.ts`
 Expected: FAIL with "Cannot find module './cardDraftGame'"
 
 - [ ] **Step 3: Write the implementation**
@@ -948,13 +948,13 @@ export const cardDraftGame: RuleEngine<CardDraftState, CardDraftMove> = {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest packages/engine/src/rules/__fixtures__/cardDraftGame.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest packages/engine/src/rules/__fixtures__/cardDraftGame.test.ts`
 Expected: PASS (5 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
+cd "d:/CodeSpace/world-of-cards"
 git add packages/engine/src/rules
 git commit -m "Add RuleEngine contract and cardDraftGame test fixture"
 ```
@@ -1040,7 +1040,7 @@ describe('cardDraftGame fixture AI', () => {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest packages/engine/src/ai/weightedRandom.test.ts packages/engine/src/rules/__fixtures__/cardDraftGame.ai.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest packages/engine/src/ai/weightedRandom.test.ts packages/engine/src/rules/__fixtures__/cardDraftGame.ai.test.ts`
 Expected: FAIL with "Cannot find module './weightedRandom'" and "Cannot find module './cardDraftGame.ai'"
 
 - [ ] **Step 3: Write the implementation**
@@ -1123,13 +1123,13 @@ export const cardDraftMediumAI: AIStrategy<CardDraftState, CardDraftMove> = {
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest packages/engine/src/ai/weightedRandom.test.ts packages/engine/src/rules/__fixtures__/cardDraftGame.ai.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest packages/engine/src/ai/weightedRandom.test.ts packages/engine/src/rules/__fixtures__/cardDraftGame.ai.test.ts`
 Expected: PASS (6 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
+cd "d:/CodeSpace/world-of-cards"
 git add packages/engine/src/ai/types.ts packages/engine/src/ai/weightedRandom.ts packages/engine/src/ai/weightedRandom.test.ts packages/engine/src/rules/__fixtures__/cardDraftGame.ai.ts packages/engine/src/rules/__fixtures__/cardDraftGame.ai.test.ts
 git commit -m "Add AI contract, weighted-random helpers, and Easy/Medium fixture AI"
 ```
@@ -1177,7 +1177,7 @@ describe('minimaxChooseMove', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest packages/engine/src/ai/minimax.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest packages/engine/src/ai/minimax.test.ts`
 Expected: FAIL with "Cannot find module './minimax'"
 
 - [ ] **Step 3: Write the implementation**
@@ -1296,13 +1296,13 @@ export const cardDraftHardAI: AIStrategy<CardDraftState, CardDraftMove> = {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest packages/engine/src/ai/minimax.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest packages/engine/src/ai/minimax.test.ts`
 Expected: PASS (1 test)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
+cd "d:/CodeSpace/world-of-cards"
 git add packages/engine/src/ai/minimax.ts packages/engine/src/ai/minimax.test.ts packages/engine/src/rules/__fixtures__/cardDraftGame.ai.ts
 git commit -m "Add generic minimax search utility and Hard fixture AI"
 ```
@@ -1318,7 +1318,7 @@ git commit -m "Add generic minimax search utility and Hard fixture AI"
 
 **Interfaces:**
 - Consumes: `GameState`, `PlayerId`, `RuleEngine` (Task 6); `AIStrategy` (Task 7); `createRng` (Task 3); `allCards` (Task 5); `cardDraftGame`, `cardDraftEasyAI`, `cardDraftHardAI` (Tasks 6-8)
-- Produces: `assertCardsConserved(before, after): void`, `simulateGames(options): { finalStates, winCounts }` — exported via the `@world-cards/engine/testing` subpath for reuse by every future game's own test suite (Phase 2+).
+- Produces: `assertCardsConserved(before, after): void`, `simulateGames(options): { finalStates, winCounts }` — exported via the `@world-of-cards/engine/testing` subpath for reuse by every future game's own test suite (Phase 2+).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1359,7 +1359,7 @@ describe('simulateGames', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest packages/engine/src/testing/simulate.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest packages/engine/src/testing/simulate.test.ts`
 Expected: FAIL with "Cannot find module './simulate'"
 
 - [ ] **Step 3: Write the implementation**
@@ -1456,13 +1456,13 @@ export * from './simulate';
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest packages/engine/src/testing/simulate.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest packages/engine/src/testing/simulate.test.ts`
 Expected: PASS (2 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
+cd "d:/CodeSpace/world-of-cards"
 git add packages/engine/src/testing
 git commit -m "Add simulation harness with card-conservation invariants"
 ```
@@ -1546,7 +1546,7 @@ describe('game registry', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest packages/engine/src/registry/registry.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest packages/engine/src/registry/registry.test.ts`
 Expected: FAIL with "Cannot find module './registry'"
 
 - [ ] **Step 3: Write the implementation**
@@ -1580,13 +1580,13 @@ export function clearRegistry(): void {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest packages/engine/src/registry/registry.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest packages/engine/src/registry/registry.test.ts`
 Expected: PASS (4 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
+cd "d:/CodeSpace/world-of-cards"
 git add packages/engine/src/registry
 git commit -m "Add game registry"
 ```
@@ -1619,7 +1619,7 @@ export interface PersistenceAdapter {
 - [ ] **Step 2: Commit**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
+cd "d:/CodeSpace/world-of-cards"
 git add packages/engine/src/persistence
 git commit -m "Add Persistence interface"
 ```
@@ -1670,7 +1670,7 @@ describe('recordGameResult', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest packages/engine/src/statistics/types.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest packages/engine/src/statistics/types.test.ts`
 Expected: FAIL with "Cannot find module './types'"
 
 - [ ] **Step 3: Write the implementation**
@@ -1704,13 +1704,13 @@ export function recordGameResult(current: GameStats, result: GameResult): GameSt
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest packages/engine/src/statistics/types.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest packages/engine/src/statistics/types.test.ts`
 Expected: PASS (4 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
+cd "d:/CodeSpace/world-of-cards"
 git add packages/engine/src/statistics
 git commit -m "Add pure statistics calculation functions"
 ```
@@ -1724,7 +1724,7 @@ git commit -m "Add pure statistics calculation functions"
 
 **Interfaces:**
 - Consumes: every module from Tasks 3-12
-- Produces: `@world-cards/engine`'s complete public API surface, consumed by `apps/mobile` starting in Task 14.
+- Produces: `@world-of-cards/engine`'s complete public API surface, consumed by `apps/mobile` starting in Task 14.
 
 - [ ] **Step 1: Replace the placeholder index with real exports**
 
@@ -1748,13 +1748,13 @@ export * from './statistics/types';
 
 - [ ] **Step 2: Verify the whole engine package still type-checks and all tests pass**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx tsc --noEmit -p packages/engine/tsconfig.json && npx jest packages/engine`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx tsc --noEmit -p packages/engine/tsconfig.json && npx jest packages/engine`
 Expected: no type errors; all engine test suites pass.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
+cd "d:/CodeSpace/world-of-cards"
 git add packages/engine/src/index.ts
 git commit -m "Export the engine's public API surface"
 ```
@@ -1769,12 +1769,12 @@ git commit -m "Export the engine's public API surface"
 - Modify: `apps/mobile/package.json` (add `@react-native-async-storage/async-storage`)
 
 **Interfaces:**
-- Consumes: `PersistenceAdapter` from `@world-cards/engine` (Task 11, exported via Task 13)
+- Consumes: `PersistenceAdapter` from `@world-of-cards/engine` (Task 11, exported via Task 13)
 - Produces: `asyncStorageAdapter: PersistenceAdapter` — consumed by future save/load and statistics features (Phase 2+).
 
 - [ ] **Step 1: Add the AsyncStorage dependency**
 
-Run: `cd "d:/CodeSpace/world-cards/apps/mobile" && npx expo install @react-native-async-storage/async-storage`
+Run: `cd "d:/CodeSpace/world-of-cards/apps/mobile" && npx expo install @react-native-async-storage/async-storage`
 
 - [ ] **Step 2: Write the failing test**
 
@@ -1806,7 +1806,7 @@ describe('asyncStorageAdapter', () => {
 
 - [ ] **Step 3: Run test to verify it fails**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest apps/mobile/src/infrastructure/persistence/asyncStorageAdapter.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest apps/mobile/src/infrastructure/persistence/asyncStorageAdapter.test.ts`
 Expected: FAIL with "Cannot find module './asyncStorageAdapter'"
 
 - [ ] **Step 4: Write the implementation**
@@ -1815,7 +1815,7 @@ Create `apps/mobile/src/infrastructure/persistence/asyncStorageAdapter.ts`:
 
 ```ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { PersistenceAdapter } from '@world-cards/engine';
+import type { PersistenceAdapter } from '@world-of-cards/engine';
 
 export const asyncStorageAdapter: PersistenceAdapter = {
   async save(key, data) {
@@ -1833,13 +1833,13 @@ export const asyncStorageAdapter: PersistenceAdapter = {
 
 - [ ] **Step 5: Run test to verify it passes**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest apps/mobile/src/infrastructure/persistence/asyncStorageAdapter.test.ts`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest apps/mobile/src/infrastructure/persistence/asyncStorageAdapter.test.ts`
 Expected: PASS (3 tests)
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
+cd "d:/CodeSpace/world-of-cards"
 git add apps/mobile/src/infrastructure/persistence apps/mobile/package.json apps/mobile/package-lock.json
 git commit -m "Add AsyncStorage-backed PersistenceAdapter implementation"
 ```
@@ -1856,12 +1856,12 @@ git commit -m "Add AsyncStorage-backed PersistenceAdapter implementation"
 - Modify: `apps/mobile/package.json` (add `zustand`)
 
 **Interfaces:**
-- Consumes: `GameState`, `RuleEngine` types from `@world-cards/engine` (Task 6, exported via Task 13)
+- Consumes: `GameState`, `RuleEngine` types from `@world-of-cards/engine` (Task 6, exported via Task 13)
 - Produces: `useSettingsStore` (global Zustand store), `createGameSessionStore(ruleEngine, initialState)` (per-session store factory) — consumed by future game screens (Phase 2+).
 
 - [ ] **Step 1: Add the zustand dependency**
 
-Run: `cd "d:/CodeSpace/world-cards/apps/mobile" && npm install zustand`
+Run: `cd "d:/CodeSpace/world-of-cards/apps/mobile" && npm install zustand`
 
 - [ ] **Step 2: Write the failing tests**
 
@@ -1898,7 +1898,7 @@ Create `apps/mobile/src/state/createGameSessionStore.test.ts`:
 
 ```ts
 import { createGameSessionStore } from './createGameSessionStore';
-import type { GameState, RuleEngine } from '@world-cards/engine';
+import type { GameState, RuleEngine } from '@world-of-cards/engine';
 
 interface CounterState extends GameState {
   count: number;
@@ -1938,7 +1938,7 @@ describe('createGameSessionStore', () => {
 
 - [ ] **Step 3: Run tests to verify they fail**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest apps/mobile/src/state`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest apps/mobile/src/state`
 Expected: FAIL with "Cannot find module './settingsStore'" and "Cannot find module './createGameSessionStore'"
 
 - [ ] **Step 4: Write the implementation**
@@ -1980,7 +1980,7 @@ Create `apps/mobile/src/state/createGameSessionStore.ts`:
 
 ```ts
 import { create, StoreApi, UseBoundStore } from 'zustand';
-import type { GameState, RuleEngine } from '@world-cards/engine';
+import type { GameState, RuleEngine } from '@world-of-cards/engine';
 
 export interface GameSessionStore<TState extends GameState, TMove> {
   state: TState;
@@ -2003,13 +2003,13 @@ export function createGameSessionStore<TState extends GameState, TMove>(
 
 - [ ] **Step 5: Run tests to verify they pass**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest apps/mobile/src/state`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest apps/mobile/src/state`
 Expected: PASS (4 tests)
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
+cd "d:/CodeSpace/world-of-cards"
 git add apps/mobile/src/state apps/mobile/package.json apps/mobile/package-lock.json
 git commit -m "Add Zustand global settings store and per-session game store factory"
 ```
@@ -2027,12 +2027,12 @@ git commit -m "Add Zustand global settings store and per-session game store fact
 - Modify: `apps/mobile/package.json` (add React Navigation dependencies)
 
 **Interfaces:**
-- Consumes: `getGames`, `clearRegistry` from `@world-cards/engine` (Task 10, exported via Task 13)
+- Consumes: `getGames`, `clearRegistry` from `@world-of-cards/engine` (Task 10, exported via Task 13)
 - Produces: `RootNavigator`, `HomeScreen` — the entry point future game screens (Phase 2+) register into via the `RootStackParamList`.
 
 - [ ] **Step 1: Add React Navigation dependencies**
 
-Run: `cd "d:/CodeSpace/world-cards/apps/mobile" && npx expo install @react-navigation/native @react-navigation/native-stack react-native-screens react-native-safe-area-context`
+Run: `cd "d:/CodeSpace/world-of-cards/apps/mobile" && npx expo install @react-navigation/native @react-navigation/native-stack react-native-screens react-native-safe-area-context`
 
 - [ ] **Step 2: Write the failing test**
 
@@ -2042,7 +2042,7 @@ Create `apps/mobile/src/screens/HomeScreen.test.tsx`:
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
 import { HomeScreen } from './HomeScreen';
-import { clearRegistry } from '@world-cards/engine';
+import { clearRegistry } from '@world-of-cards/engine';
 
 describe('HomeScreen', () => {
   beforeEach(() => {
@@ -2051,7 +2051,7 @@ describe('HomeScreen', () => {
 
   it('shows the app title and an empty state when no games are registered', () => {
     render(<HomeScreen />);
-    expect(screen.getByText('World Cards')).toBeTruthy();
+    expect(screen.getByText('World of Cards')).toBeTruthy();
     expect(screen.getByText('No games installed yet')).toBeTruthy();
   });
 });
@@ -2059,7 +2059,7 @@ describe('HomeScreen', () => {
 
 - [ ] **Step 3: Run test to verify it fails**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest apps/mobile/src/screens/HomeScreen.test.tsx`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest apps/mobile/src/screens/HomeScreen.test.tsx`
 Expected: FAIL with "Cannot find module './HomeScreen'"
 
 - [ ] **Step 4: Write the implementation**
@@ -2069,13 +2069,13 @@ Create `apps/mobile/src/screens/HomeScreen.tsx`:
 ```tsx
 import React from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { getGames } from '@world-cards/engine';
+import { getGames } from '@world-of-cards/engine';
 
 export function HomeScreen() {
   const games = getGames();
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>World Cards</Text>
+      <Text style={styles.title}>World of Cards</Text>
       <FlatList
         data={games}
         keyExtractor={(game) => game.id}
@@ -2112,7 +2112,7 @@ export function RootNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator>
-        <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'World Cards' }} />
+        <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'World of Cards' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -2141,7 +2141,7 @@ Modify `apps/mobile/App.test.tsx` to match the new content:
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
 import App from './App';
-import { clearRegistry } from '@world-cards/engine';
+import { clearRegistry } from '@world-of-cards/engine';
 
 describe('App', () => {
   beforeEach(() => {
@@ -2150,20 +2150,20 @@ describe('App', () => {
 
   it('renders the Home screen inside the navigator', () => {
     render(<App />);
-    expect(screen.getByText('World Cards')).toBeTruthy();
+    expect(screen.getByText('World of Cards')).toBeTruthy();
   });
 });
 ```
 
 - [ ] **Step 5: Run tests to verify they pass**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest apps/mobile/src/screens/HomeScreen.test.tsx apps/mobile/App.test.tsx`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest apps/mobile/src/screens/HomeScreen.test.tsx apps/mobile/App.test.tsx`
 Expected: PASS (2 tests)
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
+cd "d:/CodeSpace/world-of-cards"
 git add apps/mobile/src/navigation apps/mobile/src/screens apps/mobile/App.tsx apps/mobile/App.test.tsx apps/mobile/package.json apps/mobile/package-lock.json
 git commit -m "Add RootNavigator and Home screen driven by the game registry"
 ```
@@ -2180,23 +2180,23 @@ git commit -m "Add RootNavigator and Home screen driven by the game registry"
 
 - [ ] **Step 1: Run the full test suite from the repo root**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx jest`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx jest`
 Expected: all test suites across both the `engine` and `mobile` Jest projects pass.
 
 - [ ] **Step 2: Type-check both packages**
 
-Run: `cd "d:/CodeSpace/world-cards" && npx tsc --noEmit -p packages/engine/tsconfig.json && npx tsc --noEmit -p apps/mobile/tsconfig.json`
+Run: `cd "d:/CodeSpace/world-of-cards" && npx tsc --noEmit -p packages/engine/tsconfig.json && npx tsc --noEmit -p apps/mobile/tsconfig.json`
 Expected: no type errors in either package.
 
 - [ ] **Step 3: Boot the app on the physical device via Expo Go**
 
-Run: `cd "d:/CodeSpace/world-cards/apps/mobile" && npx expo start`
-Expected: dev server starts cleanly; scanning the QR code with Expo Go loads the app and shows the "World Cards" header with "No games installed yet" (since no real game is registered yet — that begins in Phase 2). Stop the server (Ctrl+C) once confirmed.
+Run: `cd "d:/CodeSpace/world-of-cards/apps/mobile" && npx expo start`
+Expected: dev server starts cleanly; scanning the QR code with Expo Go loads the app and shows the "World of Cards" header with "No games installed yet" (since no real game is registered yet — that begins in Phase 2). Stop the server (Ctrl+C) once confirmed.
 
 - [ ] **Step 4: Commit if anything was left uncommitted**
 
 ```bash
-cd "d:/CodeSpace/world-cards"
+cd "d:/CodeSpace/world-of-cards"
 git status
 ```
 
@@ -2206,4 +2206,4 @@ If clean, no commit needed — this task is verification-only.
 
 ## Summary
 
-After Task 17, the repo has: a working npm workspaces monorepo; a pure-TypeScript `@world-cards/engine` package with Card Engine primitives, a `RuleEngine`/`AIStrategy` contract, a generic minimax utility, a game registry, a persistence interface, statistics functions, and a reusable simulation harness — all validated end-to-end against an internal test fixture (`cardDraftGame`), never a real game from the roadmap. The mobile app boots via Expo Go, renders an (empty) game library from the registry, and has Zustand stores ready for a real game session. Phase 2 (Pişti) starts from here by adding exactly two new folders — `packages/engine/src/games/pisti/` and `apps/mobile/src/games/pisti/` — without touching anything built in this plan.
+After Task 17, the repo has: a working npm workspaces monorepo; a pure-TypeScript `@world-of-cards/engine` package with Card Engine primitives, a `RuleEngine`/`AIStrategy` contract, a generic minimax utility, a game registry, a persistence interface, statistics functions, and a reusable simulation harness — all validated end-to-end against an internal test fixture (`cardDraftGame`), never a real game from the roadmap. The mobile app boots via Expo Go, renders an (empty) game library from the registry, and has Zustand stores ready for a real game session. Phase 2 (Pişti) starts from here by adding exactly two new folders — `packages/engine/src/games/pisti/` and `apps/mobile/src/games/pisti/` — without touching anything built in this plan.

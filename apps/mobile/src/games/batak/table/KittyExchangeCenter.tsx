@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import type { Card } from '@world-cards/engine';
-import type { BatakState } from '@world-cards/engine/games/batak';
-import { PressableFeedback } from '@world-cards/ui';
+import type { Card } from '@world-of-cards/engine';
+import type { BatakState } from '@world-of-cards/engine/games/batak';
+import { PressableFeedback } from '@world-of-cards/ui';
 import { centerPanelStyles } from './centerPanelStyles';
 import { BurySlots } from './BurySlots';
 import { GatherCard } from '../../../table/GatherCard';

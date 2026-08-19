@@ -221,9 +221,9 @@ Find:
 ```ts
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
-import type { Card } from '@world-cards/engine';
-import type { PistiState } from '@world-cards/engine/games/pisti';
-import { PlayingCard, TableFelt, TableWoodCorners, glowShadow } from '@world-cards/ui';
+import type { Card } from '@world-of-cards/engine';
+import type { PistiState } from '@world-of-cards/engine/games/pisti';
+import { PlayingCard, TableFelt, TableWoodCorners, glowShadow } from '@world-of-cards/ui';
 import { SelectableCard } from '../../components/SelectableCard';
 import { useCardSelection } from '../../components/useCardSelection';
 import { PlayerAvatar } from '../../components/PlayerAvatar';
@@ -253,9 +253,9 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import type { Card } from '@world-cards/engine';
-import type { PistiState } from '@world-cards/engine/games/pisti';
-import { PlayingCard, TableFelt, TableWoodCorners, glowShadow } from '@world-cards/ui';
+import type { Card } from '@world-of-cards/engine';
+import type { PistiState } from '@world-of-cards/engine/games/pisti';
+import { PlayingCard, TableFelt, TableWoodCorners, glowShadow } from '@world-of-cards/ui';
 import { SelectableCard } from '../../components/SelectableCard';
 import { useCardSelection } from '../../components/useCardSelection';
 import { PlayerAvatar } from '../../components/PlayerAvatar';
@@ -1205,7 +1205,7 @@ git commit -m "Remove dead opponent-fan overlap constants superseded by auto-fit
 
 - [ ] **Step 1: Start the mobile app's web build**
 
-Run (in a background/separate terminal): `npm run web --workspace=world-cards-mobile`
+Run (in a background/separate terminal): `npm run web --workspace=world-of-cards-mobile`
 Wait for the Metro bundler to report it's ready (typically serving on `http://localhost:8081` or `http://localhost:19006` depending on the Expo CLI version in use — check the terminal output for the actual URL).
 
 - [ ] **Step 2: Screenshot corner-index alignment across ranks**

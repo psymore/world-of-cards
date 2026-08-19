@@ -1,13 +1,13 @@
 {
-  "name": "world-cards",
+  "name": "world-of-cards",
   "private": true,
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "mobile": "npm run start --workspace=world-cards-mobile",
-    "playground": "npm run start --workspace=world-cards-playground",
+    "mobile": "npm run start --workspace=world-of-cards-mobile",
+    "playground": "npm run start --workspace=world-of-cards-playground",
     "test": "jest"
   },
   "devDependencies": {

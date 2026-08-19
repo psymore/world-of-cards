@@ -10,7 +10,7 @@ import {
   MODAL_CARD_LARGE_IMAGE,
   ModalCloseButton,
   PressableFeedback,
-} from '@world-cards/ui';
+} from '@world-of-cards/ui';
 
 const STEPPER_BUTTON_RADIUS = 16;
 

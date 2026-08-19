@@ -9,7 +9,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { SvgXml } from "react-native-svg";
-import type { Card, Suit } from "@world-cards/engine";
+import type { Card, Suit } from "@world-of-cards/engine";
 import { SuitIcon } from "./SuitIcon";
 import { glowShadow } from "./glowShadow";
 import { COURT_CARD_ART } from "./courtCardArt";

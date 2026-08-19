@@ -1,8 +1,8 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import type { Card } from "@world-cards/engine";
-import type { BatakState } from "@world-cards/engine/games/batak";
-import { PlayingCard, SuitIcon, CARD_DIMS } from "@world-cards/ui";
+import type { Card } from "@world-of-cards/engine";
+import type { BatakState } from "@world-of-cards/engine/games/batak";
+import { PlayingCard, SuitIcon, CARD_DIMS } from "@world-of-cards/ui";
 import { TravelCard } from "../../../table/TravelCard";
 import { GatherCard } from "../../../table/GatherCard";
 import {

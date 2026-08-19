@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - **Full design rationale:** `docs/superpowers/specs/2026-07-12-card-playground-design.md`. Read it if a task's reasoning is unclear.
-- **Isolation is a hard constraint, not a style preference:** `apps/playground` must never be imported by `apps/mobile`, and must never import anything from `apps/mobile/src/**`. Among this repo's other packages, it may only depend on `@world-cards/engine`. Every new dependency this plan introduces (`expo-document-picker`, `expo-file-system`, `@react-native-community/slider`, its own `react-native-svg`, `zustand`, `@react-native-async-storage/async-storage`) goes **only** in `apps/playground/package.json` — never `apps/mobile/package.json`.
+- **Isolation is a hard constraint, not a style preference:** `apps/playground` must never be imported by `apps/mobile`, and must never import anything from `apps/mobile/src/**`. Among this repo's other packages, it may only depend on `@world-of-cards/engine`. Every new dependency this plan introduces (`expo-document-picker`, `expo-file-system`, `@react-native-community/slider`, its own `react-native-svg`, `zustand`, `@react-native-async-storage/async-storage`) goes **only** in `apps/playground/package.json` — never `apps/mobile/package.json`.
 - **No new automated tests, by project policy** (see `CLAUDE.md`'s Testing policy — mobile/UI code is not test-covered by default; ask before adding a test). Every task is instead verified by (a) a TypeScript compile check, and at the two visual milestones (Task 1, Task 12) by (b) booting the app via `expo start --web` and confirming it bundles with no errors.
 - **Expo API shapes change between SDKs — verify before writing code, don't rely on memory** (per `AGENTS.md`). Two APIs already verified for SDK 57 while writing this plan, so use exactly these forms:
   - `expo-file-system`: use the modern class-based API — `new File(uri).text()` — not the deprecated `expo-file-system/legacy` `readAsStringAsync`.
@@ -39,7 +39,7 @@
 
 ```json
 {
-  "name": "world-cards-playground",
+  "name": "world-of-cards-playground",
   "version": "1.0.0",
   "main": "index.ts",
   "private": true,
@@ -48,7 +48,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@world-cards/engine": "*",
+    "@world-of-cards/engine": "*",
     "expo": "~57.0.2",
     "expo-status-bar": "~57.0.0",
     "react": "19.2.3",
@@ -68,8 +68,8 @@
 ```json
 {
   "expo": {
-    "name": "World Cards Playground",
-    "slug": "world-cards-playground",
+    "name": "World of Cards Playground",
+    "slug": "world-of-cards-playground",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -77,7 +77,7 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.worldcards.playground"
+      "package": "com.worldofcards.playground"
     },
     "web": {}
   }
@@ -95,7 +95,7 @@
 }
 ```
 
-- [ ] **Step 4: Create `apps/playground/metro.config.js`** (mirrors `apps/mobile/metro.config.js` so Metro can resolve the workspace-linked `@world-cards/engine` package)
+- [ ] **Step 4: Create `apps/playground/metro.config.js`** (mirrors `apps/mobile/metro.config.js` so Metro can resolve the workspace-linked `@world-of-cards/engine` package)
 
 ```js
 const { getDefaultConfig } = require('expo/metro-config');
@@ -148,12 +148,12 @@ const styles = StyleSheet.create({
 
 - [ ] **Step 7: Add the `playground` script to the root `package.json`**
 
-Modify `package.json`'s `scripts` block (currently `{ "mobile": "npm run start --workspace=world-cards-mobile", "test": "jest" }`) to:
+Modify `package.json`'s `scripts` block (currently `{ "mobile": "npm run start --workspace=world-of-cards-mobile", "test": "jest" }`) to:
 
 ```json
   "scripts": {
-    "mobile": "npm run start --workspace=world-cards-mobile",
-    "playground": "npm run start --workspace=world-cards-playground",
+    "mobile": "npm run start --workspace=world-of-cards-mobile",
+    "playground": "npm run start --workspace=world-of-cards-playground",
     "test": "jest"
   },
 ```
@@ -164,7 +164,7 @@ Run from the repo root:
 ```
 npm install
 ```
-Expected: completes with no errors; `apps/playground/node_modules` is not created directly (hoisted into the root `node_modules`), and `node_modules/@world-cards` contains a symlink for the engine workspace link.
+Expected: completes with no errors; `apps/playground/node_modules` is not created directly (hoisted into the root `node_modules`), and `node_modules/@world-of-cards` contains a symlink for the engine workspace link.
 
 - [ ] **Step 9: Add the remaining feature dependencies via `expo install`**
 
@@ -178,7 +178,7 @@ Expected: `apps/playground/package.json`'s `dependencies` gains entries for all 
 
 Run:
 ```
-npm run web --workspace=world-cards-playground
+npm run web --workspace=world-of-cards-playground
 ```
 in the background. Wait about 20 seconds, then check the command's output. Expected: a `Web Bundled` (or equivalent successful-compile) line with no red error text. Stop the background process once confirmed.
 
@@ -198,7 +198,7 @@ git commit -m "Scaffold apps/playground as an isolated Expo app"
 - Create: `apps/playground/src/utils/cardGroups.ts`
 
 **Interfaces:**
-- Consumes: `Rank`, `Suit` from `@world-cards/engine` (already available per Task 1).
+- Consumes: `Rank`, `Suit` from `@world-of-cards/engine` (already available per Task 1).
 - Produces: `CardGroup`, `CardImage`, `CardTemplate`, `TableTemplate`, `PlaygroundTemplates` types; `DEFAULT_CARD_TEMPLATE`, `DEFAULT_TABLE_TEMPLATE`, `DEFAULT_TEMPLATES`, `PRESET_COLORS` constants (all from `types.ts`); `getCardGroup(rank: Rank): CardGroup` (from `utils/cardGroups.ts`). Every later task imports these.
 
 - [ ] **Step 1: Create `apps/playground/src/types.ts`**
@@ -260,7 +260,7 @@ export const PRESET_COLORS: string[] = [
 - [ ] **Step 2: Create `apps/playground/src/utils/cardGroups.ts`**
 
 ```ts
-import type { Rank } from '@world-cards/engine';
+import type { Rank } from '@world-of-cards/engine';
 import type { CardGroup } from '../types';
 
 // The gallery deck is generated with includeJokers: false, so 'joker' is
@@ -399,7 +399,7 @@ git commit -m "Add persisted playground zustand store"
 - Create: `apps/playground/src/components/SuitGlyph.tsx`
 
 **Interfaces:**
-- Consumes: `Suit` from `@world-cards/engine`.
+- Consumes: `Suit` from `@world-of-cards/engine`.
 - Produces: `SuitGlyph` component, props `{ suit: Suit; size: number; color: string; opacity?: number; testID?: string }`. Consumed by Task 6 (`PlaygroundCard`).
 
 - [ ] **Step 1: Create `apps/playground/src/components/SuitGlyph.tsx`**
@@ -409,7 +409,7 @@ This is a standalone copy (not an import) of `apps/mobile/src/components/SuitIco
 ```tsx
 import React from 'react';
 import Svg, { Circle, G, Path } from 'react-native-svg';
-import type { Suit } from '@world-cards/engine';
+import type { Suit } from '@world-of-cards/engine';
 
 export interface SuitGlyphProps {
   suit: Suit;
@@ -585,7 +585,7 @@ git commit -m "Add standalone TableBackdrop component to playground"
 - Create: `apps/playground/src/components/PlaygroundCard.tsx`
 
 **Interfaces:**
-- Consumes: `Card`, `Suit` from `@world-cards/engine`; `CardImage`, `CardTemplate` from `../types` (Task 2); `SuitGlyph` from `./SuitGlyph` (Task 4).
+- Consumes: `Card`, `Suit` from `@world-of-cards/engine`; `CardImage`, `CardTemplate` from `../types` (Task 2); `SuitGlyph` from `./SuitGlyph` (Task 4).
 - Produces: `PlaygroundCard` component, props `{ card: Card; template: CardTemplate; size?: 'large' | 'grid' }` (defaults to `'large'`). Consumed by Tasks 9 (`CardTemplateEditor`) and 11 (`CardGallery`).
 
 - [ ] **Step 1: Create `apps/playground/src/components/PlaygroundCard.tsx`**
@@ -594,7 +594,7 @@ git commit -m "Add standalone TableBackdrop component to playground"
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
-import type { Card, Suit } from '@world-cards/engine';
+import type { Card, Suit } from '@world-of-cards/engine';
 import { SuitGlyph } from './SuitGlyph';
 import type { CardImage, CardTemplate } from '../types';
 
@@ -900,7 +900,7 @@ git commit -m "Add ColorPicker component (preset swatches + hex input)"
 - Create: `apps/playground/src/components/CardTemplateEditor.tsx`
 
 **Interfaces:**
-- Consumes: `Card` from `@world-cards/engine`; `CardGroup` from `../types` (Task 2); `usePlaygroundStore` from `../state/playgroundStore` (Task 3); `PlaygroundCard` from `./PlaygroundCard` (Task 6); `ColorPicker` from `./ColorPicker` (Task 8); `pickCardImage`, `buildCardImage` from `../utils/imagePicker` (Task 7).
+- Consumes: `Card` from `@world-of-cards/engine`; `CardGroup` from `../types` (Task 2); `usePlaygroundStore` from `../state/playgroundStore` (Task 3); `PlaygroundCard` from `./PlaygroundCard` (Task 6); `ColorPicker` from `./ColorPicker` (Task 8); `pickCardImage`, `buildCardImage` from `../utils/imagePicker` (Task 7).
 - Produces: `CardTemplateEditor` component (no props — reads/writes the store directly). Consumed by Task 12 (`PlaygroundScreen`).
 
 - [ ] **Step 1: Create `apps/playground/src/components/CardTemplateEditor.tsx`**
@@ -909,7 +909,7 @@ git commit -m "Add ColorPicker component (preset swatches + hex input)"
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Slider from '@react-native-community/slider';
-import type { Card } from '@world-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 import type { CardGroup } from '../types';
 import { usePlaygroundStore } from '../state/playgroundStore';
 import { PlaygroundCard } from './PlaygroundCard';
@@ -1139,7 +1139,7 @@ git commit -m "Add TableTemplateEditor component"
 - Create: `apps/playground/src/components/CardGallery.tsx`
 
 **Interfaces:**
-- Consumes: `Card`, `Suit`, `createDeck` from `@world-cards/engine`; `usePlaygroundStore` from `../state/playgroundStore` (Task 3); `getCardGroup` from `../utils/cardGroups` (Task 2); `PlaygroundCard` from `./PlaygroundCard` (Task 6); `TableBackdrop` from `./TableBackdrop` (Task 5).
+- Consumes: `Card`, `Suit`, `createDeck` from `@world-of-cards/engine`; `usePlaygroundStore` from `../state/playgroundStore` (Task 3); `getCardGroup` from `../utils/cardGroups` (Task 2); `PlaygroundCard` from `./PlaygroundCard` (Task 6); `TableBackdrop` from `./TableBackdrop` (Task 5).
 - Produces: `CardGallery` component (no props). Consumed by Task 12 (`PlaygroundScreen`).
 
 - [ ] **Step 1: Create `apps/playground/src/components/CardGallery.tsx`**
@@ -1147,8 +1147,8 @@ git commit -m "Add TableTemplateEditor component"
 ```tsx
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { createDeck } from '@world-cards/engine';
-import type { Card, Suit } from '@world-cards/engine';
+import { createDeck } from '@world-of-cards/engine';
+import type { Card, Suit } from '@world-of-cards/engine';
 import { usePlaygroundStore } from '../state/playgroundStore';
 import { getCardGroup } from '../utils/cardGroups';
 import { PlaygroundCard } from './PlaygroundCard';
@@ -1283,7 +1283,7 @@ Expected: no errors.
 
 Run:
 ```
-npm run web --workspace=world-cards-playground
+npm run web --workspace=world-of-cards-playground
 ```
 in the background. Wait about 20 seconds, confirm a successful bundle with no errors in the output, then open the printed local URL (or use whatever browser-screenshot tooling is available in this environment) and confirm:
 - The title "Card Playground" renders at the top.

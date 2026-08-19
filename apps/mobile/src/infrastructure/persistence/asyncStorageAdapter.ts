@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { PersistenceAdapter } from '@world-cards/engine';
+import type { PersistenceAdapter } from '@world-of-cards/engine';
 
 export const asyncStorageAdapter: PersistenceAdapter = {
   async save(key, data) {

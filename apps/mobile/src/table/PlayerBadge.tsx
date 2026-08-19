@@ -6,7 +6,7 @@
 // Batak: bid/tricks) since that part is genuinely game-specific.
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { BODY_SEMIBOLD, NAME_BADGE_PILL_ASPECT_RATIO, NAME_BADGE_PILL_IMAGE } from '@world-cards/ui';
+import { BODY_SEMIBOLD, NAME_BADGE_PILL_ASPECT_RATIO, NAME_BADGE_PILL_IMAGE } from '@world-of-cards/ui';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import type { SeatTurnState } from './turnState';
 

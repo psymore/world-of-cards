@@ -1,4 +1,4 @@
-import type { TableSurfaceMaterial } from '@world-cards/ui';
+import type { TableSurfaceMaterial } from '@world-of-cards/ui';
 
 // Shared between PistiDevTuningModal and BatakDevTuningModal — both games read/write the same
 // tableSurfaceMaterial store field (see its own doc comment in devTuningStore.ts), so the option

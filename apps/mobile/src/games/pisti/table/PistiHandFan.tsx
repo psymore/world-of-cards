@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import type { Card } from '@world-cards/engine';
-import { CARD_DIMS, PlayingCardSize } from '@world-cards/ui';
+import type { Card } from '@world-of-cards/engine';
+import { CARD_DIMS, PlayingCardSize } from '@world-of-cards/ui';
 import { railAngleStepDeg, railAngles, railPosition } from '../../../table/railFan';
 import type { RailAngleConfig } from '../../../table/railFan';
 import { useCardMotion } from '../../../table/useCardMotion';

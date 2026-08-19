@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { PlayingCard, CARD_DIMS } from '@world-cards/ui';
-import { createDeck, createRng, shuffle } from '@world-cards/engine';
+import { PlayingCard, CARD_DIMS } from '@world-of-cards/ui';
+import { createDeck, createRng, shuffle } from '@world-of-cards/engine';
 import { LabeledSlider } from '../components/LabeledSlider';
 
 // Starting point: the real CARD_DIMS ratio (small.width / normal.width ≈ 0.745) for the outer

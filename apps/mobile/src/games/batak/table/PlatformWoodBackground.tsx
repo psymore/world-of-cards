@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, Line, LinearGradient, Pattern, Rect, Stop } from 'react-native-svg';
-import { WOOD_DEFAULT_LIGHT, WOOD_DEFAULT_DARK, WOOD_GRAIN_COLOR } from '@world-cards/ui';
+import { WOOD_DEFAULT_LIGHT, WOOD_DEFAULT_DARK, WOOD_GRAIN_COLOR } from '@world-of-cards/ui';
 
 // The "platform" — the shared bid/trump decision panel (DecisionPanel) — gets the same
 // gradient+grain+trim wood recipe as TableWoodCorners/TableEdgeRails/HandFrame (via the shared

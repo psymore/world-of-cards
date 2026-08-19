@@ -6,7 +6,7 @@
 
 ## Context
 
-World Cards is a long-term platform intended to eventually host 100+ traditional card games, offline-first at launch, with AI opponents, statistics, achievements, themes, and (later) online multiplayer plugged in without rewriting the app. This document captures the architectural decisions made during Phase 1 brainstorming, before any game-specific code is written.
+World of Cards is a long-term platform intended to eventually host 100+ traditional card games, offline-first at launch, with AI opponents, statistics, achievements, themes, and (later) online multiplayer plugged in without rewriting the app. This document captures the architectural decisions made during Phase 1 brainstorming, before any game-specific code is written.
 
 A key amendment made at the start of this phase: **the game engine must be completely platform-agnostic.** No game logic may depend on React Native. The engine must be reusable from React Native, React Web, Electron, or a future desktop app without modification, with UI and business logic strictly separated. This requirement shapes every decision below.
 
@@ -15,7 +15,7 @@ A key amendment made at the start of this phase: **the game engine must be compl
 An npm workspaces monorepo with two packages for now:
 
 ```
-world-cards/
+world-of-cards/
 ├── packages/
 │   └── engine/                 # Pure TypeScript. Zero react/react-native dependencies.
 │       ├── package.json

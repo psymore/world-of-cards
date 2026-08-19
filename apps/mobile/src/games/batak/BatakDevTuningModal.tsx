@@ -1,7 +1,7 @@
 // apps/mobile/src/games/batak/BatakDevTuningModal.tsx
 import React from 'react';
 import { StyleSheet, Text } from 'react-native';
-import { CARD_DIMS, PressableFeedback, useCardFaceStyleStore } from '@world-cards/ui';
+import { CARD_DIMS, PressableFeedback, useCardFaceStyleStore } from '@world-of-cards/ui';
 import { useDevTuningStore } from '../../state/devTuningStore';
 import type { DevTableBackground } from '../../state/devTuningStore';
 import { STANDARD_RAIL_CONFIG, STANDARD_TOP_OVERLAP, STANDARD_BOTTOM_OVERLAP } from './table/batakRailFan';

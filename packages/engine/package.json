@@ -1,5 +1,5 @@
 {
-  "name": "@world-cards/engine",
+  "name": "@world-of-cards/engine",
   "version": "0.1.0",
   "private": true,
   "main": "src/index.ts",

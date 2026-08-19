@@ -64,7 +64,7 @@ export { GeminiTableBackground } from './GeminiTableBackground';
 
 - [ ] **Step 3: Typecheck**
 
-Run: `cd d:/CodeSpace/world-cards && npx tsc --noEmit -p packages/ui/tsconfig.json`
+Run: `cd d:/CodeSpace/world-of-cards && npx tsc --noEmit -p packages/ui/tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 4: Commit**
@@ -126,7 +126,7 @@ export const useDevTuningStore = create<DevTuningState>((set) => ({
 
 - [ ] **Step 2: Typecheck**
 
-Run: `cd d:/CodeSpace/world-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
+Run: `cd d:/CodeSpace/world-of-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 3: Commit**
@@ -148,7 +148,7 @@ git commit -m "feat(batak): add devTuningStore for dev-only live tuning state"
 
 - [ ] **Step 1: Add imports**
 
-In `apps/mobile/src/games/batak/BatakTable.tsx`, the current `@world-cards/ui` import block reads:
+In `apps/mobile/src/games/batak/BatakTable.tsx`, the current `@world-of-cards/ui` import block reads:
 
 ```tsx
 import {
@@ -160,7 +160,7 @@ import {
   HAND_BADGE_HEIGHT,
   HAND_FRAME_REVEAL_MARGIN,
   HAND_FRAME_BOTTOM_OVERSHOOT,
-} from '@world-cards/ui';
+} from '@world-of-cards/ui';
 ```
 
 Change to:
@@ -176,7 +176,7 @@ import {
   HAND_BADGE_HEIGHT,
   HAND_FRAME_REVEAL_MARGIN,
   HAND_FRAME_BOTTOM_OVERSHOOT,
-} from '@world-cards/ui';
+} from '@world-of-cards/ui';
 ```
 
 Then, right after the existing `import { DeselectableSurface } from '../../components/DeselectableSurface';` line, add:
@@ -213,7 +213,7 @@ Replace with:
 
 - [ ] **Step 4: Typecheck**
 
-Run: `cd d:/CodeSpace/world-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
+Run: `cd d:/CodeSpace/world-of-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 5: Commit**
@@ -320,7 +320,7 @@ Replace with:
 
 - [ ] **Step 5: Typecheck**
 
-Run: `cd d:/CodeSpace/world-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
+Run: `cd d:/CodeSpace/world-of-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 6: Commit**
@@ -399,7 +399,7 @@ export type { PressableFeedbackProps } from './PressableFeedback';
 
 - [ ] **Step 3: Typecheck**
 
-Run: `cd d:/CodeSpace/world-cards && npx tsc --noEmit -p packages/ui/tsconfig.json`
+Run: `cd d:/CodeSpace/world-of-cards && npx tsc --noEmit -p packages/ui/tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 4: Commit**
@@ -426,14 +426,14 @@ Change:
 
 ```tsx
 import { Alert, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
-import { HeaderWoodFrame, SettingsIcon } from '@world-cards/ui';
+import { HeaderWoodFrame, SettingsIcon } from '@world-of-cards/ui';
 ```
 
 to:
 
 ```tsx
 import { Alert, LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
-import { HeaderWoodFrame, PressableFeedback, SettingsIcon } from '@world-cards/ui';
+import { HeaderWoodFrame, PressableFeedback, SettingsIcon } from '@world-of-cards/ui';
 ```
 
 - [ ] **Step 2: Add the `extraHeaderActions` prop**
@@ -540,7 +540,7 @@ to:
 
 - [ ] **Step 5: Typecheck**
 
-Run: `cd d:/CodeSpace/world-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
+Run: `cd d:/CodeSpace/world-of-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 6: Commit**
@@ -591,7 +591,7 @@ export interface SettingsIconProps {
 
 - [ ] **Step 2: Typecheck**
 
-Run: `cd d:/CodeSpace/world-cards && npx tsc --noEmit -p packages/ui/tsconfig.json`
+Run: `cd d:/CodeSpace/world-of-cards && npx tsc --noEmit -p packages/ui/tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 3: Commit**
@@ -609,7 +609,7 @@ git commit -m "feat(ui): bump SettingsIcon default size 1.5x (18 -> 27)"
 - Create: `apps/mobile/src/games/batak/BatakDevTuningModal.tsx`
 
 **Interfaces:**
-- Consumes: `useDevTuningStore` (Task 2), `PressableFeedback` (Task 5), `CARD_DIMS` from `@world-cards/ui`.
+- Consumes: `useDevTuningStore` (Task 2), `PressableFeedback` (Task 5), `CARD_DIMS` from `@world-of-cards/ui`.
 - Produces: `BatakDevTuningModal` component, `{ visible: boolean; onClose: () => void }` props — same shape as the existing `BatakSettingsModal`, consumed by Task 9.
 
 - [ ] **Step 1: Create the modal**
@@ -618,7 +618,7 @@ git commit -m "feat(ui): bump SettingsIcon default size 1.5x (18 -> 27)"
 // apps/mobile/src/games/batak/BatakDevTuningModal.tsx
 import React, { useState } from 'react';
 import { Modal, StyleSheet, Text, View } from 'react-native';
-import { CARD_DIMS, PressableFeedback } from '@world-cards/ui';
+import { CARD_DIMS, PressableFeedback } from '@world-of-cards/ui';
 import { useDevTuningStore } from '../../state/devTuningStore';
 
 export interface BatakDevTuningModalProps {
@@ -804,7 +804,7 @@ const styles = StyleSheet.create({
 
 - [ ] **Step 2: Typecheck**
 
-Run: `cd d:/CodeSpace/world-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
+Run: `cd d:/CodeSpace/world-of-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 3: Commit**
@@ -826,11 +826,11 @@ git commit -m "feat(batak): add BatakDevTuningModal (table background + per-row 
 
 - [ ] **Step 1: Add imports**
 
-`BatakScreen.tsx` currently has no `react-native` or `@world-cards/ui` import at all. Add, right after the existing `import React, { useEffect, useRef, useState } from "react";` line:
+`BatakScreen.tsx` currently has no `react-native` or `@world-of-cards/ui` import at all. Add, right after the existing `import React, { useEffect, useRef, useState } from "react";` line:
 
 ```tsx
 import { StyleSheet, Text } from "react-native";
-import { PressableFeedback } from "@world-cards/ui";
+import { PressableFeedback } from "@world-of-cards/ui";
 ```
 
 Then, right after the existing `import { BatakSettingsModal } from "./BatakSettingsModal";` line, add:
@@ -928,7 +928,7 @@ const styles = StyleSheet.create({
 
 - [ ] **Step 5: Typecheck**
 
-Run: `cd d:/CodeSpace/world-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
+Run: `cd d:/CodeSpace/world-of-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 6: Commit**
@@ -961,7 +961,7 @@ to:
 
 ```tsx
 import { Modal, StyleSheet, Switch, Text, View } from 'react-native';
-import { PressableFeedback } from '@world-cards/ui';
+import { PressableFeedback } from '@world-of-cards/ui';
 ```
 
 Change:
@@ -992,7 +992,7 @@ to:
 
 ```tsx
 import { Modal, StyleSheet, Text, View } from 'react-native';
-import { PressableFeedback } from '@world-cards/ui';
+import { PressableFeedback } from '@world-of-cards/ui';
 ```
 
 Change:
@@ -1023,7 +1023,7 @@ to:
 
 - [ ] **Step 3: Typecheck**
 
-Run: `cd d:/CodeSpace/world-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
+Run: `cd d:/CodeSpace/world-of-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 4: Commit**
@@ -1056,7 +1056,7 @@ to:
 
 ```tsx
 import { StyleSheet, Text, View } from 'react-native';
-import { PressableFeedback } from '@world-cards/ui';
+import { PressableFeedback } from '@world-of-cards/ui';
 ```
 
 Change:
@@ -1145,7 +1145,7 @@ to:
 
 ```tsx
 import { StyleSheet, Text, View } from 'react-native';
-import { PressableFeedback } from '@world-cards/ui';
+import { PressableFeedback } from '@world-of-cards/ui';
 ```
 
 Change:
@@ -1255,7 +1255,7 @@ to:
 
 - [ ] **Step 3: Typecheck**
 
-Run: `cd d:/CodeSpace/world-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
+Run: `cd d:/CodeSpace/world-of-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 4: Commit**
@@ -1282,16 +1282,16 @@ Change:
 
 ```tsx
 import { Pressable, StyleSheet, View } from 'react-native';
-import type { Card } from '@world-cards/engine';
-import { PlayingCard } from '@world-cards/ui';
+import type { Card } from '@world-of-cards/engine';
+import { PlayingCard } from '@world-of-cards/ui';
 ```
 
 to:
 
 ```tsx
 import { StyleSheet, View } from 'react-native';
-import type { Card } from '@world-cards/engine';
-import { PlayingCard, PressableFeedback } from '@world-cards/ui';
+import type { Card } from '@world-of-cards/engine';
+import { PlayingCard, PressableFeedback } from '@world-of-cards/ui';
 ```
 
 Change (the Pressable wraps a `PlayingCard`, which itself has a 6px corner radius — `CARD_RADIUS` in `packages/ui/src/PlayingCard.tsx`):
@@ -1320,8 +1320,8 @@ Change:
 
 ```tsx
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type { Card } from '@world-cards/engine';
-import type { BatakState } from '@world-cards/engine/games/batak';
+import type { Card } from '@world-of-cards/engine';
+import type { BatakState } from '@world-of-cards/engine/games/batak';
 import { centerPanelStyles } from './centerPanelStyles';
 ```
 
@@ -1329,9 +1329,9 @@ to:
 
 ```tsx
 import { StyleSheet, Text, View } from 'react-native';
-import type { Card } from '@world-cards/engine';
-import type { BatakState } from '@world-cards/engine/games/batak';
-import { PressableFeedback } from '@world-cards/ui';
+import type { Card } from '@world-of-cards/engine';
+import type { BatakState } from '@world-of-cards/engine/games/batak';
+import { PressableFeedback } from '@world-of-cards/ui';
 import { centerPanelStyles } from './centerPanelStyles';
 ```
 
@@ -1362,7 +1362,7 @@ to:
 
 - [ ] **Step 3: Typecheck**
 
-Run: `cd d:/CodeSpace/world-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
+Run: `cd d:/CodeSpace/world-of-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 4: Commit**
@@ -1389,18 +1389,18 @@ Change:
 
 ```tsx
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type { Suit } from '@world-cards/engine';
-import type { BatakState, BatakMove } from '@world-cards/engine/games/batak';
-import { SuitIcon } from '@world-cards/ui';
+import type { Suit } from '@world-of-cards/engine';
+import type { BatakState, BatakMove } from '@world-of-cards/engine/games/batak';
+import { SuitIcon } from '@world-of-cards/ui';
 ```
 
 to:
 
 ```tsx
 import { StyleSheet, Text, View } from 'react-native';
-import type { Suit } from '@world-cards/engine';
-import type { BatakState, BatakMove } from '@world-cards/engine/games/batak';
-import { PressableFeedback, SuitIcon } from '@world-cards/ui';
+import type { Suit } from '@world-of-cards/engine';
+import type { BatakState, BatakMove } from '@world-of-cards/engine/games/batak';
+import { PressableFeedback, SuitIcon } from '@world-of-cards/ui';
 ```
 
 Change (`centerPanelStyles.suitButton` has `borderRadius: 22`, a 44x44 circle):
@@ -1444,7 +1444,7 @@ to:
 
 ```tsx
 import { Animated, StyleSheet, Text, View } from 'react-native';
-import { PressableFeedback } from '@world-cards/ui';
+import { PressableFeedback } from '@world-of-cards/ui';
 ```
 
 Change (`styles.row` has `borderRadius: 12`):
@@ -1477,7 +1477,7 @@ to:
 
 - [ ] **Step 3: Typecheck**
 
-Run: `cd d:/CodeSpace/world-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
+Run: `cd d:/CodeSpace/world-of-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 4: Commit**
@@ -1506,8 +1506,8 @@ Change:
 ```tsx
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
-import type { BatakMove } from '@world-cards/engine/games/batak';
-import { glowShadow } from '@world-cards/ui';
+import type { BatakMove } from '@world-of-cards/engine/games/batak';
+import { glowShadow } from '@world-of-cards/ui';
 ```
 
 to:
@@ -1515,8 +1515,8 @@ to:
 ```tsx
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
-import type { BatakMove } from '@world-cards/engine/games/batak';
-import { glowShadow, PressableFeedback } from '@world-cards/ui';
+import type { BatakMove } from '@world-of-cards/engine/games/batak';
+import { glowShadow, PressableFeedback } from '@world-of-cards/ui';
 ```
 
 - [ ] **Step 2: Swap `BidButton`'s wrapping `Pressable`**
@@ -1561,7 +1561,7 @@ to:
 
 - [ ] **Step 3: Typecheck**
 
-Run: `cd d:/CodeSpace/world-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
+Run: `cd d:/CodeSpace/world-of-cards && npx tsc --noEmit -p apps/mobile/tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 4: Commit**
@@ -1581,7 +1581,7 @@ git commit -m "feat(batak): add press-feedback overlay to bid buttons"
 
 Run:
 ```bash
-cd d:/CodeSpace/world-cards
+cd d:/CodeSpace/world-of-cards
 npx tsc --noEmit -p apps/mobile/tsconfig.json
 npx tsc --noEmit -p packages/ui/tsconfig.json
 ```
@@ -1589,13 +1589,13 @@ Expected: no errors in either.
 
 - [ ] **Step 2: Confirm no remaining bare `Pressable` usages outside the excluded files**
 
-Run: `cd d:/CodeSpace/world-cards && grep -rn "Pressable" apps/mobile/src --include=*.tsx -l`
+Run: `cd d:/CodeSpace/world-of-cards && grep -rn "Pressable" apps/mobile/src --include=*.tsx -l`
 
-Expected: only `apps/mobile/src/components/DeselectableSurface.tsx` (excluded — see spec §7, it never actually renders a `Pressable`, only mentions it in comments) should still contain the bare string `Pressable` outside of `PressableFeedback` usages. Every other file in the list should be either a new file from this plan (`BatakDevTuningModal.tsx`) or importing `PressableFeedback` from `@world-cards/ui`, not RN's `Pressable` directly.
+Expected: only `apps/mobile/src/components/DeselectableSurface.tsx` (excluded — see spec §7, it never actually renders a `Pressable`, only mentions it in comments) should still contain the bare string `Pressable` outside of `PressableFeedback` usages. Every other file in the list should be either a new file from this plan (`BatakDevTuningModal.tsx`) or importing `PressableFeedback` from `@world-of-cards/ui`, not RN's `Pressable` directly.
 
 - [ ] **Step 3: Run the existing test suite (regression check only — no new tests added)**
 
-Run: `cd d:/CodeSpace/world-cards && npx jest --selectProjects mobile` (or the repo's existing root test script if one wraps this — check `package.json`'s `scripts.test` first and use that instead if present, so this matches how the project's suite is normally invoked)
+Run: `cd d:/CodeSpace/world-of-cards && npx jest --selectProjects mobile` (or the repo's existing root test script if one wraps this — check `package.json`'s `scripts.test` first and use that instead if present, so this matches how the project's suite is normally invoked)
 
 Expected: all existing tests still pass (this plan touches no engine logic, only UI wiring).
 

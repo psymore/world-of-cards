@@ -1,5 +1,5 @@
 import type { ImageSourcePropType } from 'react-native';
-import type { Rank, Suit } from '@world-cards/engine';
+import type { Rank, Suit } from '@world-of-cards/engine';
 
 // Full AI-generated art set (docs/superpowers/specs/2026-07-11-court-card-art-pipeline-design.md
 // predates this set — it covered demo-scope K/Q/J-with-reuse only). This set has dedicated K/Q/J

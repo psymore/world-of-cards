@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View, Pressable, Text } from 'react-native';
-import { PlayingCard, CARD_DIMS } from '@world-cards/ui';
-import { createDeck, createRng, shuffle } from '@world-cards/engine';
-import type { Card } from '@world-cards/engine';
+import { PlayingCard, CARD_DIMS } from '@world-of-cards/ui';
+import { createDeck, createRng, shuffle } from '@world-of-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 import { FanLayoutConfig } from '../components/fanLayout';
 import { RAIL_RADIUS, railAngleStepDeg, railAngles, railPosition } from '../components/railFanLayout';
 import { FanConfigControls } from '../components/FanConfigControls';

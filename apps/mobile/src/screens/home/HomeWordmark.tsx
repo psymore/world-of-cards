@@ -1,11 +1,11 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { DISPLAY_BOLD } from '@world-cards/ui';
+import { DISPLAY_BOLD } from '@world-of-cards/ui';
 
 export const HomeWordmark = React.memo(function HomeWordmark() {
   return (
     <View style={styles.container}>
-      <Text style={styles.word}>World Cards</Text>
+      <Text style={styles.word}>World of Cards</Text>
       <View style={styles.rule} />
     </View>
   );

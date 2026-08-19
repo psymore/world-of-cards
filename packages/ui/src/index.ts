@@ -96,7 +96,7 @@ export { SeatIdentity } from "./SeatIdentity";
 // The per-turn-state avatar ring art, re-exported as plain asset handles so consuming apps can
 // build a SeatIdentityTurnStateFrames object without reaching into this package's asset folder
 // directly: package.json's `exports` map only publishes "." (./src/index.ts), so a consumer-side
-// require('@world-cards/ui/assets/table/avatar-frame-idle.png') is not a resolvable subpath.
+// require('@world-of-cards/ui/assets/table/avatar-frame-idle.png') is not a resolvable subpath.
 export const AVATAR_FRAME_IDLE_IMAGE: number = require("../assets/avatars/avatar-frame-idle.png");
 export const AVATAR_FRAME_ACTIVE_IMAGE: number = require("../assets/avatars/avatar-frame-active.png");
 // A real portrait, its own circular gold ring already baked in (Photoroom export, portrait

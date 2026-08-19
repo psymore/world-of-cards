@@ -180,7 +180,7 @@ git commit -m "feat(ui): extract seat-plaque and seat-badge assets from PANELKIT
 
 **Interfaces:**
 - Consumes: `packages/ui/assets/table/seat-plaque.png` and `packages/ui/assets/table/seat-badge.png` (Task 1's output — if Task 1 isn't complete, this task is blocked). `WOOD_TRIM_COLOR` from `./woodPalette` (already exported).
-- Produces: `SeatIdentity` component and `SeatIdentityProps`/`SeatIdentityOrientation` types, exported from `packages/ui/src/index.ts`, for Task 3 to consume as `import { SeatIdentity } from '@world-cards/ui'`.
+- Produces: `SeatIdentity` component and `SeatIdentityProps`/`SeatIdentityOrientation` types, exported from `packages/ui/src/index.ts`, for Task 3 to consume as `import { SeatIdentity } from '@world-of-cards/ui'`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -368,7 +368,7 @@ git commit -m "feat(ui): add SeatIdentity avatar+nameplate component"
 - Modify: `apps/playground/src/components/TableShellPreview.tsx`
 
 **Interfaces:**
-- Consumes: `SeatIdentity`, `SeatIdentityOrientation` from `@world-cards/ui` (Task 2's output — if Task 2 isn't complete, this task is blocked). `TableShell`, `TABLE_SHELL_ASPECT_RATIO` (existing, unchanged).
+- Consumes: `SeatIdentity`, `SeatIdentityOrientation` from `@world-of-cards/ui` (Task 2's output — if Task 2 isn't complete, this task is blocked). `TableShell`, `TABLE_SHELL_ASPECT_RATIO` (existing, unchanged).
 - Produces: nothing consumed by a later task — this is the plan's final, user-visible deliverable.
 
 - [ ] **Step 1: Replace the local `SeatBadge` placeholder with `SeatIdentity`**
@@ -378,7 +378,7 @@ Replace the full contents of `apps/playground/src/components/TableShellPreview.t
 ```tsx
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { SeatIdentity, TABLE_SHELL_ASPECT_RATIO, TableShell } from '@world-cards/ui';
+import { SeatIdentity, TABLE_SHELL_ASPECT_RATIO, TableShell } from '@world-of-cards/ui';
 
 const SEAT_SAMPLE = {
   top: { name: 'You', trickCount: 0 },

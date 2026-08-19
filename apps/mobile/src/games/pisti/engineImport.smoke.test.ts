@@ -1,8 +1,8 @@
-import { pistiDescriptor } from '@world-cards/engine/games/pisti';
-import type { PistiState, PistiMove } from '@world-cards/engine/games/pisti';
-import { createRng } from '@world-cards/engine';
+import { pistiDescriptor } from '@world-of-cards/engine/games/pisti';
+import type { PistiState, PistiMove } from '@world-of-cards/engine/games/pisti';
+import { createRng } from '@world-of-cards/engine';
 
-describe('@world-cards/engine/games/pisti subpath', () => {
+describe('@world-of-cards/engine/games/pisti subpath', () => {
   it('resolves pistiDescriptor with a working rule engine', () => {
     const state: PistiState = pistiDescriptor.ruleEngine.setup(
       { players: ['human', 'ai'] },

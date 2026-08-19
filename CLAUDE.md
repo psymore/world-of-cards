@@ -1,8 +1,8 @@
 @AGENTS.md
 
-# World Cards
+# World of Cards
 
-A cross-platform mobile platform for traditional card games (Expo/React Native/TypeScript), designed to scale to 100+ games over years. Full Purpose and Quality Attributes: `architecture/world-cards-purpose.md`.
+A cross-platform mobile platform for traditional card games (Expo/React Native/TypeScript), designed to scale to 100+ games over years. Full Purpose and Quality Attributes: `architecture/world-of-cards-purpose.md`.
 
 This file is a navigation entry point only. It routes you to where knowledge actually lives — it does not hold that knowledge itself. For the complete picture beyond this condensed version (full authority hierarchy, reading order for every situation), see `docs/00-DocumentationMap.md`.
 
@@ -12,7 +12,7 @@ This file is a navigation entry point only. It routes you to where knowledge act
 |---|---|
 | The generic WKA meta-architecture | `architecture/WKA*.md` |
 | The WKA v1.0 canonical model (entities, relationships, lifecycle, invariants) applied to this repository's Code Index | `architecture/wka-v1.0-canonical-model.md` |
-| World Cards' own Purpose/Quality Attributes | `architecture/world-cards-purpose.md` |
+| World of Cards' own Purpose/Quality Attributes | `architecture/world-of-cards-purpose.md` |
 | Standing engineering principles (engine purity, testing policy, build pipeline, etc.) | `docs/governance/engineering-principles.md` |
 | Standing behavioral guardrails (commit/merge, branch workflow, cross-app visual changes, etc.) | `docs/governance/guardrails.md` |
 | Whether a recurring problem is architecture-shaped, not just another patch | `docs/governance/architecture-escalation.md` |

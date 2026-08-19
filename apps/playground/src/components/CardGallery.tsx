@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import type { Card, Suit } from '@world-cards/engine';
-import { PlayingCard, TableFelt, TableWoodCorners } from '@world-cards/ui';
+import type { Card, Suit } from '@world-of-cards/engine';
+import { PlayingCard, TableFelt, TableWoodCorners } from '@world-of-cards/ui';
 import { usePlaygroundStore } from '../state/playgroundStore';
 import { getCardGroup, SUIT_LABELS } from '../utils/cardGroups';
 import { ORDERED_DECK } from '../utils/orderedDeck';

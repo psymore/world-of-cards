@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { SuitIcon, SUIT_COLOR } from '@world-cards/ui';
-import type { Suit } from '@world-cards/engine';
+import { SuitIcon, SUIT_COLOR } from '@world-of-cards/ui';
+import type { Suit } from '@world-of-cards/engine';
 
 const FAN_SUITS: Array<{ suit: Suit; color: string }> = [
   { suit: 'spades', color: SUIT_COLOR.black },

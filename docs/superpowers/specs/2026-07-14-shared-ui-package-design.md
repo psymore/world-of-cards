@@ -26,7 +26,7 @@ Separately, playground has a real cross-platform rendering bug: `CardGallery`'s 
 
 ## Design
 
-### New package: `packages/ui` (`@world-cards/ui`)
+### New package: `packages/ui` (`@world-of-cards/ui`)
 
 The first RN-dependent shared package in `packages/` — unlike `packages/engine`, which is deliberately pure TypeScript with zero React/React Native dependency, `packages/ui` is real RN components consumed directly from source (`"main": "src/index.ts"`, no build step), exactly matching how `packages/engine` is already consumed by both apps via the npm workspace.
 
@@ -40,7 +40,7 @@ The first RN-dependent shared package in `packages/` — unlike `packages/engine
 - `glowShadow.ts`
 - `courtCardArt.ts`, plus its referenced assets: `apps/mobile/assets/card-art/processed/ai-generated/**` moves to `packages/ui/assets/card-art/processed/ai-generated/**` (the `require(...)` paths in `courtCardArt.ts` must move with it, since Metro resolves them relative to the requiring file).
 
-**Stays in `apps/mobile/src/components/`:** `GameResultModal.tsx`(+test), `GameScreenLayout.tsx`(+test), `PlayerAvatar.tsx`, `SelectableCard.tsx` (now imports `PlayingCard` from `@world-cards/ui`), `useCardSelection.ts`, `useReducedMotion.ts`.
+**Stays in `apps/mobile/src/components/`:** `GameResultModal.tsx`(+test), `GameScreenLayout.tsx`(+test), `PlayerAvatar.tsx`, `SelectableCard.tsx` (now imports `PlayingCard` from `@world-of-cards/ui`), `useCardSelection.ts`, `useReducedMotion.ts`.
 
 **Barrel export** (`packages/ui/src/index.ts`): re-exports `PlayingCard`/`PlayingCardProps`, `SuitIcon`/`SuitIconProps`, `TableFelt`, `TableWoodCorners`, `CardBackPattern`, `AbsoluteOverlay`, `glowShadow` — matching `packages/engine/src/index.ts`'s existing barrel pattern.
 
@@ -58,25 +58,25 @@ Investigated each component's actual current color ownership before designing th
 
 ### `apps/mobile` changes
 
-- `package.json`: add `"@world-cards/ui": "*"` dependency (same pattern as the existing `"@world-cards/engine": "*"`).
-- Update imports in `PistiTable.tsx` and `SelectableCard.tsx` from local relative paths to `@world-cards/ui` (confirmed via search: these are the only two files outside `components/` itself that reference the moving components).
+- `package.json`: add `"@world-of-cards/ui": "*"` dependency (same pattern as the existing `"@world-of-cards/engine": "*"`).
+- Update imports in `PistiTable.tsx` and `SelectableCard.tsx` from local relative paths to `@world-of-cards/ui` (confirmed via search: these are the only two files outside `components/` itself that reference the moving components).
 - Remove the moved files and moved assets from `apps/mobile`.
 - No behavior change: every new prop is optional and unused by `apps/mobile`, so its visual output is provably identical before/after.
 
 ### `apps/playground` changes
 
-- `package.json`: add `"@world-cards/ui": "*"` dependency.
+- `package.json`: add `"@world-of-cards/ui": "*"` dependency.
 - Delete `PlaygroundCard.tsx`, `SuitGlyph.tsx`, `TableBackdrop.tsx` (the duplicate implementations these changes make obsolete).
-- `CardGallery.tsx`, `CardTemplateEditor.tsx`, `TableTemplateEditor.tsx`: render the real `PlayingCard`/`TableFelt`/`TableWoodCorners` from `@world-cards/ui`, passing `usePlaygroundStore`'s existing `CardTemplate`/`TableTemplate` state through the new override props via a small local adapter (mapping `template.borderRadius` → `cardRadius`, `template.borders` → `borders`, `template.image` → `overlayImage`, `table.woodColor` → `TableWoodCorners`'s `woodColor`).
+- `CardGallery.tsx`, `CardTemplateEditor.tsx`, `TableTemplateEditor.tsx`: render the real `PlayingCard`/`TableFelt`/`TableWoodCorners` from `@world-of-cards/ui`, passing `usePlaygroundStore`'s existing `CardTemplate`/`TableTemplate` state through the new override props via a small local adapter (mapping `template.borderRadius` → `cardRadius`, `template.borders` → `borders`, `template.image` → `overlayImage`, `table.woodColor` → `TableWoodCorners`'s `woodColor`).
 - `PlaygroundScreen.tsx`: fix the grid-sizing inconsistency by capping the content width (e.g. `maxWidth: 480`, centered) so the existing `22%`-based grid math in `CardGallery` always resolves against a phone-like width regardless of actual browser window width. This is the same value class as a typical large phone (~430dp) with a small margin, chosen so native rendering is visually unaffected (already narrower than the cap) while web rendering gets constrained to match.
 
 ### Testing / tooling
 
 - New `packages/ui/jest.config.js`: `jest-expo` preset, copying `apps/mobile/jest.config.js`'s exact `transformIgnorePatterns` (needed since `packages/ui` contains real RN component tests, unlike `packages/engine`'s plain `ts-jest` setup).
 - New `packages/ui/tsconfig.json`: extends `expo/tsconfig.base` (matching `apps/mobile`/`apps/playground`'s pattern — NOT `packages/engine`'s pure-TS `nodenext` config, since this package needs JSX/RN types).
-- New `packages/ui/package.json`: `"name": "@world-cards/ui"`, `"main": "src/index.ts"`, `"types": "src/index.ts"`, devDependencies for typecheck only (matching `packages/engine`'s lightweight pattern — `react`/`react-native`/`react-native-svg` are provided by whichever consuming app's node_modules at runtime, same as how `packages/engine` declares no runtime dependencies of its own).
+- New `packages/ui/package.json`: `"name": "@world-of-cards/ui"`, `"main": "src/index.ts"`, `"types": "src/index.ts"`, devDependencies for typecheck only (matching `packages/engine`'s lightweight pattern — `react`/`react-native`/`react-native-svg` are provided by whichever consuming app's node_modules at runtime, same as how `packages/engine` declares no runtime dependencies of its own).
 - Root `jest.config.js`: add `'<rootDir>/packages/ui'` to the `projects` array.
-- No Metro config changes expected in either app — both already set `watchFolders`/`nodeModulesPaths` to the workspace root (confirmed by reading both `metro.config.js` files), the same mechanism that already resolves `@world-cards/engine`.
+- No Metro config changes expected in either app — both already set `watchFolders`/`nodeModulesPaths` to the workspace root (confirmed by reading both `metro.config.js` files), the same mechanism that already resolves `@world-of-cards/engine`.
 - No new automated tests beyond relocating `PlayingCard.test.tsx` unmodified — this remains decorative/tooling work per this project's standing testing policy. Verification is: existing tests pass after the move, typecheck is clean, and a browser/Playwright visual check confirms playground's card gallery now matches `apps/mobile`'s current look (PT Serif corner font, refined suit glyphs) and that the grid-sizing fix holds at both a narrow and a wide viewport width.
 
 ### `CLAUDE.md` update

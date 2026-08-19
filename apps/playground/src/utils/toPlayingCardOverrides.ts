@@ -1,8 +1,8 @@
-import type { PlayingCardBorderSpec, PlayingCardOverlayImage } from '@world-cards/ui';
+import type { PlayingCardBorderSpec, PlayingCardOverlayImage } from '@world-of-cards/ui';
 import type { CardTemplate } from '../types';
 
 // Maps playground's own CardTemplate state shape to the real PlayingCard's override props.
-// This mapping lives in apps/playground (the consumer), not @world-cards/ui (the shared
+// This mapping lives in apps/playground (the consumer), not @world-of-cards/ui (the shared
 // package) — the shared package owns its own prop interface and must not depend on any one
 // consumer's local types.
 export function toPlayingCardOverrides(template: CardTemplate): {

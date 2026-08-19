@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "world-cards",
+    "name": "World of Cards",
     "slug": "world-of-cards",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -10,7 +10,7 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.worldcards.app",
+      "package": "com.worldofcards.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",

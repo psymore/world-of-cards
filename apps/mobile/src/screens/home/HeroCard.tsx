@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
-import { glowShadow } from '@world-cards/ui';
+import { glowShadow } from '@world-of-cards/ui';
 
 const heroCardImage = require('../../../assets/hero-card-queen-of-hearts.png');
 

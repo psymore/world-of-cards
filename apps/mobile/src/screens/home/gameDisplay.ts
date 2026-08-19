@@ -1,4 +1,4 @@
-import type { GameCategory } from '@world-cards/engine';
+import type { GameCategory } from '@world-of-cards/engine';
 
 const CATEGORY_LABEL: Record<GameCategory, string> = {
   fishing: 'Fishing',

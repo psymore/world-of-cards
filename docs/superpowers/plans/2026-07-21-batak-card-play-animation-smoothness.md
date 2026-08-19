@@ -459,14 +459,14 @@ git commit -m "Thread the played card's origin rotation through the Batak play p
 In `apps/mobile/src/games/batak/table/TrickCenter.tsx`, replace:
 
 ```ts
-import { PlayingCard, SuitIcon, CARD_DIMS } from '@world-cards/ui';
+import { PlayingCard, SuitIcon, CARD_DIMS } from '@world-of-cards/ui';
 import { TravelCard } from '../../../table/TravelCard';
 ```
 
 with:
 
 ```ts
-import { PlayingCard, SuitIcon, CARD_DIMS } from '@world-cards/ui';
+import { PlayingCard, SuitIcon, CARD_DIMS } from '@world-of-cards/ui';
 import { TravelCard } from '../../../table/TravelCard';
 import { SELECTED_SCALE } from '../../../components/SelectableCard';
 ```

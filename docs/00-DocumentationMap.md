@@ -40,7 +40,7 @@ No lower-level document may override a higher-level one. If a domain's reasoning
 |---|---|---|---|
 | Generic WKA meta-architecture | `architecture/WKA*.md` | Project owner | Onboarding, or a genuinely architecture-shaped change |
 | WKA v1.0 canonical model (entities, relationships, lifecycle, invariants for the Code Index knowledge layer) | `architecture/wka-v1.0-canonical-model.md` | Project owner | Onboarding, or a genuinely architecture-shaped change |
-| World Cards' own Purpose/Quality Attributes | `architecture/world-cards-purpose.md` | Project owner | Same as above |
+| World of Cards' own Purpose/Quality Attributes | `architecture/world-of-cards-purpose.md` | Project owner | Same as above |
 | Standing engineering principles | `docs/governance/engineering-principles.md` | Project owner | Before writing code/tests/a structural decision |
 | Standing behavioral guardrails | `docs/governance/guardrails.md` | Project owner, via direct correction | Always, before implementation |
 | Architecture escalation triggers | `docs/governance/architecture-escalation.md` | Project owner | When a recurring-problem signal is suspected |

@@ -1,7 +1,7 @@
 // apps/mobile/src/games/pisti/PistiDevTuningModal.tsx
 import React from 'react';
 import { StyleSheet, Text } from 'react-native';
-import { CARD_DIMS, PressableFeedback, useCardFaceStyleStore } from '@world-cards/ui';
+import { CARD_DIMS, PressableFeedback, useCardFaceStyleStore } from '@world-of-cards/ui';
 import { useDevTuningStore } from '../../state/devTuningStore';
 import type { PistiTableBackground } from '../../state/devTuningStore';
 import { PISTI_RAIL_CONFIG } from './table/pistiRailFan';

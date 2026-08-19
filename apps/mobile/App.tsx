@@ -6,7 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AppState, Platform, StyleSheet } from 'react-native';
 import { RootNavigator } from './src/navigation/RootNavigator';
-import { FONTS } from '@world-cards/ui';
+import { FONTS } from '@world-of-cards/ui';
 
 SplashScreen.preventAutoHideAsync();
 

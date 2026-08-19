@@ -6,8 +6,8 @@ import {
   MODAL_CARD_SMALL_ASPECT_RATIO,
   MODAL_CARD_SMALL_IMAGE,
   PlaqueButton,
-} from '@world-cards/ui';
-import type { PlayerId, ScoreBoard } from '@world-cards/engine';
+} from '@world-of-cards/ui';
+import type { PlayerId, ScoreBoard } from '@world-of-cards/engine';
 
 export interface GameResultModalProps {
   scores: ScoreBoard;

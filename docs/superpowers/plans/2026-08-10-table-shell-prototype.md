@@ -412,7 +412,7 @@ git commit -m "feat(ui): add optional 2.5D tilt to TableShell"
 
 **Interfaces:**
 - Consumes: `TableShell`, `TableShellProps`, `TableSeatPosition`, `TABLE_SHELL_ASPECT_RATIO` from `./TableShell` (Tasks 2–3).
-- Produces: `@world-cards/ui` now exports all four — consumed by Task 5's Playground preview via `import { TableShell } from '@world-cards/ui'`.
+- Produces: `@world-of-cards/ui` now exports all four — consumed by Task 5's Playground preview via `import { TableShell } from '@world-of-cards/ui'`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -461,7 +461,7 @@ git commit -m "feat(ui): export TableShell from the ui package"
 - Modify: `apps/playground/src/PlaygroundScreen.tsx`
 
 **Interfaces:**
-- Consumes: `TableShell` from `@world-cards/ui` (Task 4).
+- Consumes: `TableShell` from `@world-of-cards/ui` (Task 4).
 - Produces: `TableShellPreview()` component, rendered by `PlaygroundScreen`. Nothing else in the repo depends on this — it is prototype-only UI, matching `TableTemplateEditor`'s and `CardTemplateEditor`'s role in the same file.
 
 - [ ] **Step 1: Create the preview component**
@@ -470,7 +470,7 @@ git commit -m "feat(ui): export TableShell from the ui package"
 // apps/playground/src/components/TableShellPreview.tsx
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { TableShell } from '@world-cards/ui';
+import { TableShell } from '@world-of-cards/ui';
 
 const SEAT_LABEL = { top: 'You', bottom: 'South AI', left: 'West AI', right: 'East AI' } as const;
 
@@ -547,7 +547,7 @@ import { TableShellPreview } from "./components/TableShellPreview";
 
 - [ ] **Step 3: Run the Playground app and visually verify**
 
-Run: `npm run playground` (or `npm run start --workspace=world-cards-playground`), open it in a browser or simulator.
+Run: `npm run playground` (or `npm run start --workspace=world-of-cards-playground`), open it in a browser or simulator.
 
 Expected, and required before this task is done:
 - The table renders as a floating oval on a dark backdrop, not full-bleed.

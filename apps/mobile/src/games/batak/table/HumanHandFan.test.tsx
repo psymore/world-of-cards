@@ -2,7 +2,7 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 import { HumanHandFan } from './HumanHandFan';
 import type { HandSlot } from './HumanHandFan';
-import type { Card } from '@world-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 
 const CARD: Card = { id: 'c1', suit: 'hearts', rank: '7' };
 

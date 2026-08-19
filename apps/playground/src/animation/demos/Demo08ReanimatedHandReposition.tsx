@@ -10,8 +10,8 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { createDeck } from "@world-cards/engine";
-import type { Card } from "@world-cards/engine";
+import { createDeck } from "@world-of-cards/engine";
+import type { Card } from "@world-of-cards/engine";
 import { SimpleCard, SIMPLE_CARD_HEIGHT, SIMPLE_CARD_WIDTH } from "../components/SimpleCard";
 import { FanLayoutConfig } from "../components/fanLayout";
 import {

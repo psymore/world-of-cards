@@ -4,15 +4,15 @@
 
 **Goal:** Build a self-contained "Animation Playground" mode inside `apps/playground`, implementing the 6 demos from `apps/playground/ANIMATION_ARCHITECTURE.md` on top of one reusable, single-progress-value motion primitive (`useCardMotion`), so card-travel animation quality can be perfected in isolation before it's ever ported into Batak.
 
-**Architecture:** A new `apps/playground/src/animation/` folder, reachable via a local-state mode toggle in `App.tsx`. Every animated card property is derived from one `Animated.Value` per card instance via `useCardMotion`; cards are rendered with a simplified text/suit-glyph `SimpleCard`, not `@world-cards/ui`'s `PlayingCard`. Demo 06 additionally uses a small local `useDealLoop` reducer (built on `@world-cards/engine`'s `createDeck`/`shuffle`/`createRng`) for the continuous 4-seat deal loop — no bidding/trump/trick-winner logic.
+**Architecture:** A new `apps/playground/src/animation/` folder, reachable via a local-state mode toggle in `App.tsx`. Every animated card property is derived from one `Animated.Value` per card instance via `useCardMotion`; cards are rendered with a simplified text/suit-glyph `SimpleCard`, not `@world-of-cards/ui`'s `PlayingCard`. Demo 06 additionally uses a small local `useDealLoop` reducer (built on `@world-of-cards/engine`'s `createDeck`/`shuffle`/`createRng`) for the continuous 4-seat deal loop — no bidding/trump/trick-winner logic.
 
-**Tech Stack:** React Native's built-in `Animated` API (`useNativeDriver: true`), `@react-native-community/slider` (already a dependency), `@world-cards/engine` root exports. No `react-native-reanimated`, no `@world-cards/ui`, no new dependencies.
+**Tech Stack:** React Native's built-in `Animated` API (`useNativeDriver: true`), `@react-native-community/slider` (already a dependency), `@world-of-cards/engine` root exports. No `react-native-reanimated`, no `@world-of-cards/ui`, no new dependencies.
 
 ## Global Constraints
 
 - No automated tests (Jest/RNTL) are written for this module — per this repo's standing 2026-07-07 mobile-UI testing policy, this is decorative/animation UI work judged by eye, not assertions. Every task's verification step is `npx tsc -p apps/playground/tsconfig.json --noEmit` plus running the app and manually checking behavior against `apps/playground/CLAUDE_ANIMATION_RULES.md`'s per-demo checklist (motion, continuity, scaling, landing, rotation, performance).
-- Do not add `react-native-reanimated` or any new npm dependency. Everything needed (`@react-native-community/slider`, `react-native`'s `Animated`, `@world-cards/engine`) is already present in `apps/playground/package.json`.
-- `apps/playground/src/animation/` must not import from `@world-cards/ui` or `apps/mobile`. It may import from `@world-cards/engine`'s root export only (`createDeck`, `shuffle`, `createRng`, `Card`, `Suit`, `Rank`).
+- Do not add `react-native-reanimated` or any new npm dependency. Everything needed (`@react-native-community/slider`, `react-native`'s `Animated`, `@world-of-cards/engine`) is already present in `apps/playground/package.json`.
+- `apps/playground/src/animation/` must not import from `@world-of-cards/ui` or `apps/mobile`. It may import from `@world-of-cards/engine`'s root export only (`createDeck`, `shuffle`, `createRng`, `Card`, `Suit`, `Rank`).
 - Do not modify `apps/mobile` in this plan — porting into Batak is an explicitly separate, later sub-project.
 - Every `Animated.timing` call must pass `useNativeDriver: true`.
 - One demo per task, in order — do not start a later demo's task before the previous one's manual verification checklist passes, per `CLAUDE_ANIMATION_RULES.md`'s "One Problem at a Time" / "Demo First" rules.
@@ -33,7 +33,7 @@
 - [ ] **Step 1: Create `apps/playground/src/animation/types.ts`**
 
 ```ts
-import type { Card } from '@world-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 
 export type DemoId =
   | 'fan-layout'
@@ -157,7 +157,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { FONTS } from '@world-cards/ui';
+import { FONTS } from '@world-of-cards/ui';
 import { PlaygroundScreen } from './src/PlaygroundScreen';
 import { AnimationPlaygroundScreen } from './src/animation/AnimationPlaygroundScreen';
 
@@ -249,7 +249,7 @@ git commit -m "Add animation playground entry point and demo switcher scaffold"
 - Create: `apps/playground/src/animation/components/SimpleCard.tsx`
 
 **Interfaces:**
-- Consumes: `Card`, `Suit` from `@world-cards/engine`.
+- Consumes: `Card`, `Suit` from `@world-of-cards/engine`.
 - Produces: `SimpleCard` component, `SIMPLE_CARD_WIDTH`, `SIMPLE_CARD_HEIGHT` constants. Every later task's card rendering uses these.
 
 - [ ] **Step 1: Create `apps/playground/src/animation/components/SimpleCard.tsx`**
@@ -257,7 +257,7 @@ git commit -m "Add animation playground entry point and demo switcher scaffold"
 ```tsx
 import React from 'react';
 import { Animated, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import type { Card, Suit } from '@world-cards/engine';
+import type { Card, Suit } from '@world-of-cards/engine';
 
 export const SIMPLE_CARD_WIDTH = 64;
 export const SIMPLE_CARD_HEIGHT = 92;
@@ -285,7 +285,7 @@ export interface SimpleCardProps {
   glyphStyle?: StyleProp<ViewStyle>;
 }
 
-// Deliberately does not use @world-cards/ui's PlayingCard/SuitIcon — per
+// Deliberately does not use @world-of-cards/ui's PlayingCard/SuitIcon — per
 // ANIMATION_ARCHITECTURE.md's "Playground Scope," this module renders cards as plain
 // text + Unicode suit glyphs at one fixed size, so animation work here is never
 // blocked on (or confused with) the real game's card art.
@@ -345,7 +345,7 @@ git commit -m "Add SimpleCard: text/suit-glyph card for the animation playground
 - Modify: `apps/playground/src/animation/AnimationPlaygroundScreen.tsx`
 
 **Interfaces:**
-- Consumes: `SIMPLE_CARD_WIDTH`, `SIMPLE_CARD_HEIGHT`, `SimpleCard` from `../components/SimpleCard` (Task 2); `Card`, `createDeck` from `@world-cards/engine`.
+- Consumes: `SIMPLE_CARD_WIDTH`, `SIMPLE_CARD_HEIGHT`, `SimpleCard` from `../components/SimpleCard` (Task 2); `Card`, `createDeck` from `@world-of-cards/engine`.
 - Produces: `computeFanSlot(index, count, config): {x, y, rotateDeg}`, `computeFanWidth(count, config): number`, `FanLayoutConfig` type from `./fanLayout` — Task 4 (Demo 02) reuses these directly so hand-slot math is defined exactly once.
 
 - [ ] **Step 1: Create `apps/playground/src/animation/components/fanLayout.ts`**
@@ -395,7 +395,7 @@ export function computeFanWidth(count: number, config: FanLayoutConfig): number 
 ```tsx
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import type { Card } from '@world-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 import { SimpleCard, SIMPLE_CARD_HEIGHT } from './SimpleCard';
 import { computeFanSlot, computeFanWidth, FanLayoutConfig } from './fanLayout';
 
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
 ```tsx
 import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { createDeck } from '@world-cards/engine';
+import { createDeck } from '@world-of-cards/engine';
 import { Hand } from '../components/Hand';
 import { LabeledSlider } from '../components/LabeledSlider';
 import { SIMPLE_CARD_WIDTH } from '../components/SimpleCard';
@@ -758,8 +758,8 @@ export function useCardMotion({
 ```tsx
 import React, { useMemo, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
-import { createDeck } from '@world-cards/engine';
-import type { Card } from '@world-cards/engine';
+import { createDeck } from '@world-of-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 import { SimpleCard, SIMPLE_CARD_HEIGHT } from '../components/SimpleCard';
 import { computeFanSlot, computeFanWidth, FanLayoutConfig, FanSlot } from '../components/fanLayout';
 import { useCardMotion } from '../engine/useCardMotion';
@@ -863,8 +863,8 @@ This demo is deliberately scoped as a small, replayable single-hand sandbox for 
 ```tsx
 import React, { useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
-import { createDeck } from '@world-cards/engine';
-import type { Card } from '@world-cards/engine';
+import { createDeck } from '@world-of-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 import { SimpleCard, SIMPLE_CARD_HEIGHT } from '../components/SimpleCard';
 import { computeFanSlot, computeFanWidth, FanLayoutConfig, FanSlot } from '../components/fanLayout';
 import { useCardMotion } from '../engine/useCardMotion';
@@ -1009,8 +1009,8 @@ This demo is Demo 03's exact mechanic with one axis exposed for comparison: whic
 ```tsx
 import React, { useMemo, useRef, useState } from 'react';
 import { Animated, Easing, EasingFunction, Pressable, StyleSheet, Text, View } from 'react-native';
-import { createDeck } from '@world-cards/engine';
-import type { Card } from '@world-cards/engine';
+import { createDeck } from '@world-of-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 import { SimpleCard, SIMPLE_CARD_HEIGHT } from '../components/SimpleCard';
 import { computeFanSlot, computeFanWidth, FanLayoutConfig, FanSlot } from '../components/fanLayout';
 import { useCardMotion } from '../engine/useCardMotion';
@@ -1179,8 +1179,8 @@ git commit -m "Implement Demo 04: landing easing comparison"
 ```tsx
 import React, { useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
-import { createDeck } from '@world-cards/engine';
-import type { Card } from '@world-cards/engine';
+import { createDeck } from '@world-of-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 import { SimpleCard, SIMPLE_CARD_HEIGHT } from '../components/SimpleCard';
 import { computeFanSlot, computeFanWidth, FanLayoutConfig, FanSlot } from '../components/fanLayout';
 import { useCardMotion } from '../engine/useCardMotion';
@@ -1317,7 +1317,7 @@ git commit -m "Implement Demo 05: scale/glyph transformation"
 - Modify: `apps/playground/src/animation/AnimationPlaygroundScreen.tsx`
 
 **Interfaces:**
-- Consumes: `createDeck`, `shuffle`, `createRng`, `Card` from `@world-cards/engine`; `useCardMotion` (Task 4); `SimpleCard`, `SIMPLE_CARD_WIDTH`/`HEIGHT` (Task 2); `computeFanSlot`/`computeFanWidth`/`FanLayoutConfig` (Task 3); `idleKeyframe` (Task 1).
+- Consumes: `createDeck`, `shuffle`, `createRng`, `Card` from `@world-of-cards/engine`; `useCardMotion` (Task 4); `SimpleCard`, `SIMPLE_CARD_WIDTH`/`HEIGHT` (Task 2); `computeFanSlot`/`computeFanWidth`/`FanLayoutConfig` (Task 3); `idleKeyframe` (Task 1).
 - Produces: `useDealLoop(): DealLoopApi` — `{ seats: Card[][], turnSeat: number, currentTrick: {seat:number; card:Card}[], playCard(seat, cardId): Card | null, clearTrick(): void }`.
 
 This is the "everything combined" demo: a real 4-seat, 13-card deal with turn order that cycles continuously (no trick-winner logic — confirmed with the user, see the design spec), auto-reshuffle once every hand is empty, the human seat (0) using the full select→play flow from Tasks 4–7, and the other 3 seats auto-playing on a timer.
@@ -1326,8 +1326,8 @@ This is the "everything combined" demo: a real 4-seat, 13-card deal with turn or
 
 ```ts
 import { useCallback, useState } from 'react';
-import { createDeck, createRng, shuffle } from '@world-cards/engine';
-import type { Card } from '@world-cards/engine';
+import { createDeck, createRng, shuffle } from '@world-of-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 
 export const SEAT_COUNT = 4;
 export const HAND_SIZE = 13;
@@ -1403,7 +1403,7 @@ export function useDealLoop(): DealLoopApi {
 ```tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
-import type { Card } from '@world-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 import { SimpleCard, SIMPLE_CARD_HEIGHT, SIMPLE_CARD_WIDTH } from '../components/SimpleCard';
 import { computeFanSlot, computeFanWidth, FanLayoutConfig, FanSlot } from '../components/fanLayout';
 import { useCardMotion } from '../engine/useCardMotion';

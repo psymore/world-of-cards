@@ -1,4 +1,4 @@
-import type { Card, Rank, Suit } from '@world-cards/engine';
+import type { Card, Rank, Suit } from '@world-of-cards/engine';
 import type { CardGroup } from '../types';
 
 // The gallery deck is generated with includeJokers: false, so 'joker' is

@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, Text } from "react-native";
-import { PressableFeedback } from "@world-cards/ui";
-import type { Difficulty, PlayerId, RNG } from "@world-cards/engine";
-import { createRng } from "@world-cards/engine";
+import { PressableFeedback } from "@world-of-cards/ui";
+import type { Difficulty, PlayerId, RNG } from "@world-of-cards/engine";
+import { createRng } from "@world-of-cards/engine";
 import {
   batakDescriptor,
   BatakState,
   BatakMove,
   trickWinnerIndex,
-} from "@world-cards/engine/games/batak";
+} from "@world-of-cards/engine/games/batak";
 import { createGameSessionStore } from "../../state/createGameSessionStore";
 import { useSettingsStore } from "../../state/settingsStore";
 import { GameScreenLayout } from "../../components/GameScreenLayout";

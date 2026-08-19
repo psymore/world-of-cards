@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
-import { createDeck, createRng, shuffle } from '@world-cards/engine';
-import type { Card } from '@world-cards/engine';
+import { createDeck, createRng, shuffle } from '@world-of-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 
 export const SEAT_COUNT = 4;
 export const HAND_SIZE = 13;

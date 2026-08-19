@@ -1,8 +1,8 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import type { Card, Suit } from "@world-cards/engine";
-import { compareRanks } from "@world-cards/engine/games/batak";
-import { CARD_DIMS } from "@world-cards/ui";
+import type { Card, Suit } from "@world-of-cards/engine";
+import { compareRanks } from "@world-of-cards/engine/games/batak";
+import { CARD_DIMS } from "@world-of-cards/ui";
 import { BatakHandCard } from "./BatakHandCard";
 import type { useCardMotion } from "../../../table/useCardMotion";
 import {

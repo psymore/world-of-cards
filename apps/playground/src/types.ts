@@ -57,7 +57,7 @@ export interface BorderPreset {
   builtIn?: boolean;
 }
 
-// The real game's actual border spec, mirrored from @world-cards/ui's PlayingCard defaults
+// The real game's actual border spec, mirrored from @world-of-cards/ui's PlayingCard defaults
 // (CARD_RADIUS = 6, DEFAULT_BORDERS = 1px #fff + 1px #999). Kept as data here rather than
 // imported because the shared package doesn't export those constants.
 export const CURRENT_GAME_BORDER_PRESET: BorderPreset = {

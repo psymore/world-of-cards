@@ -6,7 +6,7 @@
 
 **Architecture:** Two files (`useBatakCardMotion.ts`, `batakRailFan.ts`'s pure math) are promoted from Batak-only to a shared `apps/mobile/src/table/` location, since they were already 100% game-agnostic. Pişti gets its own `pistiRailFan.ts`/`PistiHandFan.tsx`/`PistiHandCard.tsx`, mirroring `HumanHandFan.tsx`/`BatakHandCard.tsx`'s actual gesture/animation logic without importing them directly (matching this codebase's existing cross-game isolation convention). Pişti's bespoke `RevealCard` play-travel component is retired in favor of the already-shared `TravelCard.tsx`, and a new `pileRestingRotations` map persists each landed card's angle in the pile.
 
-**Tech Stack:** `react-native-reanimated` (shared values, `withTiming`), `react-native-gesture-handler` (`Gesture.Tap()`/`GestureDetector`), existing `@world-cards/ui` `PlayingCard`/`CARD_DIMS`, plain `Animated` for `TravelCard` (unchanged).
+**Tech Stack:** `react-native-reanimated` (shared values, `withTiming`), `react-native-gesture-handler` (`Gesture.Tap()`/`GestureDetector`), existing `@world-of-cards/ui` `PlayingCard`/`CARD_DIMS`, plain `Animated` for `TravelCard` (unchanged).
 
 ## Global Constraints
 
@@ -327,7 +327,7 @@ git commit -m "feat(pisti): add pistiRailFan geometry config"
 - Create: `apps/mobile/src/games/pisti/table/PistiHandCard.tsx`
 
 **Interfaces:**
-- Consumes: `useCardMotion` (Task 1), `PlayingCard`/`CARD_DIMS` from `@world-cards/ui`, `useReducedMotion` (`apps/mobile/src/components/useReducedMotion`), `useSettingsStore` (`apps/mobile/src/state/settingsStore`).
+- Consumes: `useCardMotion` (Task 1), `PlayingCard`/`CARD_DIMS` from `@world-of-cards/ui`, `useReducedMotion` (`apps/mobile/src/components/useReducedMotion`), `useSettingsStore` (`apps/mobile/src/state/settingsStore`).
 - Produces: `PistiHandCard` component, props `{ cardId: string; card: Card; restTarget: { x: number; y: number; angleDeg: number }; liftedTarget: { x: number; y: number }; interactive: boolean; selected: boolean; onPress: () => void; registerMotion: (cardId: string, motion: ReturnType<typeof useCardMotion> | null) => void }`. Consumed by Task 4 (`PistiHandFan.tsx`).
 
 Simpler than `BatakHandCard.tsx`: no `enterFromOffset` (no gömmeli-bury equivalent), no entrance stagger (Pişti's hand only ever renders once `dealPhase === 'revealing'`, i.e. after the deal-flight overlay already finished — cards appear directly at their resting slot, same as today), no local-departure leg (no trick-center resize in scope for Pişti).
@@ -339,8 +339,8 @@ import React, { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Easing, runOnJS, useAnimatedStyle } from 'react-native-reanimated';
-import type { Card } from '@world-cards/engine';
-import { PlayingCard, CARD_DIMS } from '@world-cards/ui';
+import type { Card } from '@world-of-cards/engine';
+import { PlayingCard, CARD_DIMS } from '@world-of-cards/ui';
 import { useReducedMotion } from '../../../components/useReducedMotion';
 import { useSettingsStore } from '../../../state/settingsStore';
 import { useCardMotion } from '../../../table/useCardMotion';
@@ -565,8 +565,8 @@ git commit -m "feat(pisti): add PistiHandCard component"
 ```tsx
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import type { Card } from '@world-cards/engine';
-import { CARD_DIMS } from '@world-cards/ui';
+import type { Card } from '@world-of-cards/engine';
+import { CARD_DIMS } from '@world-of-cards/ui';
 import { railAngleStepDeg, railAngles, railPosition } from '../../../table/railFan';
 import { useCardMotion } from '../../../table/useCardMotion';
 import { PISTI_RAIL_CONFIG, PISTI_SELECTED_LIFT_DISTANCE } from './pistiRailFan';
@@ -688,7 +688,7 @@ git commit -m "feat(pisti): add PistiHandFan component"
 - [ ] **Step 1: Confirm `SelectableCard.tsx` has no other consumer**
 
 ```bash
-cd d:/CodeSpace/world-cards && grep -rl "components/SelectableCard\|from '\./SelectableCard'" apps/mobile/src --include="*.tsx" --include="*.ts"
+cd d:/CodeSpace/world-of-cards && grep -rl "components/SelectableCard\|from '\./SelectableCard'" apps/mobile/src --include="*.tsx" --include="*.ts"
 ```
 
 Expected: only `apps/mobile/src/games/pisti/PistiTable.tsx` (about to be updated by this task). If anything else appears, stop and report it before proceeding — do not delete the file.
@@ -1165,7 +1165,7 @@ Replace the full file content with:
 import React from 'react';
 import { render, screen, within } from '@testing-library/react-native';
 import { PistiTable } from './PistiTable';
-import type { PistiState } from '@world-cards/engine/games/pisti';
+import type { PistiState } from '@world-of-cards/engine/games/pisti';
 
 const PLAYER_NAMES = { human: 'You', ai: 'Computer' };
 

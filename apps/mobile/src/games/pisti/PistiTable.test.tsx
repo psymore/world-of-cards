@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, within } from '@testing-library/react-native';
 import { PistiTable, turnStateForPlayer } from './PistiTable';
-import type { PistiState } from '@world-cards/engine/games/pisti';
+import type { PistiState } from '@world-of-cards/engine/games/pisti';
 
 const PLAYER_NAMES = { human: 'You', ai: 'Computer' };
 

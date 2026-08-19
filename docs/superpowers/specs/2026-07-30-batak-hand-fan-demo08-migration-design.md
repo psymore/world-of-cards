@@ -16,7 +16,7 @@ Batak's real `HumanHandFan.tsx` has never actually carried this pattern (see `do
 New file: `apps/playground/src/animation/demos/Demo09BatakHandTuning.tsx`, registered alongside the existing demos in `apps/playground/src/animation/AnimationPlaygroundScreen.tsx`'s demo switcher. `Demo08ReanimatedHandReposition.tsx` and `railFanLayout.ts` are not modified — Demo08 stays the validated reference; Demo09 imports from `railFanLayout.ts` (`RAIL_RADIUS`, `railAngleStepDeg`, `railAngles`, `railPosition`) rather than duplicating that math.
 
 Differences from Demo08:
-- Renders `@world-cards/ui`'s real `PlayingCard` (a real, seeded, sorted 13-card Batak-style hand — reuse `@world-cards/engine`'s `createDeck`/`shuffle`/`createRng` the way Demo06's deal loop already does) instead of the playground's `SimpleCard`.
+- Renders `@world-of-cards/ui`'s real `PlayingCard` (a real, seeded, sorted 13-card Batak-style hand — reuse `@world-of-cards/engine`'s `createDeck`/`shuffle`/`createRng` the way Demo06's deal loop already does) instead of the playground's `SimpleCard`.
 - Sized to `CARD_DIMS.normal` (94×132), not the playground's smaller stand-in dimensions.
 - Preview frame is phone-width (reuse whatever width constant the other demos already use for their phone-frame mockups), not desktop-arbitrary.
 - Reuses `FanConfigControls.tsx`'s sliders as-is (radius, spacing, overlap, arc degrees, max rotation) — if it needs a prop that doesn't exist yet, extend it additively (new optional prop, existing demos byte-identical), don't fork it.

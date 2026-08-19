@@ -31,8 +31,8 @@
 - Modify: `apps/mobile/src/games/batak/BatakTable.tsx`
 
 **Interfaces:**
-- Consumes: existing `fanRotationDeg(index, count): number`, `fanCurveY(index, count): number` from `seating.ts` (unchanged). Existing `SelectableCardProps`/`SelectableCard` (unchanged behavior for existing callers). Existing `Card`, `Suit` types from `@world-cards/engine`.
-- Produces: `compareRanks` now importable from `@world-cards/engine/games/batak`. `splitTwoRows(count: number): [number, number]` and `overlapMarginPx(cardWidth: number, overlapPercent: number): number` from `seating.ts`, consumed only by `BatakTable.tsx` in this task. `SelectableCard` gains an optional `curveOffsetY?: number` prop, consumed only by `BatakTable.tsx`'s new `HandRow` in this task (Pişti's existing usage is unaffected, since it never passes this prop).
+- Consumes: existing `fanRotationDeg(index, count): number`, `fanCurveY(index, count): number` from `seating.ts` (unchanged). Existing `SelectableCardProps`/`SelectableCard` (unchanged behavior for existing callers). Existing `Card`, `Suit` types from `@world-of-cards/engine`.
+- Produces: `compareRanks` now importable from `@world-of-cards/engine/games/batak`. `splitTwoRows(count: number): [number, number]` and `overlapMarginPx(cardWidth: number, overlapPercent: number): number` from `seating.ts`, consumed only by `BatakTable.tsx` in this task. `SelectableCard` gains an optional `curveOffsetY?: number` prop, consumed only by `BatakTable.tsx`'s new `HandRow` in this task (Pişti's existing usage is unaffected, since it never passes this prop).
 
 - [ ] **Step 1: Export `compareRanks` from the `batak` engine subpath**
 
@@ -133,10 +133,10 @@ In `apps/mobile/src/games/batak/BatakTable.tsx`, update the import lines at the 
 ```tsx
 import React, { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import type { Card, Suit } from '@world-cards/engine';
-import type { BatakState, BatakMove } from '@world-cards/engine/games/batak';
-import { compareRanks } from '@world-cards/engine/games/batak';
-import { PlayingCard, SuitIcon, TableFelt, TableWoodCorners, glowShadow } from '@world-cards/ui';
+import type { Card, Suit } from '@world-of-cards/engine';
+import type { BatakState, BatakMove } from '@world-of-cards/engine/games/batak';
+import { compareRanks } from '@world-of-cards/engine/games/batak';
+import { PlayingCard, SuitIcon, TableFelt, TableWoodCorners, glowShadow } from '@world-of-cards/ui';
 import { SelectableCard } from '../../components/SelectableCard';
 import { useCardSelection } from '../../components/useCardSelection';
 import { PlayerAvatar } from '../../components/PlayerAvatar';

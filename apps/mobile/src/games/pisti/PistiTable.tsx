@@ -13,8 +13,8 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import type { Card } from "@world-cards/engine";
-import type { PistiState } from "@world-cards/engine/games/pisti";
+import type { Card } from "@world-of-cards/engine";
+import type { PistiState } from "@world-of-cards/engine/games/pisti";
 import {
   PlayingCard,
   TableShell,
@@ -44,13 +44,13 @@ import {
   BottomAnchoredImage,
   BODY_REGULAR,
   BODY_SEMIBOLD,
-} from "@world-cards/ui";
+} from "@world-of-cards/ui";
 import type {
   SeatIdentityTurnState,
   SeatIdentityAvatar,
   SeatIdentityTurnStateFrames,
   TableSeatPosition,
-} from "@world-cards/ui";
+} from "@world-of-cards/ui";
 import { DeselectableSurface } from "../../components/DeselectableSurface";
 import { useCardSelection } from "../../components/useCardSelection";
 import { PlayerBadge } from "../../table/PlayerBadge";
@@ -77,8 +77,8 @@ import type { PistiTableBackground } from "../../state/devTuningStore";
 
 // The real per-state ring art (idle/active), replacing SeatIdentity's default glowShadow
 // placeholder — see docs/superpowers/specs/2026-08-12-pisti-table-shell-pilot-design.md Decision 4.
-// Sourced via named exports from @world-cards/ui rather than a direct
-// require('@world-cards/ui/assets/...') — that package's `exports` map only publishes ".", so the
+// Sourced via named exports from @world-of-cards/ui rather than a direct
+// require('@world-of-cards/ui/assets/...') — that package's `exports` map only publishes ".", so the
 // asset subpath isn't resolvable from a consuming app. SeatIdentityTurnStateFrames still requires
 // a 'next' key (SeatIdentity itself keeps its own 3-state ring, see turnState.ts's header comment
 // for why the two components diverged) — mapped to the idle frame since turnStateForPlayer below

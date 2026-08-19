@@ -25,7 +25,7 @@
 - Modify: `packages/engine/src/games/batak/index.ts`
 
 **Interfaces:**
-- Produces: `ruleConstants(playerCount: number): RuleConstants` and the `RuleConstants` type, both now importable via `@world-cards/engine/games/batak` (previously only importable from the internal `./rules` path, unreachable from `apps/mobile`).
+- Produces: `ruleConstants(playerCount: number): RuleConstants` and the `RuleConstants` type, both now importable via `@world-of-cards/engine/games/batak` (previously only importable from the internal `./rules` path, unreachable from `apps/mobile`).
 
 - [ ] **Step 1: Add the re-export**
 
@@ -115,7 +115,7 @@ Replace the full contents of `apps/mobile/src/games/batak/BatakSetupView.tsx` wi
 ```tsx
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type { Difficulty } from '@world-cards/engine';
+import type { Difficulty } from '@world-of-cards/engine';
 import { useSettingsStore } from '../../state/settingsStore';
 import type { BatakVariant } from './batakVariant';
 
@@ -244,9 +244,9 @@ In `apps/mobile/src/games/batak/BatakScreen.tsx`, change the imports and top-lev
 
 ```ts
 import React, { useEffect, useRef, useState } from 'react';
-import type { Difficulty, PlayerId, RNG } from '@world-cards/engine';
-import { createRng } from '@world-cards/engine';
-import { batakDescriptor, BatakState, BatakMove, trickWinnerIndex } from '@world-cards/engine/games/batak';
+import type { Difficulty, PlayerId, RNG } from '@world-of-cards/engine';
+import { createRng } from '@world-of-cards/engine';
+import { batakDescriptor, BatakState, BatakMove, trickWinnerIndex } from '@world-of-cards/engine/games/batak';
 import { createGameSessionStore } from '../../state/createGameSessionStore';
 import { useSettingsStore } from '../../state/settingsStore';
 import { GameScreenLayout } from '../../components/GameScreenLayout';
@@ -535,7 +535,7 @@ git commit -m "Add 2-opponent (left/right) seat assignment for Batak gömmeli"
 - Modify: `apps/mobile/src/games/batak/BatakTable.tsx`
 
 **Interfaces:**
-- Consumes: `BatakState` (engine, unchanged), `PlayingCard`/`CARD_DIMS` (`@world-cards/ui`, unchanged).
+- Consumes: `BatakState` (engine, unchanged), `PlayingCard`/`CARD_DIMS` (`@world-of-cards/ui`, unchanged).
 - Produces: `export function kittyPileCards(state: BatakState): Card[]` and `export function KittyPile({ cards }: { cards: Card[] })` — Task 9 reuses `kittyPileCards` to derive the same 4 cards for the reveal/collect animation legs.
 
 - [ ] **Step 1: Create `KittyPile.tsx`**
@@ -545,9 +545,9 @@ Create `apps/mobile/src/games/batak/table/KittyPile.tsx`:
 ```tsx
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import type { Card } from '@world-cards/engine';
-import type { BatakState } from '@world-cards/engine/games/batak';
-import { PlayingCard, CARD_DIMS } from '@world-cards/ui';
+import type { Card } from '@world-of-cards/engine';
+import type { BatakState } from '@world-of-cards/engine/games/batak';
+import { PlayingCard, CARD_DIMS } from '@world-of-cards/ui';
 
 // The 4-card kitty is dealt face-down into a real 'kitty' zone as part of the initial deal
 // (packages/engine/src/games/batak/rules.ts:52,180) and sits there untouched through bidding
@@ -868,8 +868,8 @@ Create `apps/mobile/src/games/batak/table/BurySlots.tsx`:
 ```tsx
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import type { Card } from '@world-cards/engine';
-import { PlayingCard } from '@world-cards/ui';
+import type { Card } from '@world-of-cards/engine';
+import { PlayingCard } from '@world-of-cards/ui';
 import { TravelCard } from '../../../table/TravelCard';
 
 const BURY_SLOT_SIZE = 56;
@@ -932,8 +932,8 @@ Create `apps/mobile/src/games/batak/table/KittyExchangeCenter.tsx`:
 ```tsx
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type { Card } from '@world-cards/engine';
-import type { BatakState } from '@world-cards/engine/games/batak';
+import type { Card } from '@world-of-cards/engine';
+import type { BatakState } from '@world-of-cards/engine/games/batak';
 import { centerPanelStyles } from './centerPanelStyles';
 import { BurySlots } from './BurySlots';
 
@@ -1350,8 +1350,8 @@ Create `apps/mobile/src/table/KittyRevealCard.tsx`:
 ```tsx
 import React, { useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
-import type { Card } from '@world-cards/engine';
-import { PlayingCard } from '@world-cards/ui';
+import type { Card } from '@world-of-cards/engine';
+import { PlayingCard } from '@world-of-cards/ui';
 import { useReducedMotion } from '../components/useReducedMotion';
 import { CARD_TRAVEL_DURATION_MS, CARD_TRAVEL_EASING } from './travelAnimation';
 

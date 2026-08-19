@@ -4,7 +4,7 @@
 
 **Goal:** Extract `PlayingCard`/`SuitIcon`/`TableFelt`/`TableWoodCorners`/`CardBackPattern`/etc. into a new shared `packages/ui` workspace package so `apps/playground` previews the real, shipped components (with genuine theming override props) instead of its own duplicate implementations — while `apps/mobile` and `apps/playground` remain fully separate builds/dependency trees.
 
-**Architecture:** New pure-RN, zero-build workspace package (`@world-cards/ui`, consumed directly from `src/`, same pattern as `@world-cards/engine`). `PlayingCard`/`TableWoodCorners` gain optional override props defaulting to today's exact hardcoded look. `apps/mobile` swaps two internal import paths and drops its now-duplicated local files. `apps/playground` drops its own duplicate components, gains its own font-loading gate (Expo font loading is per-app), and wires its existing template-editor state into the real components via a small local adapter. A separate, unrelated grid-sizing bug (playground's card gallery renders far too large on web vs. native) gets fixed in its own task.
+**Architecture:** New pure-RN, zero-build workspace package (`@world-of-cards/ui`, consumed directly from `src/`, same pattern as `@world-of-cards/engine`). `PlayingCard`/`TableWoodCorners` gain optional override props defaulting to today's exact hardcoded look. `apps/mobile` swaps two internal import paths and drops its now-duplicated local files. `apps/playground` drops its own duplicate components, gains its own font-loading gate (Expo font loading is per-app), and wires its existing template-editor state into the real components via a small local adapter. A separate, unrelated grid-sizing bug (playground's card gallery renders far too large on web vs. native) gets fixed in its own task.
 
 **Tech Stack:** Expo SDK 57, React Native, TypeScript, react-native-svg, npm workspaces, jest-expo.
 
@@ -26,13 +26,13 @@
 - Modify: `apps/mobile/package.json`, `apps/playground/package.json`, `jest.config.js` (repo root)
 
 **Interfaces:**
-- Produces: `@world-cards/ui` package exporting `PlayingCard`, `PlayingCardProps`, `PlayingCardSize`, `SuitIcon`, `SuitIconProps`, `TableFelt`, `TableWoodCorners`, `CardBackPattern`, `AbsoluteOverlay`, `glowShadow`, `FONTS`, `CARD_RANK_FONT_FAMILY` from `packages/ui/src/index.ts`. Task 2 adds new override props to `PlayingCard`/`TableWoodCorners` on top of this.
+- Produces: `@world-of-cards/ui` package exporting `PlayingCard`, `PlayingCardProps`, `PlayingCardSize`, `SuitIcon`, `SuitIconProps`, `TableFelt`, `TableWoodCorners`, `CardBackPattern`, `AbsoluteOverlay`, `glowShadow`, `FONTS`, `CARD_RANK_FONT_FAMILY` from `packages/ui/src/index.ts`. Task 2 adds new override props to `PlayingCard`/`TableWoodCorners` on top of this.
 
 - [ ] **Step 1: Create `packages/ui/package.json`**
 
 ```json
 {
-  "name": "@world-cards/ui",
+  "name": "@world-of-cards/ui",
   "version": "0.1.0",
   "private": true,
   "main": "src/index.ts",
@@ -125,7 +125,7 @@ import { CARD_RANK_FONT_FAMILY } from './fonts';
 In `packages/ui/src/courtCardArt.ts`, every `require('../../assets/card-art/processed/ai-generated/...')` becomes `require('../assets/card-art/processed/ai-generated/...')` (one `../` instead of two — the file moved from `apps/mobile/src/components/` to `packages/ui/src/`, and `packages/ui/assets/` is one level up from `packages/ui/src/`, not two). The full corrected file:
 ```ts
 import type { ImageSourcePropType } from 'react-native';
-import type { Rank, Suit } from '@world-cards/engine';
+import type { Rank, Suit } from '@world-of-cards/engine';
 
 // Full AI-generated art set (docs/superpowers/specs/2026-07-11-court-card-art-pipeline-design.md
 // predates this set — it covered demo-scope K/Q/J-with-reuse only). This set has dedicated K/Q/J
@@ -167,11 +167,11 @@ export { glowShadow } from './glowShadow';
 export { FONTS, CARD_RANK_FONT_FAMILY } from './fonts';
 ```
 
-- [ ] **Step 9: Add the `@world-cards/ui` dependency to both apps**
+- [ ] **Step 9: Add the `@world-of-cards/ui` dependency to both apps**
 
-In `apps/mobile/package.json`'s `dependencies`, add (alphabetically, next to `@world-cards/engine`):
+In `apps/mobile/package.json`'s `dependencies`, add (alphabetically, next to `@world-of-cards/engine`):
 ```json
-"@world-cards/ui": "*",
+"@world-of-cards/ui": "*",
 ```
 In `apps/playground/package.json`'s `dependencies`, add the same line.
 
@@ -181,7 +181,7 @@ Run (from repo root):
 ```bash
 npm install
 ```
-Expected: exits 0; `node_modules/@world-cards/ui` now exists as a workspace symlink.
+Expected: exits 0; `node_modules/@world-of-cards/ui` now exists as a workspace symlink.
 
 - [ ] **Step 11: Typecheck the new package**
 
@@ -342,7 +342,7 @@ In `packages/ui/src/PlayingCard.tsx`, change the imports from:
 ```ts
 import React from 'react';
 import { View, Text, Image, StyleSheet, StyleProp, ViewStyle } from 'react-native';
-import type { Card, Suit } from '@world-cards/engine';
+import type { Card, Suit } from '@world-of-cards/engine';
 import { SuitIcon } from './SuitIcon';
 import { CardBackPattern } from './CardBackPattern';
 import { glowShadow } from './glowShadow';
@@ -354,7 +354,7 @@ to:
 import React from 'react';
 import { View, Text, Image, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { SvgXml } from 'react-native-svg';
-import type { Card, Suit } from '@world-cards/engine';
+import type { Card, Suit } from '@world-of-cards/engine';
 import { SuitIcon } from './SuitIcon';
 import { CardBackPattern } from './CardBackPattern';
 import { glowShadow } from './glowShadow';
@@ -743,7 +743,7 @@ git commit -m "Add theming override props to PlayingCard and TableWoodCorners"
 
 ---
 
-### Task 3: Wire `apps/mobile` to consume `@world-cards/ui`
+### Task 3: Wire `apps/mobile` to consume `@world-of-cards/ui`
 
 **Files:**
 - Modify: `apps/mobile/src/games/pisti/PistiTable.tsx`
@@ -751,7 +751,7 @@ git commit -m "Add theming override props to PlayingCard and TableWoodCorners"
 - Modify: `apps/mobile/App.tsx`
 
 **Interfaces:**
-- Consumes: `PlayingCard`, `SuitIcon`, `TableFelt`, `TableWoodCorners`, `CardBackPattern`, `AbsoluteOverlay`, `glowShadow`, `FONTS` from `@world-cards/ui` (Task 1/2).
+- Consumes: `PlayingCard`, `SuitIcon`, `TableFelt`, `TableWoodCorners`, `CardBackPattern`, `AbsoluteOverlay`, `glowShadow`, `FONTS` from `@world-of-cards/ui` (Task 1/2).
 
 - [ ] **Step 1: Update `PistiTable.tsx`'s imports**
 
@@ -768,13 +768,13 @@ import { useReducedMotion } from '../../components/useReducedMotion';
 ```
 Change it to:
 ```ts
-import { PlayingCard, TableFelt, TableWoodCorners, glowShadow } from '@world-cards/ui';
+import { PlayingCard, TableFelt, TableWoodCorners, glowShadow } from '@world-of-cards/ui';
 import { SelectableCard } from '../../components/SelectableCard';
 import { useCardSelection } from '../../components/useCardSelection';
 import { PlayerAvatar } from '../../components/PlayerAvatar';
 import { useReducedMotion } from '../../components/useReducedMotion';
 ```
-(`SelectableCard`, `useCardSelection`, `PlayerAvatar`, `useReducedMotion` did not move — only their import order shifts since the moved-component imports are now consolidated into one `@world-cards/ui` line.)
+(`SelectableCard`, `useCardSelection`, `PlayerAvatar`, `useReducedMotion` did not move — only their import order shifts since the moved-component imports are now consolidated into one `@world-of-cards/ui` line.)
 
 - [ ] **Step 2: Update `SelectableCard.tsx`'s import**
 
@@ -784,7 +784,7 @@ import { PlayingCard, PlayingCardProps } from './PlayingCard';
 ```
 to:
 ```ts
-import { PlayingCard, PlayingCardProps } from '@world-cards/ui';
+import { PlayingCard, PlayingCardProps } from '@world-of-cards/ui';
 ```
 
 - [ ] **Step 3: Update `App.tsx`'s font import**
@@ -795,7 +795,7 @@ import { FONTS } from './src/theme/fonts';
 ```
 to:
 ```ts
-import { FONTS } from '@world-cards/ui';
+import { FONTS } from '@world-of-cards/ui';
 ```
 
 - [ ] **Step 4: Confirm no other references to the moved files remain**
@@ -826,7 +826,7 @@ Expected: same 38/38 passing as before this task (this task changes only import 
 
 ```bash
 git add apps/mobile
-git commit -m "Wire apps/mobile to consume @world-cards/ui"
+git commit -m "Wire apps/mobile to consume @world-of-cards/ui"
 ```
 
 ---
@@ -838,7 +838,7 @@ git commit -m "Wire apps/mobile to consume @world-cards/ui"
 - Modify: `apps/playground/App.tsx`
 
 **Interfaces:**
-- Consumes: `FONTS` from `@world-cards/ui` (Task 1).
+- Consumes: `FONTS` from `@world-of-cards/ui` (Task 1).
 
 - [ ] **Step 1: Install expo-font and expo-splash-screen**
 
@@ -856,7 +856,7 @@ import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
-import { FONTS } from '@world-cards/ui';
+import { FONTS } from '@world-of-cards/ui';
 import { PlaygroundScreen } from './src/PlaygroundScreen';
 
 SplashScreen.preventAutoHideAsync();
@@ -907,7 +907,7 @@ git commit -m "Add PT Serif font loading to apps/playground"
 - Modify: `apps/playground/src/components/CardGallery.tsx`, `apps/playground/src/components/CardTemplateEditor.tsx`, `apps/playground/src/components/TableTemplateEditor.tsx`
 
 **Interfaces:**
-- Consumes: `PlayingCard`, `PlayingCardBorderSpec`, `PlayingCardOverlayImage`, `TableFelt`, `TableWoodCorners` from `@world-cards/ui` (Task 1/2).
+- Consumes: `PlayingCard`, `PlayingCardBorderSpec`, `PlayingCardOverlayImage`, `TableFelt`, `TableWoodCorners` from `@world-of-cards/ui` (Task 1/2).
 
 - [ ] **Step 1: Delete the three duplicate components**
 
@@ -923,9 +923,9 @@ Replace the full contents of `apps/playground/src/components/CardGallery.tsx`:
 ```tsx
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { createDeck } from '@world-cards/engine';
-import type { Card, Suit } from '@world-cards/engine';
-import { PlayingCard, TableFelt, TableWoodCorners } from '@world-cards/ui';
+import { createDeck } from '@world-of-cards/engine';
+import type { Card, Suit } from '@world-of-cards/engine';
+import { PlayingCard, TableFelt, TableWoodCorners } from '@world-of-cards/ui';
 import { usePlaygroundStore } from '../state/playgroundStore';
 import { getCardGroup } from '../utils/cardGroups';
 import { toPlayingCardOverrides } from '../utils/toPlayingCardOverrides';
@@ -984,11 +984,11 @@ const styles = StyleSheet.create({
 
 Create `apps/playground/src/utils/toPlayingCardOverrides.ts`:
 ```ts
-import type { PlayingCardBorderSpec, PlayingCardOverlayImage } from '@world-cards/ui';
+import type { PlayingCardBorderSpec, PlayingCardOverlayImage } from '@world-of-cards/ui';
 import type { CardTemplate } from '../types';
 
 // Maps playground's own CardTemplate state shape to the real PlayingCard's override props.
-// This mapping lives in apps/playground (the consumer), not @world-cards/ui (the shared
+// This mapping lives in apps/playground (the consumer), not @world-of-cards/ui (the shared
 // package) — the shared package owns its own prop interface and must not depend on any one
 // consumer's local types.
 export function toPlayingCardOverrides(template: CardTemplate): {
@@ -1022,7 +1022,7 @@ import { PlaygroundCard } from './PlaygroundCard';
 ```
 to:
 ```ts
-import { PlayingCard } from '@world-cards/ui';
+import { PlayingCard } from '@world-of-cards/ui';
 import { toPlayingCardOverrides } from '../utils/toPlayingCardOverrides';
 ```
 and change the preview render line:

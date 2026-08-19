@@ -14,7 +14,7 @@
 - `DeselectableSurface` takes exactly `onDeselect: () => void`, `style?: StyleProp<ViewStyle>`, `children: React.ReactNode` — no other props.
 - No new automated tests (mobile UI interaction wiring, per the project's standing 2026-07-07 testing policy) — existing tests are re-run for regression, not expanded.
 - Typecheck command (confirmed clean against the current baseline): `npx tsc --noEmit` run from `apps/mobile/`.
-- Full regression test command (confirmed clean against the current baseline, 39/39 suites, 229/229 tests): `npm test` run from the repo root (`D:/CodeSpace/world-cards`).
+- Full regression test command (confirmed clean against the current baseline, 39/39 suites, 229/229 tests): `npm test` run from the repo root (`D:/CodeSpace/world-of-cards`).
 
 ---
 
@@ -126,7 +126,7 @@ Expected: no output (clean compile).
 
 - [ ] **Step 4: Run the full regression suite**
 
-Run (from the repo root, `D:/CodeSpace/world-cards`): `npm test`
+Run (from the repo root, `D:/CodeSpace/world-of-cards`): `npm test`
 Expected: `Test Suites: 39 passed, 39 total` / `Tests: 229 passed, 229 total` (there is no dedicated `BatakTable.test.tsx` today, so this is purely a regression check that nothing else broke).
 
 - [ ] **Step 5: Commit**
@@ -202,12 +202,12 @@ Expected: no output (clean compile).
 
 - [ ] **Step 4: Run PistiTable's existing test suite**
 
-Run (from the repo root, `D:/CodeSpace/world-cards`): `npx jest apps/mobile/src/games/pisti/PistiTable.test.tsx`
+Run (from the repo root, `D:/CodeSpace/world-of-cards`): `npx jest apps/mobile/src/games/pisti/PistiTable.test.tsx`
 Expected: all 7 existing tests pass (`renders the pile top card and count`, `renders the opponent hand as face-down cards only`, `does not call onPlayCard on the first tap, only selects the card`, `calls onPlayCard when the already-selected card is tapped again`, `selecting a different card deselects the previous one instead of playing it`, `does not call onPlayCard when tapped during the AI turn`, `shows the banner text when provided`). None of these tests assert on the root container's element type, so swapping `View` for `DeselectableSurface` (a `Pressable`) should not affect any of them.
 
 - [ ] **Step 5: Run the full regression suite**
 
-Run (from the repo root, `D:/CodeSpace/world-cards`): `npm test`
+Run (from the repo root, `D:/CodeSpace/world-of-cards`): `npm test`
 Expected: `Test Suites: 39 passed, 39 total` / `Tests: 229 passed, 229 total`.
 
 - [ ] **Step 6: Commit**

@@ -7,7 +7,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import type { Card, Suit } from "@world-cards/engine";
+import type { Card, Suit } from "@world-of-cards/engine";
 
 export const SIMPLE_CARD_WIDTH = 64;
 export const SIMPLE_CARD_HEIGHT = 92;
@@ -35,7 +35,7 @@ export interface SimpleCardProps {
   glyphStyle?: StyleProp<ViewStyle>;
 }
 
-// Deliberately does not use @world-cards/ui's PlayingCard/SuitIcon — per
+// Deliberately does not use @world-of-cards/ui's PlayingCard/SuitIcon — per
 // ANIMATION_ARCHITECTURE.md's "Playground Scope," this module renders cards as plain
 // text + Unicode suit glyphs at one fixed size, so animation work here is never
 // blocked on (or confused with) the real game's card art.

@@ -1,4 +1,4 @@
-import type { CardFaceStyle } from '@world-cards/ui';
+import type { CardFaceStyle } from '@world-of-cards/ui';
 
 // Shared between PistiDevTuningModal and BatakDevTuningModal, same reasoning as
 // TABLE_SURFACE_MATERIAL_OPTIONS — both games read/write the same cardFaceStyle store field (it

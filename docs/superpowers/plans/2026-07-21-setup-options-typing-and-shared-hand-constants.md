@@ -592,17 +592,17 @@ git commit -m "Add shared handAreaLayout module for the 4 hand-area constants du
 - Modify: `apps/mobile/src/games/pisti/PistiTable.tsx`
 
 **Interfaces:**
-- Consumes: `CONTAINER_BOTTOM_PADDING`, `HAND_BADGE_HEIGHT`, `HAND_FRAME_REVEAL_MARGIN`, `HAND_FRAME_BOTTOM_OVERSHOOT` from `@world-cards/ui` (Task 8).
+- Consumes: `CONTAINER_BOTTOM_PADDING`, `HAND_BADGE_HEIGHT`, `HAND_FRAME_REVEAL_MARGIN`, `HAND_FRAME_BOTTOM_OVERSHOOT` from `@world-of-cards/ui` (Task 8).
 - Produces: nothing new for later tasks.
 
 The names are unchanged (only their declaration moves), so every downstream formula line in this file that already references these names (`HAND_CONTENT_HEIGHT`, `HAND_AREA_TOP_INSET`, `HAND_ROW_PEAK_DISTANCE_FROM_BOTTOM`, the `handFramePeakTarget`/`handFrameBottomOffset`/`handFrameHeight` computation further down in the component) needs no edits at all.
 
-- [ ] **Step 1: Add the 4 names to the existing `@world-cards/ui` import**
+- [ ] **Step 1: Add the 4 names to the existing `@world-of-cards/ui` import**
 
 In `apps/mobile/src/games/pisti/PistiTable.tsx`, replace:
 
 ```ts
-import { PlayingCard, TableFelt, HandFrame, HAND_FRAME_PEAK_FRACTION, CARD_DIMS } from '@world-cards/ui';
+import { PlayingCard, TableFelt, HandFrame, HAND_FRAME_PEAK_FRACTION, CARD_DIMS } from '@world-of-cards/ui';
 ```
 
 with:
@@ -618,7 +618,7 @@ import {
   HAND_BADGE_HEIGHT,
   HAND_FRAME_REVEAL_MARGIN,
   HAND_FRAME_BOTTOM_OVERSHOOT,
-} from '@world-cards/ui';
+} from '@world-of-cards/ui';
 ```
 
 - [ ] **Step 2: Remove the 4 now-duplicated local declarations**
@@ -688,17 +688,17 @@ git commit -m "Consume shared handAreaLayout constants in PistiTable"
 - Modify: `apps/mobile/src/games/batak/BatakTable.tsx`
 
 **Interfaces:**
-- Consumes: `CONTAINER_BOTTOM_PADDING`, `HAND_BADGE_HEIGHT`, `HAND_FRAME_REVEAL_MARGIN`, `HAND_FRAME_BOTTOM_OVERSHOOT` from `@world-cards/ui` (Task 8).
+- Consumes: `CONTAINER_BOTTOM_PADDING`, `HAND_BADGE_HEIGHT`, `HAND_FRAME_REVEAL_MARGIN`, `HAND_FRAME_BOTTOM_OVERSHOOT` from `@world-of-cards/ui` (Task 8).
 - Produces: nothing new for later tasks.
 
 Same shape as Task 9 — names unchanged, only the declaration moves, so this file's own `HAND_AREA_CONTENT_GAP` (Batak-only, unaffected) and downstream formula lines need no edits.
 
-- [ ] **Step 1: Add the 4 names to the existing `@world-cards/ui` import**
+- [ ] **Step 1: Add the 4 names to the existing `@world-of-cards/ui` import**
 
 In `apps/mobile/src/games/batak/BatakTable.tsx`, replace:
 
 ```ts
-import { TableFelt, HandFrame, HAND_FRAME_PEAK_FRACTION, CARD_DIMS } from '@world-cards/ui';
+import { TableFelt, HandFrame, HAND_FRAME_PEAK_FRACTION, CARD_DIMS } from '@world-of-cards/ui';
 ```
 
 with:
@@ -713,7 +713,7 @@ import {
   HAND_BADGE_HEIGHT,
   HAND_FRAME_REVEAL_MARGIN,
   HAND_FRAME_BOTTOM_OVERSHOOT,
-} from '@world-cards/ui';
+} from '@world-of-cards/ui';
 ```
 
 - [ ] **Step 2: Remove the 4 now-duplicated local declarations**

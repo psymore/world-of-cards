@@ -1,9 +1,9 @@
-import { batakDescriptor, trickWinnerIndex } from '@world-cards/engine/games/batak';
-import type { BatakState, BatakMove } from '@world-cards/engine/games/batak';
-import { createRng } from '@world-cards/engine';
-import type { Card } from '@world-cards/engine';
+import { batakDescriptor, trickWinnerIndex } from '@world-of-cards/engine/games/batak';
+import type { BatakState, BatakMove } from '@world-of-cards/engine/games/batak';
+import { createRng } from '@world-of-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 
-describe('@world-cards/engine/games/batak subpath', () => {
+describe('@world-of-cards/engine/games/batak subpath', () => {
   it('resolves batakDescriptor with a working rule engine', () => {
     const state: BatakState = batakDescriptor.ruleEngine.setup(
       { players: ['human', 'ai-1', 'ai-2', 'ai-3'] },

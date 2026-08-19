@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import type { Card } from '@world-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 import { SimpleCard, SIMPLE_CARD_HEIGHT } from './SimpleCard';
 import { computeFanSlot, computeFanWidth, FanLayoutConfig } from './fanLayout';
 

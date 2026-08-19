@@ -1,5 +1,5 @@
 import { createGameSessionStore } from './createGameSessionStore';
-import type { GameState, RuleEngine } from '@world-cards/engine';
+import type { GameState, RuleEngine } from '@world-of-cards/engine';
 
 interface CounterState extends GameState {
   count: number;

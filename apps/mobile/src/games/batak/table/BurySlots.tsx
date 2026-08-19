@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import type { Card } from '@world-cards/engine';
-import { PlayingCard, PressableFeedback } from '@world-cards/ui';
+import type { Card } from '@world-of-cards/engine';
+import { PlayingCard, PressableFeedback } from '@world-of-cards/ui';
 import { TravelCard } from '../../../table/TravelCard';
 
 const BURY_SLOT_SIZE = 56;

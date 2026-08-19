@@ -1,8 +1,8 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { HomeScreen } from './HomeScreen';
-import { clearRegistry, registerGame } from '@world-cards/engine';
-import type { GameDescriptor } from '@world-cards/engine';
+import { clearRegistry, registerGame } from '@world-of-cards/engine';
+import type { GameDescriptor } from '@world-of-cards/engine';
 
 const fakeGame: GameDescriptor = {
   id: 'fake-game',
@@ -40,7 +40,7 @@ describe('HomeScreen', () => {
 
   it('shows the app title and an empty state when no games are registered', async () => {
     await render(<HomeScreen onSelectGame={() => {}} />);
-    expect(screen.getByText('World Cards')).toBeTruthy();
+    expect(screen.getByText('World of Cards')).toBeTruthy();
     expect(screen.getByText('No games installed yet')).toBeTruthy();
   });
 

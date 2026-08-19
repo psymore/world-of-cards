@@ -23,7 +23,7 @@ The hero card, wordmark, and menu-row treatment are explicitly **kept**, not red
 
 ### Background (Home + both Setup screens)
 
-Replace with the existing `TableFelt` component (`@world-cards/ui`, `AbsoluteOverlay` + `assets/table/green.png`, `resizeMode="cover"`) — the same component the in-game tables already use. No new props, no new asset.
+Replace with the existing `TableFelt` component (`@world-of-cards/ui`, `AbsoluteOverlay` + `assets/table/green.png`, `resizeMode="cover"`) — the same component the in-game tables already use. No new props, no new asset.
 
 - `apps/mobile/src/screens/home/HomeBackground.tsx` — delete; `HomeScreen.tsx` renders `<TableFelt />` in its place.
 - `apps/mobile/src/games/pisti/PistiSetupView.tsx` — remove `backgroundColor: '#12121f'` from `container`, render `<TableFelt />` as the first child (absolute-fill behind content, same pattern as `PistiScreen`/`BatakScreen` already use for their tables).
@@ -32,7 +32,7 @@ Replace with the existing `TableFelt` component (`@world-cards/ui`, `AbsoluteOve
 ### HomeScreen
 
 - `HeroCard.tsx` (Queen of Hearts illustration + glow) — **unchanged**.
-- `HomeWordmark.tsx` (gold PT Serif "World Cards" + divider rule) — **unchanged**.
+- `HomeWordmark.tsx` (gold PT Serif "World of Cards" + divider rule) — **unchanged**.
 - `GameMenuRow.tsx` — **unchanged**; it's already translucent (`rgba(255,255,255,0.06)` fill, `#d9b34a55` border), which was designed to sit on a dark gradient and continues to work on dark felt. A quick visual check during implementation confirms legibility; no style changes are pre-planned.
 - `BaizeStrip.tsx` — **deleted**. It existed as a decorative nod toward "the table" from a screen that otherwise wasn't the table. Once the real background *is* `TableFelt`, a fake felt-colored gradient strip on top of real felt is redundant, not additive.
 
@@ -60,7 +60,7 @@ Header/title text colors (`pageTitle` gold, `title` cream, `backLink` muted gold
 
 ## Testing
 
-Per the standing testing policy: no new automated tests for this decorative/presentational work. `HomeScreen.test.tsx` queries text content (`'World Cards'`, game names), not markup structure or colors, so it should continue passing unmodified. `PistiSetupView.test.tsx` should be checked for any assertions on the removed `backgroundColor` or now-changed style values and updated only if it breaks.
+Per the standing testing policy: no new automated tests for this decorative/presentational work. `HomeScreen.test.tsx` queries text content (`'World of Cards'`, game names), not markup structure or colors, so it should continue passing unmodified. `PistiSetupView.test.tsx` should be checked for any assertions on the removed `backgroundColor` or now-changed style values and updated only if it breaks.
 
 ## Documentation follow-up (part of implementation, not this doc)
 

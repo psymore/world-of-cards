@@ -1,6 +1,6 @@
-# 🌍 World Cards
+# 🌍 World of Cards
 
-World Cards is an ambitious open-source project aiming to become the largest collection of traditional card games from around the world.
+World of Cards is an ambitious open-source project aiming to become the largest collection of traditional card games from around the world.
 
 Rather than building individual card game apps, the goal is to create a reusable platform where every game shares a common engine while implementing only its own rules.
 
@@ -17,8 +17,8 @@ Rather than building individual card game apps, the goal is to create a reusable
 ### Setup
 
 ```powershell
-git clone https://github.com/<your-org>/world-cards.git
-cd world-cards
+git clone https://github.com/<your-org>/world-of-cards.git
+cd world-of-cards
 npm install
 npm run mobile
 ```

@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
-import type { Card } from '@world-cards/engine';
-import { PlayingCard, CARD_DIMS } from '@world-cards/ui';
+import type { Card } from '@world-of-cards/engine';
+import { PlayingCard, CARD_DIMS } from '@world-of-cards/ui';
 import { useReducedMotion } from '../../../components/useReducedMotion';
 import { useCardMotion } from '../../../table/useCardMotion';
 import { LOCAL_DEPARTURE_SCALE } from './trickCardScale';

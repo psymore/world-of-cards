@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react-native';
 import { PlayingCard } from './PlayingCard';
 import { useCardFaceStyleStore } from './cardFaceStyleStore';
-import type { Card } from '@world-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 
 const heartsAce: Card = { id: 'h-A', suit: 'hearts', rank: 'A' };
 const clubsTen: Card = { id: 'c-10', suit: 'clubs', rank: '10' };

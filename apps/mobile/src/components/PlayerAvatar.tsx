@@ -4,7 +4,7 @@ import {
   AVATAR_FRAME_ACTIVE_IMAGE,
   AVATAR_FRAME_IDLE_IMAGE,
   PLAYER_AVATAR_PHOTO_IMAGE,
-} from '@world-cards/ui';
+} from '@world-of-cards/ui';
 
 export type PlayerAvatarTurnState = 'idle' | 'active';
 

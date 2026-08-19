@@ -186,7 +186,7 @@ git commit -m "feat(ui): taller cards and tighter corner index on PlayingCard"
 
 **Interfaces:**
 - Consumes: nothing new from earlier tasks.
-- Produces: no new exports; removes the `CardBackPattern` export from `@world-cards/ui`.
+- Produces: no new exports; removes the `CardBackPattern` export from `@world-of-cards/ui`.
 
 - [ ] **Step 1: Confirm `CardBackPattern` has no other real importers**
 
@@ -198,7 +198,7 @@ Expected: matches only in `packages/ui/src/PlayingCard.tsx` (the import + usage 
 In `packages/ui/src/PlayingCard.tsx`, find:
 ```ts
 import { SvgXml } from "react-native-svg";
-import type { Card, Suit } from "@world-cards/engine";
+import type { Card, Suit } from "@world-of-cards/engine";
 import { SuitIcon } from "./SuitIcon";
 import { CardBackPattern } from "./CardBackPattern";
 import { glowShadow } from "./glowShadow";
@@ -206,7 +206,7 @@ import { glowShadow } from "./glowShadow";
 Replace with:
 ```ts
 import { SvgXml } from "react-native-svg";
-import type { Card, Suit } from "@world-cards/engine";
+import type { Card, Suit } from "@world-of-cards/engine";
 import { SuitIcon } from "./SuitIcon";
 import { glowShadow } from "./glowShadow";
 ```
@@ -683,7 +683,7 @@ Create `apps/mobile/src/table/DealFlightOverlay.tsx`:
 ```tsx
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
-import { PlayingCard } from '@world-cards/ui';
+import { PlayingCard } from '@world-of-cards/ui';
 import { revealOriginOffset } from './seating';
 import type { RevealOrigin } from './seating';
 
@@ -816,9 +816,9 @@ git commit -m "feat: add shared DealFlightOverlay + useDealSequence hook"
 In `apps/mobile/src/games/batak/BatakScreen.tsx`, find:
 ```ts
 import React, { useEffect, useRef, useState } from 'react';
-import type { Difficulty, PlayerId, RNG } from '@world-cards/engine';
-import { createRng } from '@world-cards/engine';
-import { batakDescriptor, BatakState, BatakMove } from '@world-cards/engine/games/batak';
+import type { Difficulty, PlayerId, RNG } from '@world-of-cards/engine';
+import { createRng } from '@world-of-cards/engine';
+import { batakDescriptor, BatakState, BatakMove } from '@world-of-cards/engine/games/batak';
 import { createGameSessionStore } from '../../state/createGameSessionStore';
 import { useSettingsStore } from '../../state/settingsStore';
 import { GameScreenLayout } from '../../components/GameScreenLayout';
@@ -832,9 +832,9 @@ import { BatakSettingsModal } from './BatakSettingsModal';
 Replace with:
 ```ts
 import React, { useEffect, useRef, useState } from 'react';
-import type { Difficulty, PlayerId, RNG } from '@world-cards/engine';
-import { createRng } from '@world-cards/engine';
-import { batakDescriptor, BatakState, BatakMove } from '@world-cards/engine/games/batak';
+import type { Difficulty, PlayerId, RNG } from '@world-of-cards/engine';
+import { createRng } from '@world-of-cards/engine';
+import { batakDescriptor, BatakState, BatakMove } from '@world-of-cards/engine/games/batak';
 import { createGameSessionStore } from '../../state/createGameSessionStore';
 import { useSettingsStore } from '../../state/settingsStore';
 import { GameScreenLayout } from '../../components/GameScreenLayout';

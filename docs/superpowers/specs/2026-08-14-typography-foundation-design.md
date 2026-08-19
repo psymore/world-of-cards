@@ -42,7 +42,7 @@ entries. Files added at `packages/ui/assets/fonts/Cinzel-Regular.ttf`, `Cinzel-B
 `Inter-Regular.ttf`, `Inter-Bold.ttf`, registered in the existing `FONTS` map in
 `packages/ui/src/fonts.ts` (extended, not replaced — `PTSerif-*`/`CARD_RANK_FONT_FAMILY` stay as
 they are for the card corner rank). Both `apps/mobile/App.tsx` and `apps/playground/App.tsx`
-already call `useFonts(FONTS)` from `@world-cards/ui`, so no other loading code changes.
+already call `useFonts(FONTS)` from `@world-of-cards/ui`, so no other loading code changes.
 
 ## Type scale
 

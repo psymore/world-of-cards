@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import type { Card } from '@world-cards/engine';
-import type { BatakState } from '@world-cards/engine/games/batak';
-import { PlayingCard, CARD_DIMS } from '@world-cards/ui';
+import type { Card } from '@world-of-cards/engine';
+import type { BatakState } from '@world-of-cards/engine/games/batak';
+import { PlayingCard, CARD_DIMS } from '@world-of-cards/ui';
 
 // The 4-card kitty is dealt face-down into a real 'kitty' zone as part of the initial deal
 // (packages/engine/src/games/batak/rules.ts:52,180) and sits there untouched through bidding

@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import type { Suit } from '@world-cards/engine';
-import type { BatakState, BatakMove } from '@world-cards/engine/games/batak';
-import { PressableFeedback, SuitIcon } from '@world-cards/ui';
+import type { Suit } from '@world-of-cards/engine';
+import type { BatakState, BatakMove } from '@world-of-cards/engine/games/batak';
+import { PressableFeedback, SuitIcon } from '@world-of-cards/ui';
 import { centerPanelStyles } from './centerPanelStyles';
 import { DecisionPanel } from './DecisionPanel';
 import { suitColor } from './suitColor';

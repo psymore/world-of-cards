@@ -4,7 +4,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { FONTS } from '@world-cards/ui';
+import { FONTS } from '@world-of-cards/ui';
 import { PlaygroundScreen } from './src/PlaygroundScreen';
 import { AnimationPlaygroundScreen } from './src/animation/AnimationPlaygroundScreen';
 

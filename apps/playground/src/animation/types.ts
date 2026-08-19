@@ -1,4 +1,4 @@
-import type { Card } from '@world-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 
 export type DemoId =
   | 'fan-layout'

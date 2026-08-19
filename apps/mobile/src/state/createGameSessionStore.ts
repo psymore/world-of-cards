@@ -1,5 +1,5 @@
 import { create, StoreApi, UseBoundStore } from 'zustand';
-import type { GameState, RuleEngine } from '@world-cards/engine';
+import type { GameState, RuleEngine } from '@world-of-cards/engine';
 
 export interface GameSessionStore<TState extends GameState, TMove> {
   state: TState;

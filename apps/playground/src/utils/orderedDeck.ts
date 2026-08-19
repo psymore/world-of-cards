@@ -1,5 +1,5 @@
-import { createDeck } from '@world-cards/engine';
-import type { Card } from '@world-cards/engine';
+import { createDeck } from '@world-of-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 
 // Single source of truth for full-deck ordering, shared by CardGallery (which groups this by
 // suit for display) and CardTemplateEditor (which pages through it one card at a time via the

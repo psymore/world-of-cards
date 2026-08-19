@@ -6,7 +6,7 @@
 
 **Architecture:** Extract the 52-card array both components already need into one shared util (`ORDERED_DECK`), so `CardGallery` and `CardTemplateEditor` read from a single source of truth. `CardTemplateEditor` switches its selection state from a `CardGroup` string to a numeric index into that array, deriving the group (for template editing) from whichever card is currently shown.
 
-**Tech Stack:** TypeScript, React Native (Expo), `@world-cards/engine` (`createDeck`, `Card`/`Rank`/`Suit` types), `@world-cards/ui` (`PlayingCard`). No test framework is configured for `apps/playground` (confirmed: it's intentionally excluded from the root Jest `projects` array — see `docs/superpowers/specs/2026-07-12-card-playground-design.md`), so verification here is TypeScript compilation, not automated tests, matching the project's standing "no new tests for playground/mobile UI by default" policy.
+**Tech Stack:** TypeScript, React Native (Expo), `@world-of-cards/engine` (`createDeck`, `Card`/`Rank`/`Suit` types), `@world-of-cards/ui` (`PlayingCard`). No test framework is configured for `apps/playground` (confirmed: it's intentionally excluded from the root Jest `projects` array — see `docs/superpowers/specs/2026-07-12-card-playground-design.md`), so verification here is TypeScript compilation, not automated tests, matching the project's standing "no new tests for playground/mobile UI by default" policy.
 
 ## Global Constraints
 
@@ -24,14 +24,14 @@
 - Modify: `apps/playground/src/utils/cardGroups.ts`
 
 **Interfaces:**
-- Produces: `ORDERED_DECK: Card[]` (52-card array, `@world-cards/engine`'s `createDeck({ deckCount: 1, includeJokers: false })` order) from `orderedDeck.ts`.
+- Produces: `ORDERED_DECK: Card[]` (52-card array, `@world-of-cards/engine`'s `createDeck({ deckCount: 1, includeJokers: false })` order) from `orderedDeck.ts`.
 - Produces: `SUIT_LABELS: Record<Suit, string>` and `formatCardLabel(card: Card): string` (e.g. `formatCardLabel({rank: '7', suit: 'spades', id: '...'})` → `"7 of Spades"`) from `cardGroups.ts`, alongside the existing `getCardGroup`.
 
 - [ ] **Step 1: Create `apps/playground/src/utils/orderedDeck.ts`**
 
 ```ts
-import { createDeck } from '@world-cards/engine';
-import type { Card } from '@world-cards/engine';
+import { createDeck } from '@world-of-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 
 // Single source of truth for full-deck ordering, shared by CardGallery (which groups this by
 // suit for display) and CardTemplateEditor (which pages through it one card at a time via the
@@ -44,7 +44,7 @@ export const ORDERED_DECK: Card[] = createDeck({ deckCount: 1, includeJokers: fa
 Replace the full file contents with:
 
 ```ts
-import type { Card, Rank, Suit } from '@world-cards/engine';
+import type { Card, Rank, Suit } from '@world-of-cards/engine';
 import type { CardGroup } from '../types';
 
 // The gallery deck is generated with includeJokers: false, so 'joker' is
@@ -98,8 +98,8 @@ Replace the full file contents with:
 ```tsx
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import type { Card, Suit } from '@world-cards/engine';
-import { PlayingCard, TableFelt, TableWoodCorners } from '@world-cards/ui';
+import type { Card, Suit } from '@world-of-cards/engine';
+import { PlayingCard, TableFelt, TableWoodCorners } from '@world-of-cards/ui';
 import { usePlaygroundStore } from '../state/playgroundStore';
 import { getCardGroup, SUIT_LABELS } from '../utils/cardGroups';
 import { ORDERED_DECK } from '../utils/orderedDeck';
@@ -178,11 +178,11 @@ In `apps/playground/src/components/CardTemplateEditor.tsx`, change the imports a
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Slider from '@react-native-community/slider';
-import type { Card } from '@world-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 import type { CardGroup } from '../types';
 import { MAX_CARD_BORDERS } from '../types';
 import { usePlaygroundStore } from '../state/playgroundStore';
-import { PlayingCard } from '@world-cards/ui';
+import { PlayingCard } from '@world-of-cards/ui';
 import { toPlayingCardOverrides } from '../utils/toPlayingCardOverrides';
 import { ColorPicker } from './ColorPicker';
 import { pickCardImage, buildCardImage } from '../utils/imagePicker';
@@ -194,11 +194,11 @@ to:
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Slider from '@react-native-community/slider';
-import type { Rank, Suit } from '@world-cards/engine';
+import type { Rank, Suit } from '@world-of-cards/engine';
 import type { CardGroup } from '../types';
 import { MAX_CARD_BORDERS } from '../types';
 import { usePlaygroundStore } from '../state/playgroundStore';
-import { PlayingCard } from '@world-cards/ui';
+import { PlayingCard } from '@world-of-cards/ui';
 import { toPlayingCardOverrides } from '../utils/toPlayingCardOverrides';
 import { getCardGroup, formatCardLabel } from '../utils/cardGroups';
 import { ORDERED_DECK } from '../utils/orderedDeck';

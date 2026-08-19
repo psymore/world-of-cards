@@ -6,7 +6,7 @@
 
 **Architecture:** One new, zero-logic, `React.memo`'d SVG component (`CourtCardFrame`) following the exact pattern already established by `TableWoodCorners`/`CardBackPattern`/`AbsoluteOverlay` in `packages/ui/src`. `PlayingCard.tsx` renders it conditionally, reusing the same `isFaceCard`/`courtArt` predicate the existing center-art sizing logic already uses (lifted up one level so both consumers share a single source of truth instead of computing it twice).
 
-**Tech Stack:** React Native, `react-native-svg` (already a dependency of `@world-cards/ui`), TypeScript.
+**Tech Stack:** React Native, `react-native-svg` (already a dependency of `@world-of-cards/ui`), TypeScript.
 
 ## Global Constraints
 
@@ -142,7 +142,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { SvgXml } from "react-native-svg";
-import type { Card, Suit } from "@world-cards/engine";
+import type { Card, Suit } from "@world-of-cards/engine";
 import { SuitIcon } from "./SuitIcon";
 import { glowShadow } from "./glowShadow";
 import { COURT_CARD_ART } from "./courtCardArt";
@@ -163,7 +163,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { SvgXml } from "react-native-svg";
-import type { Card, Suit } from "@world-cards/engine";
+import type { Card, Suit } from "@world-of-cards/engine";
 import { SuitIcon } from "./SuitIcon";
 import { glowShadow } from "./glowShadow";
 import { COURT_CARD_ART } from "./courtCardArt";

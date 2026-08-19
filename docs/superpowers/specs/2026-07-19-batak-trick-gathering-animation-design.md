@@ -29,7 +29,7 @@ only before/after state. To animate cards toward the winner, `BatakScreen` needs
 It gets this via the exact same pure function the engine itself uses:
 `trickWinnerIndex(trick: Card[], trumpSuit: Suit): number`
 (`packages/engine/src/games/batak/rules.ts`), today used internally by the Medium AI
-(`ai/medium.ts`) but not re-exported from the public `@world-cards/engine/games/batak` subpath.
+(`ai/medium.ts`) but not re-exported from the public `@world-of-cards/engine/games/batak` subpath.
 
 Change: add `export { trickWinnerIndex } from './rules';` to
 `packages/engine/src/games/batak/index.ts`.

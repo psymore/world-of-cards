@@ -1,4 +1,4 @@
-import type { TableSeatPosition, SeatIdentityTurnState } from '@world-cards/ui';
+import type { TableSeatPosition, SeatIdentityTurnState } from '@world-of-cards/ui';
 
 // Shared throwaway sample data for Playground's table-preview prototypes (TableShellPreview,
 // MahoganyTablePreview) — not persisted state, not tied to any real game. 'female-01' on every

@@ -6,7 +6,7 @@ import {
   MODAL_CARD_SMALL_ASPECT_RATIO,
   MODAL_CARD_SMALL_IMAGE,
   ModalCloseButton,
-} from '@world-cards/ui';
+} from '@world-of-cards/ui';
 import { useSettingsStore } from '../../state/settingsStore';
 
 export interface BatakSettingsModalProps {

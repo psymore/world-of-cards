@@ -15,7 +15,7 @@ Arrived at via 3 rounds in the visual-companion browser tool (`.superpowers/brai
 
 - **Base layout & marquee identity** from "Card Catalog / Marquee": Home gets its own distinct identity, separate from the in-game felt/wood tables — reads as a menu, not "another table." A deep navy-to-plum gradient background (`#1a0f2e` → `#2b1149` → `#180a26`), with a large hero illustrated court card near the top, tilted slightly (`rotate(-4deg)`) as if just dealt.
 - **Menu-row content** from "Card Table Lobby": each game is a row showing a small fanned 3-mini-card preview (not a plain icon/dot) plus the game's name and a subtitle.
-- **Wordmark style** from "Minimal Editorial": `World Cards` set in the app's existing **PT Serif** font (already bundled and loaded via `expo-font` in `packages/ui/src/fonts.ts` — reuse `'PTSerif-Regular'` or `'PTSerif-Bold'`, zero new font dependency), gold (`#f4c542`), light weight, wide letter-spacing, centered, with a thin gold divider rule beneath it.
+- **Wordmark style** from "Minimal Editorial": `World of Cards` set in the app's existing **PT Serif** font (already bundled and loaded via `expo-font` in `packages/ui/src/fonts.ts` — reuse `'PTSerif-Regular'` or `'PTSerif-Bold'`, zero new font dependency), gold (`#f4c542`), light weight, wide letter-spacing, centered, with a thin gold divider rule beneath it.
 - **Added during iteration, not from any single original direction:** a soft green glow blended into the hero card's shadow, and a thin green "baize" gradient strip grounding the bottom edge of the screen — a deliberate, minimal nod to the felt-table identity so Home doesn't feel completely disconnected from the games it leads into, without abandoning the marquee's own purple identity.
 
 ## Palette (named)
@@ -34,7 +34,7 @@ This is a genuinely new palette, not a reuse of the existing navy/gold shell tok
 
 ## Typography
 
-- **Wordmark ("World Cards"):** PT Serif (existing bundle), light/regular weight, ~26sp, letter-spacing ~3, gold.
+- **Wordmark ("World of Cards"):** PT Serif (existing bundle), light/regular weight, ~26sp, letter-spacing ~3, gold.
 - **Game name:** existing system sans-serif (matches current app-wide body-text convention — no new font), semibold, ~14sp, `text.onDark`.
 - **Game subtitle:** same sans-serif, regular, ~11sp, `text.onDark` at reduced opacity (~55%).
 

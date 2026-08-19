@@ -6,7 +6,7 @@
 
 **Architecture:** A new playground demo (`Demo09BatakHandTuning`) reuses `railFanLayout.ts`'s math and `FanConfigControls.tsx`'s sliders against real `PlayingCard`s to tune the geometry live. Production gets a new, Batak-owned rail-math module (two independent rail rows, not importing across the app boundary from `apps/playground`) and two new components (`useBatakCardMotion.ts`, `BatakHandCard.tsx`) that `HumanHandFan.tsx` composes. `BatakTable.tsx`'s `playWithMeasuredOrigin` is simplified to read the new shared values directly instead of its old measurement/re-derivation workaround.
 
-**Tech Stack:** `react-native-reanimated` (shared values, `withTiming`), `react-native-gesture-handler` (`Gesture.Tap()`/`GestureDetector`), existing `@world-cards/ui` `PlayingCard`/`CARD_DIMS`.
+**Tech Stack:** `react-native-reanimated` (shared values, `withTiming`), `react-native-gesture-handler` (`Gesture.Tap()`/`GestureDetector`), existing `@world-of-cards/ui` `PlayingCard`/`CARD_DIMS`.
 
 ## Global Constraints
 
@@ -29,7 +29,7 @@
 - Modify: `apps/playground/src/animation/components/FanConfigControls.tsx` (additive `cardWidth?: number` prop)
 
 **Interfaces:**
-- Consumes: `railAngleStepDeg`/`railAngles`/`railPosition`/`RailSlot` from `apps/playground/src/animation/components/railFanLayout.ts` (unchanged), `FanConfigControls` (extended additively), `PlayingCard`/`CARD_DIMS` from `@world-cards/ui`, `createDeck`/`shuffle`/`createRng` from `@world-cards/engine`.
+- Consumes: `railAngleStepDeg`/`railAngles`/`railPosition`/`RailSlot` from `apps/playground/src/animation/components/railFanLayout.ts` (unchanged), `FanConfigControls` (extended additively), `PlayingCard`/`CARD_DIMS` from `@world-of-cards/ui`, `createDeck`/`shuffle`/`createRng` from `@world-of-cards/engine`.
 - Produces: nothing consumed by later tasks programmatically — **this task's real output is the tuned numeric values you choose interactively**, which Task 2 hardcodes. Nothing here blocks on Task 2 existing.
 
 - [ ] **Step 1: Add the additive `cardWidth` prop to `FanConfigControls.tsx`**
@@ -124,9 +124,9 @@ Models Batak's real two-row hand: each row is its own independent rail (same rad
 ```tsx
 import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View, Pressable, Text } from 'react-native';
-import { PlayingCard, CARD_DIMS } from '@world-cards/ui';
-import { createDeck, createRng, shuffle } from '@world-cards/engine';
-import type { Card } from '@world-cards/engine';
+import { PlayingCard, CARD_DIMS } from '@world-of-cards/ui';
+import { createDeck, createRng, shuffle } from '@world-of-cards/engine';
+import type { Card } from '@world-of-cards/engine';
 import { FanLayoutConfig } from '../components/fanLayout';
 import { railAngleStepDeg, railAngles, railPosition } from '../components/railFanLayout';
 import { FanConfigControls } from '../components/FanConfigControls';
@@ -516,7 +516,7 @@ git commit -m "feat(mobile): add useBatakCardMotion hook"
 - Create: `apps/mobile/src/games/batak/table/BatakHandCard.tsx`
 
 **Interfaces:**
-- Consumes: `useBatakCardMotion` (Task 3), `PlayingCard` from `@world-cards/ui`.
+- Consumes: `useBatakCardMotion` (Task 3), `PlayingCard` from `@world-of-cards/ui`.
 - Produces: `BatakHandCard` component, props `{ cardId: string; card: Card; initial: {x,y,angleDeg}; interactive: boolean; selected: boolean; onPress: () => void; registerCardRef: (cardId: string, node: View | null) => void; motionRef?: (cardId: string, motion: ReturnType<typeof useBatakCardMotion>) => void }`. Consumed by Task 5.
 
 - [ ] **Step 1: Write the component**
@@ -528,8 +528,8 @@ import React, { useEffect } from 'react';
 import { View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { runOnJS, useAnimatedStyle } from 'react-native-reanimated';
-import type { Card } from '@world-cards/engine';
-import { PlayingCard, CARD_DIMS } from '@world-cards/ui';
+import type { Card } from '@world-of-cards/engine';
+import { PlayingCard, CARD_DIMS } from '@world-of-cards/ui';
 import { useBatakCardMotion } from './useBatakCardMotion';
 
 const CARD_WIDTH = CARD_DIMS.normal.width;
@@ -735,7 +735,7 @@ No `AnimatedFanCard`, no `EntranceCard` wrapper component (its behavior moved in
 
 ```bash
 cd apps/mobile && npx tsc --noEmit
-cd d:/CodeSpace/world-cards && npm test
+cd d:/CodeSpace/world-of-cards && npm test
 ```
 
 Clean: `apps/mobile` typechecks with zero errors; 39/39 suites, 248/248 tests pass, including `PistiTable.test.tsx` explicitly re-run in isolation.
@@ -807,7 +807,7 @@ Confirmed via repo-wide grep (`registerCardRef`/`handCardRefs`) that this ref ma
 
 ```bash
 cd apps/mobile && npx tsc --noEmit
-cd d:/CodeSpace/world-cards && npm test
+cd d:/CodeSpace/world-of-cards && npm test
 ```
 
 Clean: zero typecheck errors, 39/39 suites, 248/248 tests pass.
@@ -888,7 +888,7 @@ And add `useEvent,` to the `module.exports` object, alongside the existing `useA
 - [x] **Step 3: Run the full suite, confirm `PistiTable.test.tsx` specifically passes**
 
 ```bash
-cd d:/CodeSpace/world-cards && npx jest apps/mobile/src/games/pisti/PistiTable.test.tsx
+cd d:/CodeSpace/world-of-cards && npx jest apps/mobile/src/games/pisti/PistiTable.test.tsx
 npm test
 ```
 

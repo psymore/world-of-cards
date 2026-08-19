@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
-import { BODY_REGULAR, BODY_SEMIBOLD, PressableFeedback } from '@world-cards/ui';
-import type { GameCategory } from '@world-cards/engine';
+import { BODY_REGULAR, BODY_SEMIBOLD, PressableFeedback } from '@world-of-cards/ui';
+import type { GameCategory } from '@world-of-cards/engine';
 import { MiniCardFan } from './MiniCardFan';
 import { accentColorForCategory, categoryLabel, playerRangeLabel } from './gameDisplay';
 import { useReducedMotion } from '../../components/useReducedMotion';

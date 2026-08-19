@@ -78,7 +78,7 @@ The existing `useCardSelection` (`apps/mobile/src/components/useCardSelection.ts
 
 ## Engine/registry plumbing (mechanical)
 
-- `packages/engine/src/games/batak/index.ts`: add `export { ruleConstants }` (type-only `RuleConstants` export as needed) alongside the existing `export * from './types'` — currently unreachable from the mobile app's `@world-cards/engine/games/batak` subpath, needed for the bid grid, the bury-count cap in `useBurySlots`, and the kitty-pile card count.
+- `packages/engine/src/games/batak/index.ts`: add `export { ruleConstants }` (type-only `RuleConstants` export as needed) alongside the existing `export * from './types'` — currently unreachable from the mobile app's `@world-of-cards/engine/games/batak` subpath, needed for the bid grid, the bury-count cap in `useBurySlots`, and the kitty-pile card count.
 - `packages/engine/src/games/batak/index.ts`: `batakDescriptor.minPlayers`/`maxPlayers`: `4`/`4` → `3`/`4`.
 
 ## Testing

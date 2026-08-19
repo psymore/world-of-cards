@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "World Cards Playground",
-    "slug": "world-cards-playground",
+    "name": "World of Cards Playground",
+    "slug": "world-of-cards-playground",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -9,7 +9,7 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.worldcards.playground"
+      "package": "com.worldofcards.playground"
     },
     "web": {},
     "owner": "ragedapes-team",
