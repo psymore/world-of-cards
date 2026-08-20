@@ -7,19 +7,19 @@ import type { TableSurfaceMaterial } from '@world-of-cards/ui';
 // this shared field rather than duplicated per-game. Now Batak's actual shipped default too
 // (matching Pişti's), with 'felt' kept as the legacy look, opt-in via each game's own dev-tuning
 // panel.
-export type DevTableBackground = 'felt' | 'gemini' | 'frame';
+export type DevTableBackground = 'felt' | 'frame';
 
-// Pişti-only — unlike tableBackground above (shared with Batak, still only felt/gemini/frame), Pişti
+// Pişti-only — unlike tableBackground above (shared with Batak, still only felt/frame), Pişti
 // has its own richer set of table designs from the TableShell pilot
-// (docs/superpowers/plans/2026-08-12-pisti-table-shell-pilot.md): the pre-pilot legacy looks
-// ('felt'/'gemini', now rendered via Pişti's own legacy render path since the pilot replaced its
-// default usage of TableFelt/GeminiTableBackground), the pilot's original TableShell surface
+// (docs/superpowers/plans/2026-08-12-pisti-table-shell-pilot.md): the pre-pilot legacy look
+// ('felt', now rendered via Pişti's own legacy render path since the pilot replaced its default
+// usage of TableFelt), the pilot's original TableShell surface
 // ('tableShell'), an experiment stretching a plain felt panel to fill the full screen height
 // non-uniformly ('stretchedFelt') — kept as a dev-tuning-only comparison rather than applied
 // unconditionally, since it visibly distorts framed/carved artwork (fine for a flat panel, not for
 // TableShell's ornate wood frame) — a newer full-bleed carved-frame felt panel ('legacyRevisited',
 // TABLE-FELT-PANEL-TRY-02-GLOW.png) covered (not stretched) over the whole legacy table area, the
-// same way TableFelt/GeminiTableBackground already are — a three-layer backdrop/felt-insert/wood-
+// same way TableFelt already is — a three-layer backdrop/felt-insert/wood-
 // frame composite with its own baked-in bottom plaque ('newDesign', see
 // TABLE_BACKDROP_GLASS_GOLD_GLOW_IMAGE's own doc comment in packages/ui/src/index.ts) — and that
 // same wood frame alone, stretched to all four screen edges over plain TableFelt with no felt-
@@ -32,7 +32,6 @@ export type DevTableBackground = 'felt' | 'gemini' | 'frame';
 // stretched up to the screen's top edge — a comparison for 'frameOnly's distorted top.
 export type PistiTableBackground =
   | 'felt'
-  | 'gemini'
   | 'tableShell'
   | 'stretchedFelt'
   | 'legacyRevisited'

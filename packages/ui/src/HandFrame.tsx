@@ -1,7 +1,7 @@
 import React from "react";
 import { Image, StyleSheet, useWindowDimensions } from "react-native";
 
-const FRAME_IMAGE = require("../assets/table/alternatives/wooden-frame-long-Photoroom.png");
+const FRAME_IMAGE = require("../assets/table/themes/wooden-frame-long-Photoroom.png");
 
 // Measured directly from the asset's own pixel/alpha data (not eyeballed): its native
 // height/width ratio, and how far down its top-edge arch peaks (fraction of the image's own

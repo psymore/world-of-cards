@@ -45,7 +45,6 @@ const OPTION_BUTTON_RADIUS = 8;
 const TABLE_BACKGROUND_OPTIONS: { value: DevTableBackground; label: string }[] = [
   { value: 'frame', label: 'Default Frame (current)' },
   { value: 'felt', label: 'Felt (legacy default)' },
-  { value: 'gemini', label: 'Gemini (experiment)' },
 ];
 
 export function BatakDevTuningModal({ visible, onClose }: BatakDevTuningModalProps) {

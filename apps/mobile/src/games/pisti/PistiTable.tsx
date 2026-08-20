@@ -21,7 +21,6 @@ import {
   TABLE_SHELL_ASPECT_RATIO,
   SeatIdentity,
   TableFelt,
-  GeminiTableBackground,
   MahoganyTableSurface,
   HandFrame,
   HAND_FRAME_PEAK_FRACTION,
@@ -183,7 +182,7 @@ const PILE_STACK_HEIGHT = 144;
 const HAND_FAN_FELT_BOTTOM_FRACTION = 0.8;
 const HAND_FAN_FELT_WIDTH_FRACTION = 0.58;
 
-// Everything below is only used by the LEGACY table shape ('felt' | 'gemini' | 'stretchedFelt' —
+// Everything below is only used by the LEGACY table shape ('felt' | 'stretchedFelt' —
 // see devTuningStore.ts's PistiTableBackground), reintroduced for the Dev Tuning "Table
 // Background" comparison after the TableShell pilot replaced this as Pişti's default layout.
 // Kept as a genuinely separate render path (see the pistiTableBackground branch in PistiTable
@@ -199,7 +198,7 @@ const LEGACY_STRETCHED_FELT_IMAGE = require("../../../assets/pisti-legacy-felt-s
 
 // A carved-frame green felt panel (source: TABLE-FELT-PANEL-TRY-02-GLOW.png, docs/references/
 // GPT-powerful-assets-review/assets-v1/ — same "TRY-02-GLOW" pass TableShell's own surface asset
-// came from) — like TableFelt/GeminiTableBackground, covered (not stretched) over the full legacy
+// came from) — like TableFelt, covered (not stretched) over the full legacy
 // table area so its own aspect ratio is preserved instead of distorted.
 const LEGACY_REVISITED_IMAGE = require("../../../assets/pisti-legacy-revisited.png");
 
@@ -346,7 +345,7 @@ interface LegacyOpponentSeatProps {
 
 // Combined nameplate + card stack, exactly as Pişti rendered its opponents before the TableShell
 // pilot — kept only for the legacy Dev Tuning table-background options (see
-// LEGACY_STRETCHED_FELT_IMAGE's doc above), which use the old felt-panel/gemini/black-backdrop
+// LEGACY_STRETCHED_FELT_IMAGE's doc above), which use the old felt-panel/black-backdrop
 // look with no baked plaque anchors for OpponentHandStack + renderOpponentNameplate to target.
 function LegacyOpponentSeat({
   seat,
@@ -703,7 +702,7 @@ export function PistiTable({
     // nameplates) with a swappable full-bleed background — see LEGACY_STRETCHED_FELT_IMAGE's doc
     // comment above for why this is a genuinely separate tree rather than a parameterization of
     // the 'tableShell' tree below. HandFrame (the carved-wood arch behind the hand row) is only
-    // drawn for 'felt': on gemini/stretchedFelt its wood tone clashed with those backgrounds, so
+    // drawn for 'felt': on stretchedFelt its wood tone clashed with that background, so
     // it's skipped there rather than styled to match. 'legacyRevisited' gets its own dedicated
     // bottom plaque instead (MAHOGANY_PLAQUE_IMAGE, below) rather than reusing HandFrame.
     const legacyHandFramePeakTarget =
@@ -715,9 +714,7 @@ export function PistiTable({
 
     return (
       <DeselectableSurface style={styles.container} onDeselect={clearSelection}>
-        {pistiTableBackground === "gemini" ? (
-          <GeminiTableBackground />
-        ) : pistiTableBackground === "stretchedFelt" ? (
+        {pistiTableBackground === "stretchedFelt" ? (
           <Image
             source={LEGACY_STRETCHED_FELT_IMAGE}
             resizeMode="stretch"
@@ -1169,8 +1166,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 4,
   },
-  // Full-bleed, edge-to-edge — matches how TableFelt/GeminiTableBackground already size
-  // themselves for this same call site (no wrapper style needed for either of those; this Image
+  // Full-bleed, edge-to-edge — matches how TableFelt already sizes
+  // itself for this same call site (no wrapper style needed for that; this Image
   // needs one since it's rendered directly, not via a self-sizing component).
   legacyFullBleedBackground: {
     position: "absolute",

@@ -34,7 +34,6 @@ const OPTION_BUTTON_RADIUS = 8;
 const PISTI_TABLE_BACKGROUND_OPTIONS: { value: PistiTableBackground; label: string }[] = [
   { value: 'frameOnly', label: 'Default Frame (current)' },
   { value: 'felt', label: 'Felt (legacy default)' },
-  { value: 'gemini', label: 'Gemini (legacy alt)' },
   { value: 'tableShell', label: 'Table Shell (experiment)' },
   { value: 'stretchedFelt', label: 'Stretched felt panel (experiment)' },
   { value: 'legacyRevisited', label: 'Legacy Revisited (experiment)' },
@@ -45,7 +44,7 @@ const PISTI_TABLE_BACKGROUND_OPTIONS: { value: PistiTableBackground; label: stri
 // Pişti's hand is one row (PISTI_RAIL_CONFIG, no Standard/Compact split like Batak's) — one
 // overlap/spacing/arcDegrees each, not top/bottom pairs. Table Background uses Pişti's OWN
 // pistiTableBackground field — unlike the hand-fan tuning fields, this is deliberately NOT shared
-// with Batak's own tableBackground/felt-vs-gemini switch, since Pişti now has a much richer set
+// with Batak's own tableBackground field, since Pişti now has a much richer set
 // of table designs Batak was never part of (see devTuningStore.ts's PistiTableBackground doc).
 export function PistiDevTuningModal({ visible, onClose }: PistiDevTuningModalProps) {
   const pistiTableBackground = useDevTuningStore((s) => s.pistiTableBackground);

@@ -4,7 +4,6 @@ import type { BatakState, BatakMove } from '@world-of-cards/engine/games/batak';
 import { ruleConstants } from '@world-of-cards/engine/games/batak';
 import {
   TableFelt,
-  GeminiTableBackground,
   MahoganyTableSurface,
   HandFrame,
   HAND_FRAME_PEAK_FRACTION,
@@ -501,9 +500,7 @@ export function BatakTable({
 
   return (
     <DeselectableSurface style={styles.container} onDeselect={clearSelection}>
-      {__DEV__ && devTableBackground === 'gemini' ? (
-        <GeminiTableBackground />
-      ) : __DEV__ && devTableBackground === 'frame' ? (
+      {__DEV__ && devTableBackground === 'frame' ? (
         <MahoganyTableSurface material={tableSurfaceMaterial} />
       ) : (
         <TableFelt />
@@ -588,12 +585,11 @@ export function BatakTable({
         />
       </View>
 
-      {/* Suppressed on the Gemini table background — its own art doesn't want the wooden arch
-          layered on top — and on the Mahogany frame background, whose own frame already wraps
+      {/* Suppressed on the Mahogany frame background, whose own frame already wraps
           the bottom edge; layering this older plaque on top of it would double up the wood border
           there. Only relevant in __DEV__ (see devTableBackground above); in a release build this
           is always true. */}
-      {!(__DEV__ && (devTableBackground === 'gemini' || devTableBackground === 'frame')) && (
+      {!(__DEV__ && devTableBackground === 'frame') && (
         <HandFrame bottomOffset={handFrameBottomOffset} height={handFrameHeight} />
       )}
       <View style={styles.handArea}>

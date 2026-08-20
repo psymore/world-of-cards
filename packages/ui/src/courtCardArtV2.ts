@@ -35,4 +35,4 @@ export const COURT_CARD_ART_V2: Partial<Record<`${Rank}-${Suit}`, ImageSourcePro
 // A flat cream/parchment card face, replacing the plain '#fff' backgroundColor for every rank
 // under cardFaceStyle 'v2' or 'v3' — including non-court ranks, which otherwise keep today's plain
 // SVG suit watermark (no v2/v3 art exists for 2-10/Ace; only the background changes for them).
-export const CARD_FACE_BACKGROUND_V2_IMAGE: ImageSourcePropType = require('../assets/card-art/processed/ai-generated/v2/card-face-background-v2.jpg');
+export const CARD_FACE_BACKGROUND_V2_IMAGE: ImageSourcePropType = require('../assets/card-art/processed/ai-generated/v2/card-face-background-v2.png');

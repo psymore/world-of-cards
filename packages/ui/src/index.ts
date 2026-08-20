@@ -8,7 +8,6 @@ export type {
 export { SuitIcon } from "./SuitIcon";
 export type { SuitIconProps } from "./SuitIcon";
 export { TableFelt } from "./TableFelt";
-export { GeminiTableBackground } from "./GeminiTableBackground";
 export { DefaultTableFrame } from "./DefaultTableFrame";
 export {
   MahoganyTableSurface,

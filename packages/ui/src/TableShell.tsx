@@ -6,7 +6,7 @@ import { Image, StyleSheet, View, ViewStyle } from "react-native";
 // already cleanly cut (alpha 0 outside the wood ring, ~253 inside), so unlike the frame this
 // replaces, there's no separate felt layer to composite: this one image is the whole table
 // surface.
-const SURFACE_IMAGE = require("../assets/table/alternatives/table-shell-surface.png");
+const SURFACE_IMAGE = require("../assets/table/themes/table-shell-surface.png");
 
 // Matches table-shell-surface.png's pixel dimensions (1024x1536).
 export const TABLE_SHELL_ASPECT_RATIO = 1024 / 1536;

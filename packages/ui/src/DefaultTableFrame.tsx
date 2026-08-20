@@ -10,7 +10,7 @@ const FRAME_IMAGE = require("../assets/table/default/TABLE-FRAME-MAHOGANY-BURGUN
 // width/height: '100%' stretch is safe here — no per-edge overscan or measured-layout workaround
 // needed — because the source PNG's own file edges now ARE the artwork's edges (see the
 // "-trimmed" file's own doc comment on TABLE_FRAME_MAHOGANY_BURGUNDY_PLAQUE_IMAGE in index.ts for
-// the crop that fixed this at the source). Game-agnostic, like TableFelt/GeminiTableBackground: no
+// the crop that fixed this at the source). Game-agnostic, like TableFelt: no
 // props, painted once — pair with a game's own <TableFelt /> underneath as the actual playing
 // surface, since this frame's own center is alpha-cut hollow (it reads as a border around the
 // felt, not a full replacement background).
