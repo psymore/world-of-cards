@@ -43,6 +43,11 @@ android/
 # Subagent-driven-development scratch state
 .superpowers/
 
+# Manual git worktrees (dot-free path — Jest's glob matching breaks on Windows when the repo
+# path contains any dot-prefixed folder, so worktrees needing test runs live here instead of
+# under .claude/worktrees/)
+worktrees/
+
 # Code Index — generated runtime outputs (regenerate via update_codeindex.ps1)
 code-index/code_index.db
 code-index/code_index.db-*
