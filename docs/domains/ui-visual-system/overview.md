@@ -2,7 +2,7 @@
 
 **Owner:** whoever maintains `packages/ui`. **Load:** when touching shared visual components used by more than one app.
 
-`packages/ui` holds the shared, reusable visual components consumed by both `apps/mobile` and `apps/playground`: `PlayingCard`, `SuitIcon`, `CardBackPattern`, `CourtCardFrame`, `TableFelt`, `TableShell`, `TableWoodCorners`, `TableEdgeRails`, `HeaderWoodFrame`, `HandFrame`, `AbsoluteOverlay`, `glowShadow`, `SettingsIcon`, `colorUtils`, `courtCardArt`, `fonts`, `woodPalette`, `handAreaLayout`.
+`packages/ui` holds the shared, reusable visual components consumed by both `apps/mobile` and `apps/playground`: `PlayingCard`, `SuitIcon`, `CardBackPattern`, `CourtCardFrame`, `TableFelt`, `TableShell`, `TableWoodCorners`, `TableEdgeRails`, `HeaderWoodFrame`, `HandFrame`, `AbsoluteOverlay`, `glowShadow`, `SettingsIcon`, `colorUtils`, `courtCardArt`, `fonts`, `typography`, `woodPalette`, `handAreaLayout`.
 
 ## The cross-app isolation rule
 

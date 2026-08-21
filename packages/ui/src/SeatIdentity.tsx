@@ -9,6 +9,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { glowShadow } from "./glowShadow";
+import { DISPLAY_BOLD } from "./typography";
 
 const BADGE_IMAGE = require("../assets/avatars/seat-badge.png");
 // Decorative ring (silver band, gold rim, two diamond accents) that replaces the plain
@@ -368,10 +369,14 @@ const styles = StyleSheet.create({
   textColumn: { flex: 1, minWidth: 0 },
   nameText: {
     color: "#e8e3d2",
-    fontWeight: "bold",
+    fontFamily: DISPLAY_BOLD,
     fontSize: 7,
     lineHeight: 9,
   },
-  trickText: { color: "#b8b3a2", fontSize: 5.5, lineHeight: 7 },
+  trickText: {
+    color: "#b8b3a2",
+    fontSize: 5.5,
+    lineHeight: 7,
+  },
   badge: { width: 12, height: 12 },
 });
