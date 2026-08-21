@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>3D code index</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="graph"></div>
+
+<div id="panel">
+  <h1>Code index</h1>
+  <div class="stats" id="stats">loading...</div>
+
+  <label><input type="checkbox" id="showFiles" checked /> Show files</label>
+  <label><input type="checkbox" id="showFileEdges" /> Show file-level edges (heavy)</label>
+  <label>Node size:
+    <input type="range" id="nodeSize" min="2" max="14" value="6" />
+  </label>
+  <label>Link distance:
+    <input type="range" id="linkDist" min="20" max="200" value="80" />
+  </label>
+
+  <input id="search" placeholder="Filter files / symbols..." />
+
+  <div id="legend"></div>
+
+  <div style="margin-top: 10px; display: flex; gap: 6px;">
+    <button id="resetView">Reset camera</button>
+    <button id="clearSelection">Clear</button>
+  </div>
+
+  <div class="hint">
+    Click a node to inspect. Drag to rotate. Scroll to zoom.
+  </div>
+</div>
+
+<div id="detail" style="display:none;"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1.73.4/dist/3d-force-graph.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/state.js"></script>
+<script src="js/legend.js"></script>
+<script src="js/detail.js"></script>
+<script src="js/graph.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

@@ -27,7 +27,7 @@ UNMATCHED_POLICY = "default"
 CSPROJ_SUFFIX = ".csproj"
 NAMED_PROJECT_MARKERS = ("package.json", "pyproject.toml", "Cargo.toml")
 
-EXCLUDED_DIRS = {"obj", "bin", "node_modules", ".venv", "target", "dist", ".git"}
+EXCLUDED_DIRS = {"obj", "bin", "node_modules", ".venv", "target", "dist", ".git", ".claude"}
 
 
 def scan_repository(repo_root):

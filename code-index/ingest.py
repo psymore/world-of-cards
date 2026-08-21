@@ -185,20 +185,23 @@ con.commit()
 
 print(f"[ingest] {len(symbol_rows)} symbols inserted  ({skipped} skipped)")
 
-# ── Sanity report ─────────────────────────────────────────────────────────────
-print("\n── Symbol counts by module ──────────────────────────")
+# -- Sanity report ---------------------------------------------------------
+# Plain ASCII on purpose: Windows' default console codepage (cp1252) can't
+# encode box-drawing characters and print() crashes with UnicodeEncodeError
+# on some terminals - same pitfall update_codeindex.ps1 already avoids.
+print("\n-- Symbol counts by module --------------------------")
 for row in cur.execute(
     "SELECT module, COUNT(*) FROM symbols GROUP BY module ORDER BY COUNT(*) DESC"
 ):
     print(f"  {row[0]:<16} {row[1]:>5}")
 
-print("\n── Symbol counts by kind ────────────────────────────")
+print("\n-- Symbol counts by kind -----------------------------")
 for row in cur.execute(
     "SELECT kind, COUNT(*) FROM symbols GROUP BY kind ORDER BY COUNT(*) DESC"
 ):
     print(f"  {row[0]:<16} {row[1]:>5}")
 
-print("\n── Files per module ─────────────────────────────────")
+print("\n-- Files per module ----------------------------------")
 for row in cur.execute(
     "SELECT module, COUNT(*) FROM files GROUP BY module ORDER BY COUNT(*) DESC"
 ):

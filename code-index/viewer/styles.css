@@ -1,0 +1,37 @@
+html, body { margin: 0; height: 100%; background: #0b0d10; color: #e6e8eb; font-family: -apple-system, Segoe UI, Roboto, sans-serif; }
+#graph { width: 100vw; height: 100vh; }
+#panel {
+  position: fixed; top: 12px; left: 12px; max-width: 360px;
+  background: rgba(15, 18, 22, 0.88); border: 1px solid #2a2f37;
+  border-radius: 8px; padding: 12px 14px; backdrop-filter: blur(4px);
+  font-size: 13px; line-height: 1.5;
+}
+#panel h1 { font-size: 14px; margin: 0 0 6px; letter-spacing: .02em; }
+#panel .stats { color: #9aa3ad; font-size: 11px; margin-bottom: 10px; }
+#panel label { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+#panel input[type=range] { width: 130px; }
+#search { width: 100%; box-sizing: border-box; padding: 6px 8px;
+  background: #14181d; border: 1px solid #2a2f37; color: #e6e8eb;
+  border-radius: 4px; font-size: 12px; margin-top: 6px; }
+#legend { margin-top: 10px; display: grid; grid-template-columns: 12px auto; gap: 4px 8px; font-size: 11px; }
+.swatch { width: 12px; height: 12px; border-radius: 50%; align-self: center; }
+#detail {
+  position: fixed; bottom: 12px; right: 12px; max-width: 420px;
+  background: rgba(15, 18, 22, 0.92); border: 1px solid #2a2f37;
+  border-radius: 8px; padding: 12px 14px; backdrop-filter: blur(4px);
+  font-size: 12px; line-height: 1.5; max-height: 45vh; overflow: auto;
+}
+#detail h2 { font-size: 13px; margin: 0 0 6px; color: #c5cdd6; }
+#detail .path { color: #8a929c; word-break: break-all; }
+#detail .sym { display: grid; grid-template-columns: 60px 1fr; gap: 4px 10px; margin-top: 6px; }
+#detail .sym .kind { color: #7d8690; font-size: 10px; text-transform: uppercase; }
+#detail .sym .name { color: #e6e8eb; }
+#detail .sym .name.access-public { color: #7ee08a; }
+#detail .sym .name.access-protected { color: #c3a374; }
+#detail .sym .name.access-private { color: #9aa3ad; }
+button {
+  background: #1d2329; color: #e6e8eb; border: 1px solid #2a2f37;
+  border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer;
+}
+button:hover { background: #262d35; }
+.hint { color: #7d8690; font-size: 10px; margin-top: 8px; }
