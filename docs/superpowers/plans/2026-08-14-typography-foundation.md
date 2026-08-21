@@ -333,7 +333,7 @@ Any Pişti or Batak table screen — `SeatIdentity` is the shared seat/player-ba
 - [ ] **Step 3: Screenshot and confirm the fonts actually render**
 
 ```bash
-adb -s c2a9d642 exec-out screencap -p > /d/CodeSpace/world-cards/.tmp-seat-identity-check.png
+adb -s c2a9d642 exec-out screencap -p > /d/CodeSpace/world-of-cards/.tmp-seat-identity-check.png
 ```
 
 Read the resulting PNG and confirm: the player name renders in a serif face with visible small-caps-like inscriptional letterforms (Cinzel), not the system default sans, and it's not falling back to tofu/missing-glyph boxes.
@@ -341,7 +341,7 @@ Read the resulting PNG and confirm: the player name renders in a serif face with
 - [ ] **Step 4: Delete the verification screenshot**
 
 ```bash
-rm /d/CodeSpace/world-cards/.tmp-seat-identity-check.png
+rm /d/CodeSpace/world-of-cards/.tmp-seat-identity-check.png
 ```
 
 Per the phone-connected-phase screenshot policy (`docs/governance/guardrails.md` §3) — screenshot files never get committed or left in the working tree.

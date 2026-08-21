@@ -1777,8 +1777,8 @@ In `package.json`, add a `repo` entry to `scripts` alongside the existing `mobil
 ```json
 {
   "scripts": {
-    "mobile": "npm run start --workspace=world-cards-mobile",
-    "playground": "npm run start --workspace=world-cards-playground",
+    "mobile": "npm run start --workspace=world-of-cards-mobile",
+    "playground": "npm run start --workspace=world-of-cards-playground",
     "test": "jest",
     "repo": "python ops/repo.py"
   }
