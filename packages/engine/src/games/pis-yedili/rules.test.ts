@@ -168,6 +168,23 @@ describe('pisYedeliGame.getLegalMoves', () => {
     expect(pisYedeliGame.getLegalMoves(state, 'p1')).toEqual([{ type: 'play', cardId: 'h1' }]);
   });
 
+  it('before the game opens, expands a Jack of clubs into one candidate move per declared suit', () => {
+    const table = createTable([
+      createZone('stock', false, [card('s1', '4')]),
+      createZone('discard', true),
+      createZone('hand-p1', true, [card('h1', 'J', 'clubs'), card('h2', '3', 'hearts')]),
+      createZone('hand-p2', true, []),
+    ]);
+    const state = makeState({ table, activeSuit: null });
+    const moves = pisYedeliGame.getLegalMoves(state, 'p1');
+    const suits = ['hearts', 'diamonds', 'clubs', 'spades'] as const;
+    expect(moves).toHaveLength(4);
+    for (const suit of suits) {
+      expect(moves).toContainEqual({ type: 'play', cardId: 'h1', declaredSuit: suit });
+    }
+    expect(moves).not.toContainEqual({ type: 'play', cardId: 'h1' });
+  });
+
   it('before the game opens, offers only draw when the current player holds no club', () => {
     const table = createTable([
       createZone('stock', false, [card('s1', '4')]),
@@ -343,6 +360,20 @@ describe('pisYedeliGame.performMove', () => {
     expect(next.currentPlayerIndex).toBe(1);
     expect(next.table).toBe(state.table);
     expect(next.activeSuit).toBe('clubs');
+    expect(next.pendingDraw).toBe(0);
+  });
+
+  it('pass clears an undischargeable pendingDraw penalty instead of carrying it forward', () => {
+    const table = createTable([
+      createZone('stock', false),
+      createZone('discard', true, [card('d1', '7', 'spades')]),
+      createZone('hand-p1', true, [card('h1', 'K', 'hearts')]),
+      createZone('hand-p2', true, []),
+    ]);
+    const state = makeState({ table, activeSuit: 'spades', pendingDraw: 2, currentPlayerIndex: 0 });
+    const next = pisYedeliGame.performMove(state, { type: 'pass' });
+    expect(next.pendingDraw).toBe(0);
+    expect(next.currentPlayerIndex).toBe(1);
   });
 
   it('draw moves one card from stock to hand and does not advance the turn', () => {
@@ -423,6 +454,19 @@ describe('pisYedeliGame.performMove', () => {
     const state = makeState({ table, activeSuit: 'clubs', currentPlayerIndex: 0, pendingDraw: 2 });
     const next = pisYedeliGame.performMove(state, { type: 'play', cardId: 'h1' });
     expect(next.pendingDraw).toBe(4);
+  });
+
+  it('playing the Jack of clubs to open the game sets activeSuit to the declared suit', () => {
+    const table = createTable([
+      createZone('stock', false, [card('s1', '4')]),
+      createZone('discard', true),
+      createZone('hand-p1', true, [card('h1', 'J', 'clubs')]),
+      createZone('hand-p2', true, [card('h2', '3', 'hearts')]),
+    ]);
+    const state = makeState({ table, activeSuit: null, currentPlayerIndex: 0 });
+    const next = pisYedeliGame.performMove(state, { type: 'play', cardId: 'h1', declaredSuit: 'diamonds' });
+    expect(next.activeSuit).toBe('diamonds');
+    expect(next.activeSuit).not.toBeUndefined();
   });
 
   it('playing a Jack sets activeSuit to the declared suit, not the Jack\'s own suit', () => {

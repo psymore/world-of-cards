@@ -75,7 +75,17 @@ export const pisYedeliGame: RuleEngine<PisYedeliState, PisYedeliMove, PisYedeliS
     if (discard.length === 0) {
       const clubs = hand.filter((c) => c.suit === 'clubs');
       if (clubs.length > 0) {
-        return clubs.map((c) => ({ type: 'play' as const, cardId: c.id }));
+        const moves: PisYedeliMove[] = [];
+        for (const c of clubs) {
+          if (c.rank === 'J') {
+            for (const suit of SUITS) {
+              moves.push({ type: 'play', cardId: c.id, declaredSuit: suit });
+            }
+          } else {
+            moves.push({ type: 'play', cardId: c.id });
+          }
+        }
+        return moves;
       }
       return drawable ? [{ type: 'draw' as const }] : [];
     }
@@ -122,7 +132,7 @@ export const pisYedeliGame: RuleEngine<PisYedeliState, PisYedeliMove, PisYedeliS
     const playerCount = state.players.length;
 
     if (move.type === 'pass') {
-      return { ...state, currentPlayerIndex: (state.currentPlayerIndex + 1) % playerCount };
+      return { ...state, currentPlayerIndex: (state.currentPlayerIndex + 1) % playerCount, pendingDraw: 0 };
     }
 
     if (move.type === 'draw') {
