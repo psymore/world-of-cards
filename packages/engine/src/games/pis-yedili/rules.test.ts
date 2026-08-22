@@ -155,3 +155,177 @@ describe('pisYedeliGame.calculateScore', () => {
     expect(score['p2']).toBe(0);
   });
 });
+
+describe('pisYedeliGame.getLegalMoves', () => {
+  it('before the game opens, offers only clubs in hand if any are held', () => {
+    const table = createTable([
+      createZone('stock', false, [card('s1', '4')]),
+      createZone('discard', true),
+      createZone('hand-p1', true, [card('h1', '9', 'clubs'), card('h2', '3', 'hearts')]),
+      createZone('hand-p2', true, []),
+    ]);
+    const state = makeState({ table, activeSuit: null });
+    expect(pisYedeliGame.getLegalMoves(state, 'p1')).toEqual([{ type: 'play', cardId: 'h1' }]);
+  });
+
+  it('before the game opens, offers only draw when the current player holds no club', () => {
+    const table = createTable([
+      createZone('stock', false, [card('s1', '4')]),
+      createZone('discard', true),
+      createZone('hand-p1', true, [card('h1', '9', 'hearts')]),
+      createZone('hand-p2', true, []),
+    ]);
+    const state = makeState({ table, activeSuit: null });
+    expect(pisYedeliGame.getLegalMoves(state, 'p1')).toEqual([{ type: 'draw' }]);
+  });
+
+  it('returns nothing for a player who is not current', () => {
+    const table = createTable([
+      createZone('stock', false, [card('s1', '4')]),
+      createZone('discard', true),
+      createZone('hand-p1', true, [card('h1', '9', 'clubs')]),
+      createZone('hand-p2', true, [card('h2', '3', 'clubs')]),
+    ]);
+    const state = makeState({ table, activeSuit: null });
+    expect(pisYedeliGame.getLegalMoves(state, 'p2')).toEqual([]);
+  });
+
+  it('with a pending draw penalty, offers only sevens in hand plus draw', () => {
+    const table = createTable([
+      createZone('stock', false, [card('s1', '4')]),
+      createZone('discard', true, [card('d1', '7', 'spades')]),
+      createZone('hand-p1', true, [card('h1', '7', 'hearts'), card('h2', 'K', 'hearts')]),
+      createZone('hand-p2', true, []),
+    ]);
+    const state = makeState({ table, activeSuit: 'spades', pendingDraw: 2 });
+    expect(pisYedeliGame.getLegalMoves(state, 'p1')).toEqual([
+      { type: 'play', cardId: 'h1' },
+      { type: 'draw' },
+    ]);
+  });
+
+  it('with a pending draw penalty and no seven or draw available, falls back to pass', () => {
+    const table = createTable([
+      createZone('stock', false),
+      createZone('discard', true, [card('d1', '7', 'spades')]),
+      createZone('hand-p1', true, [card('h1', 'K', 'hearts')]),
+      createZone('hand-p2', true, []),
+    ]);
+    const state = makeState({ table, activeSuit: 'spades', pendingDraw: 2 });
+    expect(pisYedeliGame.getLegalMoves(state, 'p1')).toEqual([{ type: 'pass' }]);
+  });
+
+  it('once opened, offers cards matching the active suit or the discard top rank', () => {
+    const table = createTable([
+      createZone('stock', false, [card('s1', '4')]),
+      createZone('discard', true, [card('d1', '9', 'clubs')]),
+      createZone('hand-p1', true, [
+        card('h1', '5', 'clubs'),   // matches active suit
+        card('h2', '9', 'hearts'),  // matches discard top rank
+        card('h3', '3', 'hearts'),  // matches neither
+      ]),
+      createZone('hand-p2', true, []),
+    ]);
+    const state = makeState({ table, activeSuit: 'clubs' });
+    const moves = pisYedeliGame.getLegalMoves(state, 'p1');
+    expect(moves).toEqual(
+      expect.arrayContaining([{ type: 'play', cardId: 'h1' }, { type: 'play', cardId: 'h2' }, { type: 'draw' }])
+    );
+    expect(moves).not.toContainEqual({ type: 'play', cardId: 'h3' });
+  });
+
+  it('always offers a seven regardless of match', () => {
+    const table = createTable([
+      createZone('stock', false, [card('s1', '4')]),
+      createZone('discard', true, [card('d1', '9', 'clubs')]),
+      createZone('hand-p1', true, [card('h1', '7', 'hearts')]),
+      createZone('hand-p2', true, []),
+    ]);
+    const state = makeState({ table, activeSuit: 'clubs' });
+    expect(pisYedeliGame.getLegalMoves(state, 'p1')).toContainEqual({ type: 'play', cardId: 'h1' });
+  });
+
+  it('expands a Jack into one candidate move per declared suit', () => {
+    const table = createTable([
+      createZone('stock', false, [card('s1', '4')]),
+      createZone('discard', true, [card('d1', '9', 'clubs')]),
+      createZone('hand-p1', true, [card('h1', 'J', 'hearts')]),
+      createZone('hand-p2', true, []),
+    ]);
+    const state = makeState({ table, activeSuit: 'clubs' });
+    const moves = pisYedeliGame.getLegalMoves(state, 'p1');
+    const suits = ['hearts', 'diamonds', 'clubs', 'spades'] as const;
+    for (const suit of suits) {
+      expect(moves).toContainEqual({ type: 'play', cardId: 'h1', declaredSuit: suit });
+    }
+  });
+
+  it('offers pass only when no legal play exists', () => {
+    const table = createTable([
+      createZone('stock', false, [card('s1', '4')]),
+      createZone('discard', true, [card('d1', '9', 'clubs')]),
+      createZone('hand-p1', true, [card('h1', '3', 'hearts')]),
+      createZone('hand-p2', true, []),
+    ]);
+    const state = makeState({ table, activeSuit: 'clubs' });
+    expect(pisYedeliGame.getLegalMoves(state, 'p1')).toEqual([{ type: 'draw' }, { type: 'pass' }]);
+  });
+
+  it('does not offer pass when a legal play exists, even though draw is always offered too', () => {
+    const table = createTable([
+      createZone('stock', false, [card('s1', '4')]),
+      createZone('discard', true, [card('d1', '9', 'clubs')]),
+      createZone('hand-p1', true, [card('h1', '5', 'clubs')]),
+      createZone('hand-p2', true, []),
+    ]);
+    const state = makeState({ table, activeSuit: 'clubs' });
+    const moves = pisYedeliGame.getLegalMoves(state, 'p1');
+    expect(moves).not.toContainEqual({ type: 'pass' });
+  });
+});
+
+describe('pisYedeliGame.validateMove', () => {
+  const baseTable = createTable([
+    createZone('stock', false, [card('s1', '4')]),
+    createZone('discard', true, [card('d1', '9', 'clubs')]),
+    createZone('hand-p1', true, [card('h1', '5', 'clubs'), card('h2', 'J', 'hearts')]),
+    createZone('hand-p2', true, [card('h3', '3', 'hearts')]),
+  ]);
+
+  it('rejects a move from a player who is not current', () => {
+    const state = makeState({ table: baseTable, activeSuit: 'clubs' });
+    expect(pisYedeliGame.validateMove(state, { type: 'draw' }, 'p2')).toBe(false);
+  });
+
+  it('rejects any move once the game has finished', () => {
+    const state = makeState({ table: baseTable, activeSuit: 'clubs', status: 'finished' });
+    expect(pisYedeliGame.validateMove(state, { type: 'draw' }, 'p1')).toBe(false);
+  });
+
+  it('accepts a legal play matching the active suit', () => {
+    const state = makeState({ table: baseTable, activeSuit: 'clubs' });
+    expect(pisYedeliGame.validateMove(state, { type: 'play', cardId: 'h1' }, 'p1')).toBe(true);
+  });
+
+  it('accepts a Jack play with a declared suit that matches a legal candidate', () => {
+    const state = makeState({ table: baseTable, activeSuit: 'clubs' });
+    expect(
+      pisYedeliGame.validateMove(state, { type: 'play', cardId: 'h2', declaredSuit: 'spades' }, 'p1')
+    ).toBe(true);
+  });
+
+  it('rejects a Jack play with no declared suit', () => {
+    const state = makeState({ table: baseTable, activeSuit: 'clubs' });
+    expect(pisYedeliGame.validateMove(state, { type: 'play', cardId: 'h2' }, 'p1')).toBe(false);
+  });
+
+  it('rejects a card not in hand', () => {
+    const state = makeState({ table: baseTable, activeSuit: 'clubs' });
+    expect(pisYedeliGame.validateMove(state, { type: 'play', cardId: 'not-a-real-card' }, 'p1')).toBe(false);
+  });
+
+  it('accepts draw', () => {
+    const state = makeState({ table: baseTable, activeSuit: 'clubs' });
+    expect(pisYedeliGame.validateMove(state, { type: 'draw' }, 'p1')).toBe(true);
+  });
+});
