@@ -39,3 +39,18 @@ export const STANDARD_TOP_OVERLAP = 0.6;
 export const STANDARD_BOTTOM_OVERLAP = 0.66;
 export const COMPACT_TOP_OVERLAP = 0.7;
 export const COMPACT_BOTTOM_OVERLAP = 0.7;
+
+// Per-row spacing/position baseline (2026-08-22), same "row can differ from row, mode can differ
+// from mode" reasoning as the overlap constants above — tuned live via BatakDevTuningModal's Top/
+// Bottom X/Y and spacing steppers, then promoted here as the real shipped default (previously
+// these steppers only ever affected __DEV__ builds; see HumanHandFan.tsx's configForRow/
+// applyDevOffset for where these now apply in every build). X stays 0 for every row — only spacing
+// and Y were retuned.
+export const STANDARD_TOP_SPACING = 124;
+export const STANDARD_BOTTOM_SPACING = 120;
+export const COMPACT_TOP_SPACING = 120;
+export const COMPACT_BOTTOM_SPACING = 106;
+export const STANDARD_TOP_OFFSET_Y = 30;
+export const STANDARD_BOTTOM_OFFSET_Y = 20;
+export const COMPACT_TOP_OFFSET_Y = 30;
+export const COMPACT_BOTTOM_OFFSET_Y = 24;

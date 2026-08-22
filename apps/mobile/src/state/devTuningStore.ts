@@ -58,6 +58,8 @@ export interface DevTuningState {
   bottomSpacingPx: number | null;
   // Per-row position nudge (px), added to that row's fan on top of its rail geometry — same
   // null-means-untouched convention as the fields above. Batak-only, like topOverlap/bottomOverlap.
+  // Y has a real per-row/per-mode production baseline it layers on top of (see batakRailFan.ts's
+  // STANDARD_TOP_OFFSET_Y and siblings); X has no such baseline (stays 0 until touched here).
   topOffsetX: number | null;
   topOffsetY: number | null;
   bottomOffsetX: number | null;
