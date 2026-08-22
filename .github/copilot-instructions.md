@@ -1,5 +1,19 @@
 # GitHub Copilot Instructions
 
+## Documentation
+
+This repository has its own knowledge architecture, entered via `CLAUDE.md` (routing) and
+`docs/00-DocumentationMap.md` (full authority hierarchy: `architecture/` → `docs/governance/`
+→ `docs/domains/<domain>/` → `docs/superpowers/specs+plans/` → `docs/status/` →
+implementation). Read `docs/governance/guardrails.md` and
+`docs/governance/engineering-principles.md` before implementation or risky operations, and
+the relevant `docs/domains/<domain>/overview.md` before touching that domain. Where those
+documents and the generic rules below disagree, the repository's own documents win.
+
+`docs/superpowers/plans/ACTIVE-WORK-vscode.md` is the shared handoff record between Claude
+Code and GitHub Copilot sessions — check it at the start of a session and keep it current
+when work changes hands.
+
 ## Role
 
 You are a senior React Native and TypeScript engineer.

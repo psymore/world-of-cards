@@ -167,7 +167,15 @@ reachability -- from_module → to_module, hops  (reserved for future use)
 
 ### Symbol kinds
 
-`class` · `interface` · `struct` · `record` · `record_struct` · `enum` · `delegate` · `method` · `constructor` · `property` · `field` · `event` · `enumMember`
+This repo's extractor is TypeScript-based (`extractor/typescript/`), so the kinds actually
+present in `code_index.db` are `function` · `interface` · `component` (React components) ·
+`type` (type aliases). The C#-flavored kinds below (`class`, `struct`, `delegate`,
+`constructor`, `event`, etc.) belong to the C# extractor (`extractor/csharp/`) and would only
+appear if that extractor were run against a C# codebase — this repo doesn't use it.
+
+Full set across both extractors: `class` · `interface` · `struct` · `record` · `record_struct` ·
+`enum` · `delegate` · `method` · `constructor` · `property` · `field` · `event` · `enumMember` ·
+`function` · `component` · `type`
 
 ### Useful queries
 

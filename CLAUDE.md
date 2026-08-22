@@ -24,6 +24,7 @@ This file is a navigation entry point only. It routes you to where knowledge act
 | Full repo-wide documentation map, authority hierarchy, and reading order | `docs/00-DocumentationMap.md` |
 | Fast symbol/file-dependency lookup without loading raw source (what exists, what imports what) | `code-index/LAYOUT.md` → `code-index/LAYOUT_<module>.md`, or query the `code-index` MCP server directly — see `code-index/README.md` |
 | A visual, explorable map of the whole module/file dependency graph | `code-index/viewer/` (see its README) |
+| Current state when picking up work handed off between Claude Code and VS Code Copilot | `docs/superpowers/plans/ACTIVE-WORK-vscode.md` |
 
 ## Before you start
 
