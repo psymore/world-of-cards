@@ -500,7 +500,7 @@ export function BatakTable({
 
   return (
     <DeselectableSurface style={styles.container} onDeselect={clearSelection}>
-      {__DEV__ && devTableBackground === 'frame' ? (
+      {devTableBackground === 'frame' ? (
         <MahoganyTableSurface material={tableSurfaceMaterial} />
       ) : (
         <TableFelt />
@@ -587,9 +587,8 @@ export function BatakTable({
 
       {/* Suppressed on the Mahogany frame background, whose own frame already wraps
           the bottom edge; layering this older plaque on top of it would double up the wood border
-          there. Only relevant in __DEV__ (see devTableBackground above); in a release build this
-          is always true. */}
-      {!(__DEV__ && devTableBackground === 'frame') && (
+          there. */}
+      {devTableBackground !== 'frame' && (
         <HandFrame bottomOffset={handFrameBottomOffset} height={handFrameHeight} />
       )}
       <View style={styles.handArea}>

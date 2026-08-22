@@ -6,8 +6,10 @@ import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWi
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import {
+  LIGHTING_BEAM_IMAGE,
   MODAL_CARD_LARGE_ASPECT_RATIO,
-  MODAL_CARD_LARGE_IMAGE,
+  TABLE_BACKDROP_GLASS_GOLD_GLOW_IMAGE,
+  TABLE_FELT_INSERT_MAHOGANY_BURGUNDY_IMAGE,
   ModalCloseButton,
   PressableFeedback,
 } from '@world-of-cards/ui';
@@ -108,6 +110,12 @@ export function CollapsibleSection({ title, children }: { title: string; childre
 const SWIPE_DISMISS_DISTANCE = 120;
 const SWIPE_DISMISS_VELOCITY = 800;
 
+// How much larger than the card itself the ambient backdrop glow renders — it sits behind `card`
+// as an unclipped sibling (unlike the felt/light-beam layers, which paint inside card's own
+// overflow:hidden), so this overscan is what actually produces the soft halo bleeding out past
+// the card's own edges rather than stopping dead at its rim.
+const BACKDROP_GLOW_OVERSCAN = 1.25;
+
 // The Modal/backdrop/card/heading/Done-button chrome every dev-tuning modal shares — a caller
 // supplies only its own CollapsibleSections as children. Capped at 90vw/80vh (bounded further by
 // MODAL_CARD_LARGE_IMAGE's own aspect ratio — its content region only ever exists inside that
@@ -163,11 +171,31 @@ export function DevTuningModalShell({
             fall through to the backdrop's own onPress above and close the modal on every inside
             tap. This no-op onPress exists solely to claim the responder instead. */}
         <Pressable onPress={() => {}} style={{ width: cardWidth, maxHeight }}>
+          <Image
+            source={TABLE_BACKDROP_GLASS_GOLD_GLOW_IMAGE}
+            resizeMode="stretch"
+            pointerEvents="none"
+            style={[
+              styles.backdropGlow,
+              {
+                width: cardWidth * BACKDROP_GLOW_OVERSCAN,
+                height: cardHeight * BACKDROP_GLOW_OVERSCAN,
+                left: (-cardWidth * (BACKDROP_GLOW_OVERSCAN - 1)) / 2,
+                top: (-cardHeight * (BACKDROP_GLOW_OVERSCAN - 1)) / 2,
+              },
+            ]}
+          />
           <Animated.View style={[styles.card, { height: cardHeight }, dragStyle]}>
             <Image
-              source={MODAL_CARD_LARGE_IMAGE}
+              source={TABLE_FELT_INSERT_MAHOGANY_BURGUNDY_IMAGE}
               resizeMode="stretch"
               style={[StyleSheet.absoluteFill, styles.cardImage]}
+            />
+            <Image
+              source={LIGHTING_BEAM_IMAGE}
+              resizeMode="contain"
+              pointerEvents="none"
+              style={[styles.lightBeam, { width: cardWidth, height: cardWidth }]}
             />
             <GestureDetector gesture={panGesture}>
               <View style={styles.dragHandleArea}>
@@ -188,37 +216,51 @@ export function DevTuningModalShell({
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  // No backgroundColor/borderRadius of its own — MODAL_CARD_LARGE_IMAGE (an absoluteFill sibling,
-  // painted first) is the entire visible card, gold rim and rounded corners baked in. width/height
-  // are computed inline (contain-fit against the image's own aspect ratio, capped at 90vw/80vh —
-  // see the component body) rather than living here, since they depend on the window size.
+  // Positioned/sized entirely inline at the call site (it needs to overhang `card`'s own box by
+  // BACKDROP_GLOW_OVERSCAN) — this only fixes the layer type/z-order (behind everything, ignores
+  // touches).
+  backdropGlow: { position: 'absolute' },
+  // No backgroundColor/borderRadius of its own — TABLE_FELT_INSERT_MAHOGANY_BURGUNDY_IMAGE (an
+  // absoluteFill sibling, painted first) is the entire visible card, gold rim and rounded corners
+  // baked in, same as the modal-card-large asset it replaced (2026-08-22 — see index.ts's own doc
+  // comment on TABLE_BACKDROP_GLASS_GOLD_GLOW_IMAGE for why). width/height are computed inline
+  // (contain-fit against MODAL_CARD_LARGE_ASPECT_RATIO, capped at 90vw/80vh — see the component
+  // body) rather than living here, since they depend on the window size.
   card: { overflow: 'hidden' },
   // react-native-web's Image falls back to the loaded image's natural pixel size unless width/
   // height are explicit — StyleSheet.absoluteFill alone leaves them 'auto' on web (see
-  // TableShell.tsx's own styles.fill for the same fix), which let the 874x1462-native modal-card
-  // art escape its own overflow:hidden-clipped ancestor. Explicit 100%/100% forces the fill on
-  // web while staying a no-op on native.
+  // TableShell.tsx's own styles.fill for the same fix), which let the source art escape its own
+  // overflow:hidden-clipped ancestor. Explicit 100%/100% forces the fill on web while staying a
+  // no-op on native.
   cardImage: { width: '100%', height: '100%' },
+  // A soft top-down accent layered above the felt but below the header/content — low opacity so it
+  // reads as ambient light on the felt rather than competing with the heading text under it.
+  lightBeam: { position: 'absolute', top: 0, left: 0, opacity: 0.35 },
   dragHandleArea: { alignItems: 'center', paddingTop: 14, paddingBottom: 4 },
   // A plain code-drawn grip bar (not part of the source art) — the visual affordance that this
   // header strip is what you drag to swipe the sheet closed, same convention as native bottom
-  // sheets. Sits above the heading so it doesn't compete with the title for attention.
+  // sheets. Sits above the heading so it doesn't compete with the title for attention. Gold-tinted
+  // (was a dark near-black bar, tuned for the old smoky-glass background) so it stays visible
+  // against the current opaque emerald-felt background.
   dragHandle: {
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(36, 26, 16, 0.35)',
+    backgroundColor: 'rgba(244, 197, 66, 0.5)',
     marginBottom: 10,
   },
-  heading: { fontSize: 18, fontWeight: 'bold', textAlign: 'center', color: '#241a10' },
+  // Gold/cream, matching the established dark-felt palette (BatakSettingsModal, SeatIdentity,
+  // BatakSetupView) — the previous #241a10 near-black was tuned for the old light smoky-glass
+  // modal-card-large background and reads as near-invisible against the current dark emerald felt.
+  heading: { fontSize: 18, fontWeight: 'bold', textAlign: 'center', color: '#f4c542' },
   scroll: { flexShrink: 1 },
   scrollContent: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 16 },
   section: { marginBottom: 12 },
   sectionToggle: { paddingVertical: 6 },
-  sectionToggleText: { fontSize: 15, fontWeight: '600' },
+  sectionToggleText: { fontSize: 15, fontWeight: '600', color: '#f5f0e6' },
   sectionContent: { paddingTop: 8, gap: 10 },
   stepperRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  stepperLabel: { fontSize: 14, flexShrink: 1 },
+  stepperLabel: { fontSize: 14, flexShrink: 1, color: '#f5f0e6' },
   stepperControls: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   stepperButton: {
     width: 32,
@@ -229,6 +271,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepperButtonText: { fontSize: 18, fontWeight: '700' },
+  // Own light chip background (like stepperButton/optionRow) rather than relying on the
+  // surrounding felt for contrast — its default black input text stays legible regardless of
+  // what background this shell is on.
   stepperInput: {
     fontSize: 14,
     minWidth: 56,
@@ -238,6 +283,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     paddingVertical: 4,
     paddingHorizontal: 6,
+    backgroundColor: '#eee',
   },
   // Absolute against `card` (the nearest positioned ancestor — Views are position:'relative' by
   // default in RN) rather than flowing after the ScrollView, so it stays fixed to the card's own
