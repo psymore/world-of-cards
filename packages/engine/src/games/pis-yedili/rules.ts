@@ -117,8 +117,51 @@ export const pisYedeliGame: RuleEngine<PisYedeliState, PisYedeliMove, PisYedeliS
     return legal.some((m) => m.type === move.type);
   },
 
-  performMove(): PisYedeliState {
-    throw new Error('not implemented');
+  performMove(state: PisYedeliState, move: PisYedeliMove): PisYedeliState {
+    const playerId = state.players[state.currentPlayerIndex];
+    const playerCount = state.players.length;
+
+    if (move.type === 'pass') {
+      return { ...state, currentPlayerIndex: (state.currentPlayerIndex + 1) % playerCount };
+    }
+
+    if (move.type === 'draw') {
+      let table = state.table;
+      if (table.zones['stock'].cards.length === 0) {
+        const discardCards = table.zones['discard'].cards;
+        const top = discardCards[discardCards.length - 1];
+        const rest = discardCards.slice(0, -1).reverse();
+        table = {
+          zones: {
+            ...table.zones,
+            discard: { ...table.zones['discard'], cards: [top] },
+            stock: { ...table.zones['stock'], cards: rest },
+          },
+        };
+      }
+      const stockCards = table.zones['stock'].cards;
+      const drawnCard = stockCards[stockCards.length - 1];
+      table = moveCard(table, drawnCard.id, 'stock', `hand-${playerId}`);
+      return { ...state, table, pendingDraw: state.pendingDraw > 0 ? state.pendingDraw - 1 : 0 };
+    }
+
+    const handZone = `hand-${playerId}`;
+    const playedCard = state.table.zones[handZone].cards.find((c) => c.id === move.cardId)!;
+    const table = moveCard(state.table, move.cardId, handZone, 'discard');
+    const activeSuit = playedCard.rank === 'J' ? move.declaredSuit! : playedCard.suit!;
+    const pendingDraw = playedCard.rank === '7' ? state.pendingDraw + 2 : 0;
+    const advance = playedCard.rank === 'J' ? 2 : 1;
+    const nextIndex = (state.currentPlayerIndex + advance) % playerCount;
+    const handEmpty = table.zones[handZone].cards.length === 0;
+
+    return {
+      ...state,
+      table,
+      activeSuit,
+      pendingDraw,
+      currentPlayerIndex: nextIndex,
+      status: handEmpty ? 'finished' : 'in-progress',
+    };
   },
 
   calculateScore(state: PisYedeliState): ScoreBoard {
