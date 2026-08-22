@@ -174,7 +174,6 @@ export function DevTuningModalShell({
           <Image
             source={TABLE_BACKDROP_GLASS_GOLD_GLOW_IMAGE}
             resizeMode="stretch"
-            pointerEvents="none"
             style={[
               styles.backdropGlow,
               {
@@ -194,7 +193,6 @@ export function DevTuningModalShell({
             <Image
               source={LIGHTING_BEAM_IMAGE}
               resizeMode="contain"
-              pointerEvents="none"
               style={[styles.lightBeam, { width: cardWidth, height: cardWidth }]}
             />
             <GestureDetector gesture={panGesture}>
@@ -217,8 +215,8 @@ export function DevTuningModalShell({
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
   // Positioned/sized entirely inline at the call site (it needs to overhang `card`'s own box by
-  // BACKDROP_GLOW_OVERSCAN) — this only fixes the layer type/z-order (behind everything, ignores
-  // touches).
+  // BACKDROP_GLOW_OVERSCAN) — this only fixes the layer type/z-order (behind everything). No
+  // pointerEvents needed: a plain Image never claims RN's touch responder, unlike Pressable/View.
   backdropGlow: { position: 'absolute' },
   // No backgroundColor/borderRadius of its own — TABLE_FELT_INSERT_MAHOGANY_BURGUNDY_IMAGE (an
   // absoluteFill sibling, painted first) is the entire visible card, gold rim and rounded corners
