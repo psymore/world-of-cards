@@ -12,6 +12,14 @@ import {
   STANDARD_BOTTOM_OVERLAP,
   COMPACT_TOP_OVERLAP,
   COMPACT_BOTTOM_OVERLAP,
+  STANDARD_TOP_SPACING,
+  STANDARD_BOTTOM_SPACING,
+  COMPACT_TOP_SPACING,
+  COMPACT_BOTTOM_SPACING,
+  STANDARD_TOP_OFFSET_Y,
+  STANDARD_BOTTOM_OFFSET_Y,
+  COMPACT_TOP_OFFSET_Y,
+  COMPACT_BOTTOM_OFFSET_Y,
 } from "./batakRailFan";
 import { railAngleStepDeg, railAngles, railPosition } from "../../../table/railFan";
 import type { RailAngleConfig } from "../../../table/railFan";
@@ -169,13 +177,13 @@ export function HumanHandFan({
   const devBottomOffsetX = useDevTuningStore((s) => s.bottomOffsetX);
   const devBottomOffsetY = useDevTuningStore((s) => s.bottomOffsetY);
 
-  // Resolves each row's real rail config. The per-row overlap baseline (STANDARD_TOP_OVERLAP /
-  // STANDARD_BOTTOM_OVERLAP / COMPACT_TOP_OVERLAP / COMPACT_BOTTOM_OVERLAP, batakRailFan.ts)
-  // always applies first, in every build — it's a real production default, not a dev-only value —
-  // then the dev panel's overlap/spacing (per-row) and arcDegrees (shared) overrides layer on top
-  // only in __DEV__ (dead-code-eliminated from a release build, per this file's own
-  // production-safety requirement). maxRotationDeg/radius always stay shared across both rows and
-  // are never overridable from the panel.
+  // Resolves each row's real rail config. The per-row overlap/spacing baseline (STANDARD_TOP_
+  // OVERLAP/STANDARD_TOP_SPACING and siblings, batakRailFan.ts) always applies first, in every
+  // build — it's a real production default, not a dev-only value — then the dev panel's overlap/
+  // spacing (per-row) and arcDegrees (shared) overrides layer on top only in __DEV__ (dead-code-
+  // eliminated from a release build, per this file's own production-safety requirement).
+  // maxRotationDeg/radius always stay shared across both rows and are never overridable from the
+  // panel.
   // Each dev override is applied only when non-null (i.e. once the panel's control has actually
   // been touched) — otherwise the per-row production baseline passes through untouched.
   function configForRow(row: "top" | "bottom"): RailAngleConfig {
@@ -183,29 +191,36 @@ export function HumanHandFan({
     const baseOverlap = compact
       ? (row === "top" ? COMPACT_TOP_OVERLAP : COMPACT_BOTTOM_OVERLAP)
       : (row === "top" ? STANDARD_TOP_OVERLAP : STANDARD_BOTTOM_OVERLAP);
-    if (!__DEV__) return { ...baseConfig, overlap: baseOverlap };
+    const baseSpacing = compact
+      ? (row === "top" ? COMPACT_TOP_SPACING : COMPACT_BOTTOM_SPACING)
+      : (row === "top" ? STANDARD_TOP_SPACING : STANDARD_BOTTOM_SPACING);
+    if (!__DEV__) return { ...baseConfig, overlap: baseOverlap, spacingPx: baseSpacing };
     const overlap = row === "top" ? devTopOverlap : devBottomOverlap;
     const spacingPx = row === "top" ? devTopSpacingPx : devBottomSpacingPx;
     return {
       ...baseConfig,
       overlap: overlap ?? baseOverlap,
-      ...(spacingPx != null ? { spacingPx } : {}),
+      spacingPx: spacingPx ?? baseSpacing,
       ...(devArcDegrees != null ? { arcDegrees: devArcDegrees } : {}),
     };
   }
 
-  // Dev-only per-row position nudge, layered on *after* slotPosition's fan geometry rather than
-  // folded into RailAngleConfig/slotPosition themselves — those stay row-agnostic and shared with
-  // Pişti's identical rail math (railFan.ts), so a Batak-only dev-tuning concept has no business
-  // inside them. No-op in production (__DEV__ false) and whenever a row's offset hasn't been
-  // touched from the panel (null), matching configForRow's own null-means-untouched convention.
+  // Per-row position nudge, layered on *after* slotPosition's fan geometry rather than folded into
+  // RailAngleConfig/slotPosition themselves — those stay row-agnostic and shared with Pişti's
+  // identical rail math (railFan.ts), so a Batak-only concept has no business inside them. The
+  // per-row Y baseline (STANDARD_TOP_OFFSET_Y and siblings, batakRailFan.ts) always applies, same
+  // "production default first, dev override layers on top only in __DEV__" convention as
+  // configForRow above; X has no production baseline (stays 0) since only Y was ever retuned.
   function applyDevOffset(
     target: { x: number; y: number; angleDeg: number },
     row: "top" | "bottom",
   ): { x: number; y: number; angleDeg: number } {
-    if (!__DEV__) return target;
+    const baseOffsetY = compact
+      ? (row === "top" ? COMPACT_TOP_OFFSET_Y : COMPACT_BOTTOM_OFFSET_Y)
+      : (row === "top" ? STANDARD_TOP_OFFSET_Y : STANDARD_BOTTOM_OFFSET_Y);
+    if (!__DEV__) return { ...target, y: target.y + baseOffsetY };
     const offsetX = (row === "top" ? devTopOffsetX : devBottomOffsetX) ?? 0;
-    const offsetY = (row === "top" ? devTopOffsetY : devBottomOffsetY) ?? 0;
+    const offsetY = (row === "top" ? devTopOffsetY : devBottomOffsetY) ?? baseOffsetY;
     if (offsetX === 0 && offsetY === 0) return target;
     return { ...target, x: target.x + offsetX, y: target.y + offsetY };
   }

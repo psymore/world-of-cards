@@ -21,6 +21,8 @@ export interface CardFaceStyleState {
 }
 
 export const useCardFaceStyleStore = create<CardFaceStyleState>((set) => ({
-  cardFaceStyle: 'v1',
+  // Shipped default for both dev and APK builds — this literal is the only place either default
+  // is set (see the doc comment above).
+  cardFaceStyle: 'v3',
   setCardFaceStyle: (cardFaceStyle) => set({ cardFaceStyle }),
 }));

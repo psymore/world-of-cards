@@ -65,6 +65,11 @@ export const GameMenuRow = React.memo(function GameMenuRow({
 });
 
 const styles = StyleSheet.create({
+  // Opaque emerald-felt + gold-rim treatment, matching the MODAL_CARD_SMALL_IMAGE panel language
+  // used by DevTuningModalShell/BatakSettingsModal (see modal-card-small-green-felt.png) — code-
+  // drawn rather than that same image asset because this row's own aspect ratio (wide list item,
+  // content-driven height) doesn't fit that asset's fixed 942:630 modal-card proportions without
+  // visible stretch distortion. `accent` still supplies the per-category left stripe on top of it.
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -72,10 +77,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 14,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: '#d9b34a55',
-    borderLeftWidth: 3,
+    backgroundColor: '#14301f',
+    borderWidth: 1.5,
+    borderColor: '#d9b34a',
+    borderLeftWidth: 4,
   },
   textBlock: { flex: 1 },
   // #f2e6ff (lavender) was a leftover from this screen's pre-gold-palette purple design phase —

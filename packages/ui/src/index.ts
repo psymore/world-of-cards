@@ -133,6 +133,12 @@ export const MODAL_CARD_SMALL_ASPECT_RATIO = 942 / 630;
 export const MODAL_CARD_LARGE_IMAGE: number = require("../assets/plaques/modal-card-large.png");
 export const MODAL_CARD_LARGE_ASPECT_RATIO = 874 / 1462;
 export const NAME_BADGE_PILL_ASPECT_RATIO = 1080 / 417;
+// Left/right (compact) seats' pill background — cut from BUTTON-GREEN-GLOW-02.png (see
+// scripts/assets/build-side-nameplate-glow-asset.js) and rotated 90° so it reads as an upright
+// vertical plaque rather than the wide horizontal button it started as. A fixed decorative
+// background (not turn-state reactive) — the avatar's own frame ring already carries turn state.
+export const SIDE_NAMEPLATE_GLOW_IMAGE: number = require("../assets/plaques/side-nameplate-green-glow.png");
+export const SIDE_NAMEPLATE_GLOW_ASPECT_RATIO = 887 / 1774;
 // A carved mahogany-burgundy plaque (opaque rectangle, own black bezel baked in — not alpha-cut)
 // meant to sit as a bottom bar/sign. Same re-export-as-raw-handle reasoning as the AVATAR_FRAME_*
 // images above.
@@ -152,7 +158,14 @@ export const MAHOGANY_PLAQUE_ASPECT_RATIO = 1449 / 976;
 // (own aspect ratio below) so they align exactly when stacked at the same size; the frame's own
 // baked-in plaque means this design needs neither HandFrame nor MAHOGANY_PLAQUE_IMAGE for its own
 // bottom decoration.
-export const TABLE_BACKDROP_GLASS_GOLD_GLOW_IMAGE: number = require("../assets/table/default/TABLE-BACKDROP-GLASS-GOLD-GLOW.png");
+// Was its own file under assets/table/default/ until 2026-08-22, when it turned out to be a byte-
+// for-byte duplicate of this modal asset — repointed here and the table/default copy deleted
+// rather than keeping two copies of the same art in sync.
+export const TABLE_BACKDROP_GLASS_GOLD_GLOW_IMAGE: number = require("../assets/modal/TABLE-BACKDROP-GLASS-GOLD-GLOW-TRANSPARENT.png");
+// A downward gold light-beam glow (1254x1254, alpha-cut, origin at top-center) — layered above a
+// modal's own background at reduced opacity for an extra ambient-light accent. Used by
+// DevTuningModalShell (apps/mobile/src/components/devTuning/DevTuningControls.tsx).
+export const LIGHTING_BEAM_IMAGE: number = require("../assets/modal/LIGHTING-BEAM-TRANSPARENT-01.png");
 export const TABLE_FELT_INSERT_MAHOGANY_BURGUNDY_IMAGE: number = require("../assets/table/default/TABLE-FELT-INSERT-MAHOGANY-BURGUNDY.png");
 // The original (untrimmed) 941x1672 file — deliberately NOT the "-trimmed" crop DefaultTableFrame
 // uses (packages/ui/src/DefaultTableFrame.tsx, which requires that file directly, independent of

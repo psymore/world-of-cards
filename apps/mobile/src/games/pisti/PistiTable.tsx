@@ -929,7 +929,7 @@ export function PistiTable({
             cardSize="normal"
           />
         </View>
-        {dealPhase !== "revealing" && <DealFlightOverlay seats={dealSeats} />}
+        {dealPhase !== "revealing" && <DealFlightOverlay seats={dealSeats} showDeckStack />}
       </DeselectableSurface>
     );
   }
@@ -1109,7 +1109,7 @@ export function PistiTable({
         </View>
       </View>
 
-      {dealPhase !== "revealing" && <DealFlightOverlay seats={dealSeats} />}
+      {dealPhase !== "revealing" && <DealFlightOverlay seats={dealSeats} showDeckStack />}
     </DeselectableSurface>
   );
 }
@@ -1136,10 +1136,19 @@ const styles = StyleSheet.create({
   },
   // Legacy-shape counterpart of opponentAreaTop above — this one DOES include HAND_BADGE_HEIGHT,
   // since the legacy render path still shows the opponent's PlayerBadge in this same box (the
-  // nameplate never moved out to TableShell there).
+  // nameplate never moved out to TableShell there). zIndex above middleRow's own pile (10, see
+  // legacyPileArea) — this box and middleRow are direct siblings (see the JSX just above), so
+  // without an explicit value here the two stack by plain render order (middleRow paints second,
+  // i.e. on top) regardless of legacyPileArea's own nested zIndex, which only ever ordered pileArea
+  // against ITS OWN siblings inside middleRow, never against this box. That let the pile visibly
+  // paint over the top badge whenever the two boxes' content overlapped even slightly (previously
+  // guaranteed by HAND_BADGE_HEIGHT badly undersizing this box — see that constant's own doc
+  // comment — but worth keeping as a real invariant rather than relying on the two heights lining
+  // up exactly forever).
   legacyOpponentAreaTop: {
     height: HAND_BADGE_HEIGHT + SMALL_CARD_HEIGHT + 8,
     justifyContent: "flex-start",
+    zIndex: 11,
   },
   // Legacy shape only: outranks the left/right OpponentSeatGroup siblings within middleRow, so a
   // reveal traveling from either side seat paints above that seat's own remaining cards too — the

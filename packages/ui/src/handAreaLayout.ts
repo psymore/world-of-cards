@@ -6,8 +6,15 @@
 
 // Matches each table's own styles.container.paddingVertical.
 export const CONTAINER_BOTTOM_PADDING = 12;
-// Approx rendered height of PlayerBadge at normal size.
-export const HAND_BADGE_HEIGHT = 34;
+// Approx rendered height of PlayerBadge at normal size (top/bottom seats — compact/side seats
+// have their own, much taller vertical-pill shape and don't use this constant). 74 = the row
+// layout's own content height (max of the 66px avatar and the ~49px pill, since 2026-08-22's
+// avatar-left/name-right redesign put them side by side instead of stacked) plus PlayerBadge's
+// own 4px top/bottom marginVertical. Previously 34 — a stale value from well before that redesign
+// (and undersized even for the older stacked layout) that let the badge silently overflow its
+// reserved box downward into whatever rendered below it (e.g. Pişti's trick pile, which paints
+// above via its own zIndex — see PistiTable.tsx's legacyPileArea).
+export const HAND_BADGE_HEIGHT = 74;
 // Peak-aligning HandFrame exactly to the hand row's own top edge hides its gold trim behind the
 // cards (they render in front, same height) — this extra margin lifts the frame's peak above the
 // row instead, so the trim clears the cards and stays visible.
