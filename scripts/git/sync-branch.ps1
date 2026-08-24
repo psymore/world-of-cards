@@ -1,12 +1,18 @@
 <#
 .SYNOPSIS
-    Branch off, commit everything, merge to master, push - in one step.
+    "BCMP": branch off, commit everything, merge to master, push - in one step.
 
 .DESCRIPTION
     Collapses this repo's everyday "wrap up a session's work" workflow -
     create a branch, commit all local changes onto it, merge it into master,
     push - into one command instead of the usual ~6 separate git commands
-    (checkout -b, add, commit, checkout master, merge, push).
+    (checkout -b, add, commit, checkout master, merge, push). This is the
+    "BCMP" shorthand from docs/governance/guardrails.md Rule 7 - the sibling
+    of CMP (scripts/git/cmp.ps1), which does the same but on the branch
+    already checked out, without creating a new one.
+
+    After a successful push, also rebuilds the code-index (Rule 10) so it
+    doesn't silently drift - pass -SkipIndex to skip that.
 
     Safety:
       - Refuses to run if there are no local changes to commit.
@@ -41,7 +47,9 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Message,
 
-    [switch]$Force
+    [switch]$Force,
+
+    [switch]$SkipIndex
 )
 
 $ErrorActionPreference = 'Stop'
@@ -91,3 +99,19 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "Done. '$BranchName' merged into master and pushed."
 Write-Host "(Started from '$originalBranch'; local branch '$BranchName' left in place.)"
+
+# --- code-index rebuild (guardrails.md Rule 10: rebuild after every push) ----
+if (-not $SkipIndex) {
+    $indexScript = Join-Path $PSScriptRoot "..\..\code-index\update_codeindex.ps1"
+    if (Test-Path $indexScript) {
+        Write-Host ""
+        Write-Host "Rebuilding code-index..." -ForegroundColor Cyan
+        & $indexScript
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Warning: code-index rebuild failed (exit $LASTEXITCODE)." -ForegroundColor Yellow
+            Write-Host "Push already succeeded. Rebuild manually later with .\code-index\update_codeindex.ps1" -ForegroundColor Yellow
+        } else {
+            Write-Host "code-index rebuilt." -ForegroundColor Green
+        }
+    }
+}

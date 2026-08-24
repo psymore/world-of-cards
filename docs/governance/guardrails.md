@@ -36,9 +36,14 @@ Before starting any animation-related task (Playground demos or `apps/mobile` an
 
 When an animation-quality problem (stutter, jank) persists despite several well-reasoned, individually-justified mitigation attempts under the current engine, escalate to a scoped, isolated experiment (e.g. a different animation library) built and evaluated in `apps/playground` first, never directly in production — rather than continuing an open-ended series of further patches under the incumbent approach. Don't wait for the user to suggest this; once roughly three targeted fixes have failed to resolve a reported issue, proactively raise the scoped-experiment option as the next step. Record the outcome as an ADR with an explicit revisit trigger (see `docs/animation/ADR/` for the model instance). This is a specific instance of the more general pattern in `docs/governance/architecture-escalation.md` — see that document for when a recurring problem generally warrants stepping back from further local patches.
 
-## 7. "CMP" shorthand: commit, merge to master, push
+## 7. "CMP" / "BCMP" shorthand: commit, (branch,) merge to master, push
 
-When the user says "CMP" (and only then), that word itself is the confirmation Rule 1 requires — commit all current changes on the current branch, merge that branch into `master`, and push `master`, without a separate ask for that invocation. It commits onto the branch already checked out (unlike `scripts/git/sync-branch.ps1`, which always creates a fresh branch first) — commit, then `checkout master`, `merge --no-edit`, `push origin master`. Still stop and surface anything ambiguous (unrelated-looking uncommitted changes, a merge conflict, a diverged remote) rather than forcing through.
+When the user says "CMP" or "BCMP" (and only then), that word itself is the confirmation Rule 1 requires for that invocation. Run the matching script rather than the equivalent individual git commands — both already end with a code-index rebuild (Rule 10) baked in, so nothing further is needed after they finish:
+
+- **CMP** — commits onto the branch already checked out (no new branch), merges it into `master`, pushes: `scripts/git/cmp.ps1 -Message "<msg>" -Force`.
+- **BCMP** — branches off first, then commits/merges/pushes the same way: `scripts/git/sync-branch.ps1 -BranchName "<category>/<short-description>" -Message "<msg>" -Force`.
+
+Still stop and surface anything ambiguous the script reports (merge conflict, diverged remote, failed commit) rather than forcing through — the scripts themselves refuse to force-push or discard work. Compose `-Message` (and `-BranchName` per Rule 2's convention) the same way you would for the manual commands; only the mechanical steps are collapsed into one call.
 
 ## 8. adb safety boundary during phone-connected development
 
@@ -55,3 +60,5 @@ Consult it (`code-index/LAYOUT.md` / `LAYOUT_<module>.md` / a live SQL query via
 ## 10. Code-index: rebuild before trusting it, no automation keeps it fresh
 
 `code-index/code_index.db` only reflects reality as of its last `update_codeindex.ps1` run — nothing hooks, lints, or reminds otherwise. Confirmed concretely on 2026-08-21: it had silently drifted 16 days (151 commits / 277 files changed) with no signal that it was stale. After any task that adds, removes, or renames files or exported symbols, run `.\code-index\update_codeindex.ps1` (and `python code-index\viewer\export_graph.py` if the viewer is in use) before relying on the next query or handing the index off as current. If a query result seems suspicious for something recently touched, check `code-index/code_index.db`'s mtime against `git log -1` before trusting it — don't assume freshness just because the file exists.
+
+Also run it as the last step of every `git push` Claude performs — a push is a natural, hard-to-miss sync point that catches anything accumulated since the last rebuild, even changes not individually flagged under the trigger above. `scripts/git/cmp.ps1` and `scripts/git/sync-branch.ps1` (Rule 7's "CMP"/"BCMP") already do this automatically; for a push outside those two paths, run `.\code-index\update_codeindex.ps1` manually.
