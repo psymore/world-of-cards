@@ -20,9 +20,13 @@ module_map_file = sys.argv[3] if len(sys.argv) > 3 else str(DEFAULT_MODULE_MAP_P
 def load_module_map(path):
     """Loads module_map.json and returns a get_module(namespace, path) resolver.
 
-    Matching is substring containment on the lowercased file path, checked in
-    the JSON array's declared order (first match wins) — this preserves the
-    exact semantics of the if/elif chain this function replaces.
+    Matching is prefix-anchored (the path must start with pathPrefix + "/",
+    or equal it exactly) on the lowercased file path — a plain substring
+    check previously matched e.g. "apps/mobile" against
+    "worktrees/other-checkout/apps/mobile/x.ts" too, silently merging an
+    unrelated checkout's files into this repo's own module. Ties (a path
+    matching more than one prefix) go to the longest — i.e. most specific —
+    matching prefix, not array order.
     """
     map_path = Path(path)
     if not map_path.exists():
@@ -34,10 +38,13 @@ def load_module_map(path):
 
     def get_module(namespace, path):
         p = path.lower()
+        best = None
         for m in modules:
-            if m["pathPrefix"] in p:
-                return m["key"]
-        return default_key
+            prefix = m["pathPrefix"]
+            if p == prefix or p.startswith(prefix + "/"):
+                if best is None or len(prefix) > len(best["pathPrefix"]):
+                    best = m
+        return best["key"] if best else default_key
 
     return get_module
 

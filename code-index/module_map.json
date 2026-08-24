@@ -19,31 +19,6 @@
       "key": "ui",
       "pathPrefix": "packages/ui",
       "description": "ui \u2014 "
-    },
-    {
-      "key": "pis-yedili-rule-engine",
-      "pathPrefix": "worktrees/pis-yedili-rule-engine",
-      "description": "pis-yedili-rule-engine \u2014 "
-    },
-    {
-      "key": "mobile",
-      "pathPrefix": "worktrees/pis-yedili-rule-engine/apps/mobile",
-      "description": "mobile \u2014 "
-    },
-    {
-      "key": "playground",
-      "pathPrefix": "worktrees/pis-yedili-rule-engine/apps/playground",
-      "description": "playground \u2014 "
-    },
-    {
-      "key": "engine",
-      "pathPrefix": "worktrees/pis-yedili-rule-engine/packages/engine",
-      "description": "engine \u2014 "
-    },
-    {
-      "key": "ui",
-      "pathPrefix": "worktrees/pis-yedili-rule-engine/packages/ui",
-      "description": "ui \u2014 "
     }
   ],
   "unmatchedPolicy": "default",

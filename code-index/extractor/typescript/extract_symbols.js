@@ -20,7 +20,9 @@ const ts = require("typescript");
 const repoRoot = process.argv[2] || ".";
 const outputFile = process.argv[3] || "ctags_raw.json";
 
-const EXCLUDED_DIRS = new Set(["node_modules", "dist", ".expo", ".git", "build", ".next"]);
+// "worktrees" excluded: a git worktree checkout duplicates the main tree's
+// own files under a second path, which otherwise get double-indexed.
+const EXCLUDED_DIRS = new Set(["node_modules", "dist", ".expo", ".git", "build", ".next", "worktrees"]);
 
 function findSourceFiles(root) {
   const results = [];

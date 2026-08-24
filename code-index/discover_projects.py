@@ -27,7 +27,12 @@ UNMATCHED_POLICY = "default"
 CSPROJ_SUFFIX = ".csproj"
 NAMED_PROJECT_MARKERS = ("package.json", "pyproject.toml", "Cargo.toml")
 
-EXCLUDED_DIRS = {"obj", "bin", "node_modules", ".venv", "target", "dist", ".git", ".claude"}
+# "worktrees" excluded because a git worktree checkout duplicates the main
+# tree's own files under a second path - indexing it produced duplicate
+# module entries with colliding keys (e.g. two unrelated "mobile" module
+# rows silently merged into one), confirmed 2026-08-24: half of all indexed
+# files were worktree copies.
+EXCLUDED_DIRS = {"obj", "bin", "node_modules", ".venv", "target", "dist", ".git", ".claude", "worktrees"}
 
 
 def scan_repository(repo_root):
