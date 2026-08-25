@@ -67,13 +67,12 @@ const CORNER_ICON_SIZE = { normal: 18, small: 12 };
 // PTSerif-Bold rank glyphs at each size; confirmed via screenshot, not computed from font metrics.
 const CORNER_INDEX_WIDTH = { normal: 28, small: 19 };
 const WATERMARK_ICON_SIZE = { normal: 50, small: 31 };
-// v3's centered court-art medallion: a fixed square, not a percentage of the card, sized so its
-// bounding box clears CORNER_INDEX_WIDTH/cornerNormal|cornerSmall's rank+suit box vertically
-// (cornerNormal's content bottom sits at ~46px into a 132px-tall card, cornerSmall's at ~32px into
-// a 101px-tall card) — the old "58%/62% of the full card" sizing put the medallion's bounding box
-// directly under the corner index on every face card. Square + contain-fit means the image itself
-// (not just this box) never reaches the corners regardless of its own aspect ratio.
-const V3_ART_SIZE = { normal: 38, small: 30 };
+// v3's centered court-art medallion: a fixed square, not a percentage of the card. Originally sized
+// (38/30) to fully clear the corner index's rank+suit box; 2026-08-25 bumped 1.5x per explicit
+// request (57/45) — at this size the medallion's own bounding box now slightly overlaps the corner
+// index's box in each corner (a few px), though contain-fit means the art image itself may not
+// reach that far depending on its own aspect ratio. Revisit if that overlap reads badly live.
+const V3_ART_SIZE = { normal: 57, small: 45 };
 // +10% height vs. the original 120/78, and widened further per live visual feedback during the
 // 2026-07-17 deal/selection/trick-motion polish pass. Exported so call sites doing their own
 // layout math around a card (fan curves, trick-slot sizing, travel-card sizing) read the real
