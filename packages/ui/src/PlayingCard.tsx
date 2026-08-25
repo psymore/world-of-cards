@@ -13,7 +13,7 @@ import type { Card, Suit } from "@world-of-cards/engine";
 import { SuitIcon } from "./SuitIcon";
 import { glowShadow } from "./glowShadow";
 import { COURT_CARD_ART } from "./courtCardArt";
-import { COURT_CARD_ART_V2, CARD_FACE_BACKGROUND_V2_IMAGE } from "./courtCardArtV2";
+import { COURT_CARD_ART_V2, CARD_FACE_BACKGROUND_V2_IMAGE, SUIT_GLYPH_V2 } from "./courtCardArtV2";
 import { useCardFaceStyleStore } from "./cardFaceStyleStore";
 import { CARD_RANK_FONT_FAMILY } from "./fonts";
 import { CourtCardFrame } from "./CourtCardFrame";
@@ -94,7 +94,7 @@ const OVERLAY_BASE_SIZE = { normal: 60, small: 38 };
 // consume PlayingCard directly, so this applies everywhere at once — see the 2026-07-17
 // deal/selection/trick-motion polish spec for why this is a deliberate "apply everywhere" call,
 // not a per-game override). Replaces the earlier hand-drawn SVG lattice (CardBackPattern).
-const CARD_BACK_IMAGE = require("../assets/card-art/processed/ai-generated/cards-backround/new-default-card-background.png");
+const CARD_BACK_IMAGE = require("../assets/card-art/processed/ai-generated/v1/cards-backround/new-default-card-background.png");
 
 function CornerIndex({
   rank,
@@ -260,6 +260,7 @@ function CenterArt({
   overlayImage,
   courtArt,
   centeredArt,
+  centerGlyph,
   isFaceCard,
   contentScale,
 }: {
@@ -272,23 +273,45 @@ function CenterArt({
   // instead of v2's edge-to-edge stretch — the v2 parchment background stays visible as a margin
   // around it rather than being fully replaced by the art's own baked frame.
   centeredArt: ImageSourcePropType | undefined;
+  // v2/v3 only: SUIT_GLYPH_V2's textured PNG for this card's suit, replacing the plain SuitIcon
+  // watermark below wherever that watermark would otherwise render (non-face ranks under v2/v3 —
+  // face ranks always have centeredArt/courtArt by the time this is reached). undefined under v1,
+  // where the flat SVG stays the deliberate baseline.
+  centerGlyph: ImageSourcePropType | undefined;
   isFaceCard: boolean;
   contentScale: number;
 }) {
   if (overlayImage !== undefined) {
     if (overlayImage == null) {
-      return card.suit != null ? (
+      if (card.suit == null) return null;
+      return (
         <View style={{ transform: [{ scale: contentScale }] }}>
-          <SuitIcon
-            suit={card.suit}
-            size={
-              isSmall ? WATERMARK_ICON_SIZE.small : WATERMARK_ICON_SIZE.normal
-            }
-            color={suitColor}
-            opacity={1}
-          />
+          {centerGlyph != null ? (
+            <Image
+              testID="playing-card-center-glyph"
+              source={centerGlyph}
+              resizeMode="contain"
+              style={{
+                width: isSmall
+                  ? WATERMARK_ICON_SIZE.small
+                  : WATERMARK_ICON_SIZE.normal,
+                height: isSmall
+                  ? WATERMARK_ICON_SIZE.small
+                  : WATERMARK_ICON_SIZE.normal,
+              }}
+            />
+          ) : (
+            <SuitIcon
+              suit={card.suit}
+              size={
+                isSmall ? WATERMARK_ICON_SIZE.small : WATERMARK_ICON_SIZE.normal
+              }
+              color={suitColor}
+              opacity={1}
+            />
+          )}
         </View>
-      ) : null;
+      );
     }
     const baseSize = isSmall
       ? OVERLAY_BASE_SIZE.small
@@ -359,16 +382,29 @@ function CenterArt({
     );
   }
 
-  return card.suit != null ? (
+  if (card.suit == null) return null;
+  return (
     <View style={{ transform: [{ scale: contentScale }] }}>
-      <SuitIcon
-        suit={card.suit}
-        size={isSmall ? WATERMARK_ICON_SIZE.small : WATERMARK_ICON_SIZE.normal}
-        color={suitColor}
-        opacity={1}
-      />
+      {centerGlyph != null ? (
+        <Image
+          testID="playing-card-center-glyph"
+          source={centerGlyph}
+          resizeMode="contain"
+          style={{
+            width: isSmall ? WATERMARK_ICON_SIZE.small : WATERMARK_ICON_SIZE.normal,
+            height: isSmall ? WATERMARK_ICON_SIZE.small : WATERMARK_ICON_SIZE.normal,
+          }}
+        />
+      ) : (
+        <SuitIcon
+          suit={card.suit}
+          size={isSmall ? WATERMARK_ICON_SIZE.small : WATERMARK_ICON_SIZE.normal}
+          color={suitColor}
+          opacity={1}
+        />
+      )}
     </View>
-  ) : null;
+  );
 }
 
 function PlayingCardComponent({
@@ -444,6 +480,10 @@ function PlayingCardComponent({
       : undefined;
   const faceBackgroundImage =
     fullBleedArt ?? (isV2Family ? CARD_FACE_BACKGROUND_V2_IMAGE : undefined);
+  // Center watermark only (see CenterArt's own doc comment) — undefined under v1, where the flat
+  // SVG SuitIcon stays the baseline.
+  const centerGlyph =
+    isV2Family && card.suit != null ? SUIT_GLYPH_V2[card.suit] : undefined;
   // v1's white/grey rings read as digital-print chrome next to v2/v3's parchment/gold art — every
   // v2/v3 card (not just the K/Q/J ones with their own baked frame) drops them in favor of a soft
   // drop shadow instead, closer to a physical card resting on the felt.
@@ -485,6 +525,7 @@ function PlayingCardComponent({
             overlayImage={overlayImage}
             courtArt={courtArt}
             centeredArt={centeredArt}
+            centerGlyph={centerGlyph}
             isFaceCard={isFaceCard}
             contentScale={contentScale}
           />

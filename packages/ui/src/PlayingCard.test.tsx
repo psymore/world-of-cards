@@ -38,6 +38,13 @@ describe('PlayingCard', () => {
     expect(screen.getByTestId('playing-card-back')).toBeTruthy();
   });
 
+  it('keeps the flat SVG suit icon (no glyph image) for the center watermark under v1', async () => {
+    useCardFaceStyleStore.setState({ cardFaceStyle: 'v1' });
+    await render(<PlayingCard card={heartsAce} />);
+    expect(screen.queryByTestId('playing-card-center-glyph')).toBeNull();
+    expect(screen.getByTestId('corner-suit-hearts')).toBeTruthy();
+  });
+
   describe('cardFaceStyle v2', () => {
     afterEach(() => {
       useCardFaceStyleStore.setState({ cardFaceStyle: 'v1' });
@@ -52,11 +59,12 @@ describe('PlayingCard', () => {
       expect(screen.getByTestId('corner-suit-spades')).toBeTruthy();
     });
 
-    it('falls back to v1 court art for a suit with no v2 art yet (Jack of clubs)', async () => {
+    it('now has its own v2 art for every suit (Jack of clubs), not the v1 fallback', async () => {
       useCardFaceStyleStore.setState({ cardFaceStyle: 'v2' });
       await render(<PlayingCard card={clubsJack} />);
       expect(screen.getByTestId('playing-card-face-background')).toBeTruthy();
-      expect(screen.getByTestId('court-card-art')).toBeTruthy();
+      expect(screen.queryByTestId('court-card-art')).toBeNull();
+      expect(screen.queryByTestId('playing-card-center-art')).toBeNull();
     });
 
     it('keeps the plain suit watermark (no v1 court art) for non-face ranks', async () => {
@@ -64,6 +72,13 @@ describe('PlayingCard', () => {
       await render(<PlayingCard card={heartsAce} />);
       expect(screen.getByTestId('playing-card-face-background')).toBeTruthy();
       expect(screen.queryByTestId('court-card-art')).toBeNull();
+    });
+
+    it('replaces the plain suit watermark with the new suit glyph for non-face ranks', async () => {
+      useCardFaceStyleStore.setState({ cardFaceStyle: 'v2' });
+      await render(<PlayingCard card={heartsAce} />);
+      expect(screen.getByTestId('playing-card-center-glyph')).toBeTruthy();
+      expect(screen.queryByTestId('corner-suit-hearts')).toBeTruthy();
     });
   });
 
@@ -81,12 +96,18 @@ describe('PlayingCard', () => {
       expect(screen.getAllByText('K')).toHaveLength(2);
     });
 
-    it('falls back to v1 court art for a suit with no v2/v3 art yet (Jack of clubs)', async () => {
+    it('now has its own v2/v3 art for every suit (Jack of clubs), not the v1 fallback', async () => {
       useCardFaceStyleStore.setState({ cardFaceStyle: 'v3' });
       await render(<PlayingCard card={clubsJack} />);
       expect(screen.getByTestId('playing-card-face-background')).toBeTruthy();
-      expect(screen.getByTestId('court-card-art')).toBeTruthy();
-      expect(screen.queryByTestId('court-card-art-v3')).toBeNull();
+      expect(screen.queryByTestId('court-card-art')).toBeNull();
+      expect(screen.getByTestId('court-card-art-v3')).toBeTruthy();
+    });
+
+    it('replaces the plain suit watermark with the new suit glyph for non-face ranks', async () => {
+      useCardFaceStyleStore.setState({ cardFaceStyle: 'v3' });
+      await render(<PlayingCard card={heartsAce} />);
+      expect(screen.getByTestId('playing-card-center-glyph')).toBeTruthy();
     });
   });
 });
