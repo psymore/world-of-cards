@@ -35,8 +35,17 @@ export interface PlayerBadgeProps {
 
 // normal: wider than the pre-2026-08-22 96 — grown by exactly AVATAR_OVERLAP so the avatar has
 // room to sink into the pill without eating into the text's own space versus before.
-const PILL_WIDTH_NORMAL = 96 + 32;
-const PILL_WIDTH_COMPACT = 78;
+const PILL_WIDTH_NORMAL = 96 + 32 + 40;
+const PILL_WIDTH_COMPACT = 78 + 22;
+// Both pills render with resizeMode="stretch", so height no longer has to track each background
+// image's own aspect ratio exactly — 2026-08-25: sized wider and taller than the current source
+// art on purpose, ahead of new glyph PNGs being dropped in to match. Expect visible stretch on the
+// existing name-badge-pill.png/side-nameplate-green-glow.png until those replacements land.
+const PILL_HEIGHT_SCALE_NORMAL = 1.4;
+// Compact's own aspect ratio is already tall/portrait (SIDE_NAMEPLATE_GLOW_ASPECT_RATIO ≈ 0.5), and
+// it renders in the width-constrained 96dp side rail — kept near 1.0 so the width bump above doesn't
+// also push it tall enough to overflow that rail vertically.
+const PILL_HEIGHT_SCALE_COMPACT = 1.05;
 // How far the normal-size avatar (66dp, see PlayerAvatar's own DIMENSIONS) sinks into the pill —
 // avatar renders after the pill in the tree with its own zIndex so it stays on top where they
 // overlap, "entering" the nameplate rather than just sitting beside it.
@@ -51,7 +60,7 @@ export function PlayerBadge({ name, statusText, turnState, isHuman, compact }: P
 
   if (compact) {
     const pillWidth = PILL_WIDTH_COMPACT;
-    const pillHeight = pillWidth / SIDE_NAMEPLATE_GLOW_ASPECT_RATIO;
+    const pillHeight = (pillWidth / SIDE_NAMEPLATE_GLOW_ASPECT_RATIO) * PILL_HEIGHT_SCALE_COMPACT;
     return (
       <View style={styles.badgeColumn}>
         <PlayerAvatar accent={isHuman} size="small" turnState={turnState} />
@@ -73,7 +82,7 @@ export function PlayerBadge({ name, statusText, turnState, isHuman, compact }: P
   }
 
   const pillWidth = PILL_WIDTH_NORMAL;
-  const pillHeight = pillWidth / NAME_BADGE_PILL_ASPECT_RATIO;
+  const pillHeight = (pillWidth / NAME_BADGE_PILL_ASPECT_RATIO) * PILL_HEIGHT_SCALE_NORMAL;
   return (
     <View style={styles.badgeRow}>
       <View style={styles.avatarOverlap}>
