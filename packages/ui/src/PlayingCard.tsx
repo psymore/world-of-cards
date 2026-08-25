@@ -104,6 +104,7 @@ function CornerIndex({
   isRed,
   mirrored,
   contentScale,
+  cornerGlyph,
 }: {
   rank: string;
   suit: Suit | null | undefined;
@@ -112,6 +113,10 @@ function CornerIndex({
   isRed: boolean;
   mirrored?: boolean;
   contentScale: number;
+  // v3 only: SUIT_GLYPH_V2's textured PNG for this card's suit, replacing the flat SVG SuitIcon in
+  // the corner index too (unlike the center watermark, which also does this under v2 — see
+  // PlayingCardComponent's own cornerGlyph computation for why v3 only). undefined under v1/v2.
+  cornerGlyph: ImageSourcePropType | undefined;
 }) {
   const containerStyle = mirrored
     ? isSmall
@@ -138,14 +143,28 @@ function CornerIndex({
         {rank}
       </Text>
       {suit != null && (
-        <SuitIcon
-          testID={
-            mirrored ? `corner-suit-mirror-${suit}` : `corner-suit-${suit}`
-          }
-          suit={suit}
-          size={isSmall ? CORNER_ICON_SIZE.small : CORNER_ICON_SIZE.normal}
-          color={suitColor}
-        />
+        cornerGlyph != null ? (
+          <Image
+            testID={
+              mirrored ? `corner-suit-mirror-${suit}` : `corner-suit-${suit}`
+            }
+            source={cornerGlyph}
+            resizeMode="contain"
+            style={{
+              width: isSmall ? CORNER_ICON_SIZE.small : CORNER_ICON_SIZE.normal,
+              height: isSmall ? CORNER_ICON_SIZE.small : CORNER_ICON_SIZE.normal,
+            }}
+          />
+        ) : (
+          <SuitIcon
+            testID={
+              mirrored ? `corner-suit-mirror-${suit}` : `corner-suit-${suit}`
+            }
+            suit={suit}
+            size={isSmall ? CORNER_ICON_SIZE.small : CORNER_ICON_SIZE.normal}
+            color={suitColor}
+          />
+        )
       )}
     </View>
   );
@@ -484,6 +503,10 @@ function PlayingCardComponent({
   // SVG SuitIcon stays the baseline.
   const centerGlyph =
     isV2Family && card.suit != null ? SUIT_GLYPH_V2[card.suit] : undefined;
+  // Corner index: v3 only, unlike centerGlyph above which also applies to v2 — 2026-08-25 request
+  // scoped the corner-index glyph swap to v3 specifically.
+  const cornerGlyph =
+    isV3 && card.suit != null ? SUIT_GLYPH_V2[card.suit] : undefined;
   // v1's white/grey rings read as digital-print chrome next to v2/v3's parchment/gold art — every
   // v2/v3 card (not just the K/Q/J ones with their own baked frame) drops them in favor of a soft
   // drop shadow instead, closer to a physical card resting on the felt.
@@ -506,6 +529,7 @@ function PlayingCardComponent({
         suitColor={suitColor}
         isRed={isRed}
         contentScale={contentScale}
+        cornerGlyph={cornerGlyph}
       />
       <CornerIndex
         rank={card.rank}
@@ -515,6 +539,7 @@ function PlayingCardComponent({
         isRed={isRed}
         mirrored
         contentScale={contentScale}
+        cornerGlyph={cornerGlyph}
       />
       {fullBleedArt == null && (
         <View testID="playing-card-center-art" style={styles.centerArt}>

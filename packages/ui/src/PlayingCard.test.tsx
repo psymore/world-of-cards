@@ -80,6 +80,12 @@ describe('PlayingCard', () => {
       expect(screen.getByTestId('playing-card-center-glyph')).toBeTruthy();
       expect(screen.queryByTestId('corner-suit-hearts')).toBeTruthy();
     });
+
+    it('keeps the flat SVG (not the glyph image) for the corner index', async () => {
+      useCardFaceStyleStore.setState({ cardFaceStyle: 'v2' });
+      await render(<PlayingCard card={heartsAce} />);
+      expect(screen.getByTestId('corner-suit-hearts').props.source).toBeUndefined();
+    });
   });
 
   describe('cardFaceStyle v3', () => {
@@ -108,6 +114,13 @@ describe('PlayingCard', () => {
       useCardFaceStyleStore.setState({ cardFaceStyle: 'v3' });
       await render(<PlayingCard card={heartsAce} />);
       expect(screen.getByTestId('playing-card-center-glyph')).toBeTruthy();
+    });
+
+    it('uses the new suit glyph image (not the flat SVG) for the corner index too', async () => {
+      useCardFaceStyleStore.setState({ cardFaceStyle: 'v3' });
+      await render(<PlayingCard card={heartsAce} />);
+      expect(screen.getByTestId('corner-suit-hearts').props.source).toBeTruthy();
+      expect(screen.getByTestId('corner-suit-mirror-hearts').props.source).toBeTruthy();
     });
   });
 });

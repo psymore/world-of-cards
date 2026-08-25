@@ -94,9 +94,15 @@ export function PlayerBadge({ name, statusText, turnState, isHuman, compact }: P
           resizeMode="stretch"
           style={[StyleSheet.absoluteFill, styles.pillImage]}
         />
-        <Text style={[styles.playerLabel, styles.playerLabelRow]} numberOfLines={1} ellipsizeMode="tail">
-          {label}
-        </Text>
+        <View style={styles.pillTextRow}>
+          <View style={{ width: AVATAR_OVERLAP }} />
+          <Text
+            style={[styles.playerLabel, styles.playerLabelRow]}
+            numberOfLines={1}
+            ellipsizeMode="tail">
+            {label}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -126,6 +132,11 @@ const styles = StyleSheet.create({
   // TableShell.tsx's own styles.fill for the same fix) — explicit 100%/100% forces the fill on
   // web while staying a no-op on native.
   pillImage: { width: '100%', height: '100%' },
+  // Row-variant only: a fixed-width spacer (AVATAR_OVERLAP) clears the avatar's overlap footprint,
+  // then the label fills the rest of the pill (flex: 1, see playerLabelRow) so its own textAlign:
+  // 'center' centers it in the space actually left for it — not in the pill's full width, which
+  // would put it visually off-center against the avatar sitting in the left portion.
+  pillTextRow: { flexDirection: 'row', alignItems: 'center', width: '100%' },
   playerLabel: {
     fontFamily: BODY_SEMIBOLD,
     fontSize: 11,
@@ -133,8 +144,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 8,
   },
-  // Extra left padding clears the avatar's overlap footprint so the text never sits under it.
-  playerLabelRow: { paddingLeft: AVATAR_OVERLAP + 6, paddingRight: 10 },
+  playerLabelRow: { flex: 1 },
   // playerLabel's #241a10 was tuned for name-badge-pill.png's light cream interior — SIDE_NAMEPLATE_
   // GLOW_IMAGE (compact's own background) is dark emerald felt instead, so this needs the same
   // light gold/cream text the other dark-felt panels use (BatakSettingsModal, DevTuningModalShell).
