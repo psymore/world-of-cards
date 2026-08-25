@@ -8,7 +8,8 @@
     ".": "./src/index.ts",
     "./testing": "./src/testing/index.ts",
     "./games/pisti": "./src/games/pisti/index.ts",
-    "./games/batak": "./src/games/batak/index.ts"
+    "./games/batak": "./src/games/batak/index.ts",
+    "./games/pis-yedili": "./src/games/pis-yedili/index.ts"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
