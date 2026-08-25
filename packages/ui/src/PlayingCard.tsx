@@ -59,6 +59,14 @@ export interface PlayingCardProps {
 
 const RED_SUITS: Suit[] = ["hearts", "diamonds"];
 export const SUIT_COLOR = { red: "#c0392b", black: "#111" };
+// v3 only: SUIT_COLOR.red (#c0392b, a brighter "pomegranate" red) reads as mismatched next to
+// glyph-hearts.png/glyph-diamond.png's own color — sampled via sharp from each PNG's solid interior
+// (dominant pixels ~rgb(127,9,7) and ~rgb(148,10,9)), averaging to this deep red. Used only for the
+// corner index rank digit's color when v3's corner glyph is showing (see cornerRankColor below) —
+// v1/v2 keep SUIT_COLOR.red, and the exported SUIT_COLOR constant itself is unchanged since other
+// consumers (apps/playground's SimpleCard, apps/mobile's MiniCardFan) read it directly and aren't
+// part of this v3-specific match-up.
+const V3_RED_TEXT_COLOR = "#8a0a08";
 const CORNER_ICON_SIZE = { normal: 18, small: 12 };
 // Fixed width (not shrink-wrap) so every rank's corner index shares one consistent center axis:
 // the suit icon centers under "10" (the widest rank) exactly as it does under any single-character
@@ -104,6 +112,7 @@ function CornerIndex({
   mirrored,
   contentScale,
   cornerGlyph,
+  cornerRankColor,
 }: {
   rank: string;
   suit: Suit | null | undefined;
@@ -116,6 +125,9 @@ function CornerIndex({
   // the corner index too (unlike the center watermark, which also does this under v2 — see
   // PlayingCardComponent's own cornerGlyph computation for why v3 only). undefined under v1/v2.
   cornerGlyph: ImageSourcePropType | undefined;
+  // v3 only, red suits only: V3_RED_TEXT_COLOR instead of the default styles.red, matching
+  // cornerGlyph's own color. undefined under v1/v2 (falls back to styles.red for red suits).
+  cornerRankColor: string | undefined;
 }) {
   const containerStyle = mirrored
     ? isSmall
@@ -137,7 +149,7 @@ function CornerIndex({
       <Text
         style={[
           isSmall ? styles.cornerRankSmall : styles.cornerRankNormal,
-          isRed && styles.red,
+          isRed && (cornerRankColor != null ? { color: cornerRankColor } : styles.red),
         ]}>
         {rank}
       </Text>
@@ -506,6 +518,7 @@ function PlayingCardComponent({
   // scoped the corner-index glyph swap to v3 specifically.
   const cornerGlyph =
     isV3 && card.suit != null ? SUIT_GLYPH_V2[card.suit] : undefined;
+  const cornerRankColor = isV3 && isRed ? V3_RED_TEXT_COLOR : undefined;
   // v1's white/grey rings read as digital-print chrome next to v2/v3's parchment/gold art — every
   // v2/v3 card (not just the K/Q/J ones with their own baked frame) drops them in favor of a soft
   // drop shadow instead, closer to a physical card resting on the felt.
@@ -529,6 +542,7 @@ function PlayingCardComponent({
         isRed={isRed}
         contentScale={contentScale}
         cornerGlyph={cornerGlyph}
+        cornerRankColor={cornerRankColor}
       />
       <CornerIndex
         rank={card.rank}
@@ -539,6 +553,7 @@ function PlayingCardComponent({
         mirrored
         contentScale={contentScale}
         cornerGlyph={cornerGlyph}
+        cornerRankColor={cornerRankColor}
       />
       {fullBleedArt == null && (
         <View testID="playing-card-center-art" style={styles.centerArt}>

@@ -122,5 +122,15 @@ describe('PlayingCard', () => {
       expect(screen.getByTestId('corner-suit-hearts').props.source).toBeTruthy();
       expect(screen.getByTestId('corner-suit-mirror-hearts').props.source).toBeTruthy();
     });
+
+    it('recolors the red corner rank digit to match the new glyph instead of SUIT_COLOR.red', async () => {
+      useCardFaceStyleStore.setState({ cardFaceStyle: 'v3' });
+      await render(<PlayingCard card={heartsAce} />);
+      const [rankText] = screen.getAllByText('A');
+      const flatStyle = Array.isArray(rankText.props.style)
+        ? Object.assign({}, ...rankText.props.style.filter(Boolean))
+        : rankText.props.style;
+      expect(flatStyle.color).not.toBe('#c0392b');
+    });
   });
 });

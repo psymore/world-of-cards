@@ -97,7 +97,7 @@ export function PlayerBadge({ name, statusText, turnState, isHuman, compact }: P
         <View style={styles.pillTextRow}>
           <View style={{ width: AVATAR_OVERLAP }} />
           <Text
-            style={[styles.playerLabel, styles.playerLabelRow]}
+            style={[styles.playerLabel, styles.playerLabelRow, { width: pillWidth - AVATAR_OVERLAP }]}
             numberOfLines={1}
             ellipsizeMode="tail">
             {label}
@@ -133,20 +133,24 @@ const styles = StyleSheet.create({
   // web while staying a no-op on native.
   pillImage: { width: '100%', height: '100%' },
   // Row-variant only: a fixed-width spacer (AVATAR_OVERLAP) clears the avatar's overlap footprint,
-  // then the label fills the rest of the pill (flex: 1, see playerLabelRow) so its own textAlign:
-  // 'center' centers it in the space actually left for it — not in the pill's full width, which
-  // would put it visually off-center against the avatar sitting in the left portion.
+  // then the label (given an explicit pillWidth - AVATAR_OVERLAP width, see the row-variant JSX)
+  // fills the rest of the pill so its own textAlign: 'center' centers it in the space actually
+  // left for it — not in the pill's full width, which would put it visibly off-center against the
+  // avatar sitting in the left portion.
   pillTextRow: { flexDirection: 'row', alignItems: 'center', width: '100%' },
   playerLabel: {
     fontFamily: BODY_SEMIBOLD,
-    fontSize: 11,
+    fontSize: 14,
     color: '#241a10',
     textAlign: 'center',
     paddingHorizontal: 8,
   },
-  playerLabelRow: { flex: 1 },
+  // width is set inline (pillWidth - AVATAR_OVERLAP, see the row-variant JSX) rather than flex: 1
+  // deliberately — a concrete number, not flex-grow, is what actually made textAlign: 'center'
+  // center the text against the avatar (not just against the pill's full, avatar-covered width).
+  playerLabelRow: {},
   // playerLabel's #241a10 was tuned for name-badge-pill.png's light cream interior — SIDE_NAMEPLATE_
   // GLOW_IMAGE (compact's own background) is dark emerald felt instead, so this needs the same
   // light gold/cream text the other dark-felt panels use (BatakSettingsModal, DevTuningModalShell).
-  playerLabelCompact: { fontSize: 10, paddingHorizontal: 6, color: '#f5f0e6' },
+  playerLabelCompact: { fontSize: 13, paddingHorizontal: 6, color: '#f5f0e6' },
 });

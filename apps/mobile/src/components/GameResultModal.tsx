@@ -33,11 +33,18 @@ function teamKey(playerId: PlayerId, teams: PlayerId[][] | undefined): string {
 // this modal's content is a short, fixed set of lines that never needs to react to window size
 // beyond a simple cap.
 const CARD_WIDTH = 300;
-const CARD_HEIGHT = CARD_WIDTH / MODAL_CARD_SMALL_ASPECT_RATIO;
+const CARD_PADDING = 24;
+// MODAL_CARD_SMALL_ASPECT_RATIO's own proportions, kept as a *minimum* height (not a fixed one —
+// see styles.card) so a longer scoreboard (4 players, long names) can grow the card taller instead
+// of clipping under a fixed height, which is what pushed the actions row below the card's visible
+// bottom edge for anything longer than 2 short lines.
+const CARD_MIN_HEIGHT = CARD_WIDTH / MODAL_CARD_SMALL_ASPECT_RATIO;
+const ACTIONS_GAP = 12;
 // Two side-by-side buttons must fit within the card's content width (CARD_WIDTH minus its own
-// 24px horizontal padding on each side) with room for styles.actions' space-around gaps —
-// PlaqueButton's own 150px default is sized for a single wider button, too wide for a pair here.
-const ACTION_BUTTON_WIDTH = 110;
+// horizontal padding on each side, minus the gap between them) — computed from CARD_WIDTH/
+// CARD_PADDING/ACTIONS_GAP directly instead of a separate hardcoded guess, so the two can never
+// drift out of sync and push the buttons past the card's own edges again.
+const ACTION_BUTTON_WIDTH = (CARD_WIDTH - CARD_PADDING * 2 - ACTIONS_GAP) / 2;
 // typography.png's own "Positive (WIN)" / "Negative (LOSS)" value-display colors (section 9) —
 // the headline is the one place in this modal a plain win/lose result benefits from that
 // semantic color instead of the gold used for every other heading in this pass. A tie stays gold
@@ -90,9 +97,14 @@ const styles = StyleSheet.create({
   // No backgroundColor/borderRadius of its own — MODAL_CARD_SMALL_IMAGE (an absoluteFill sibling,
   // painted first) is the entire visible card, gold rim baked in — same convention as
   // BatakSettingsModal's identical card.
-  card: { width: CARD_WIDTH, height: CARD_HEIGHT, overflow: 'hidden', padding: 24, justifyContent: 'center' },
+  card: {
+    width: CARD_WIDTH,
+    minHeight: CARD_MIN_HEIGHT,
+    padding: CARD_PADDING,
+    justifyContent: 'center',
+  },
   cardImage: { width: '100%', height: '100%' },
   headline: { fontFamily: DISPLAY_BOLD, fontSize: 24, marginBottom: 12, textAlign: 'center', color: '#f4c542' },
   scoreLine: { fontFamily: BODY_REGULAR, fontSize: 16, marginBottom: 4, textAlign: 'center', color: '#f5f0e6' },
-  actions: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 16 },
+  actions: { flexDirection: 'row', justifyContent: 'center', gap: ACTIONS_GAP, marginTop: 16 },
 });

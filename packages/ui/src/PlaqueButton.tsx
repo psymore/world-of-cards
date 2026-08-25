@@ -38,7 +38,9 @@ export function PlaqueButton({ label, onPress, width = DEFAULT_WIDTH, style, tes
       {(state) => (
         <View style={[styles.fill, state.pressed && glowShadow(PRESS_GLOW_COLOR, PRESS_GLOW_RADIUS)]}>
           <Image source={TAG_PLAQUE_IMAGE} resizeMode="stretch" style={StyleSheet.absoluteFill} />
-          <Text style={styles.label}>{label}</Text>
+          <Text style={styles.label} numberOfLines={1} adjustsFontSizeToFit>
+            {label}
+          </Text>
         </View>
       )}
     </PressableFeedback>
@@ -47,5 +49,5 @@ export function PlaqueButton({ label, onPress, width = DEFAULT_WIDTH, style, tes
 
 const styles = StyleSheet.create({
   fill: { flex: 1, alignItems: "center", justifyContent: "center" },
-  label: { fontFamily: BODY_SEMIBOLD, fontSize: 15, color: "#f5f0e6" },
+  label: { fontFamily: BODY_SEMIBOLD, fontSize: 15, color: "#f5f0e6", paddingHorizontal: 6 },
 });
