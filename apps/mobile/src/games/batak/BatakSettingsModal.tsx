@@ -42,10 +42,12 @@ export function BatakSettingsModal({ visible, onClose }: BatakSettingsModalProps
               resizeMode="stretch"
               style={[StyleSheet.absoluteFill, styles.cardImage]}
             />
-            <Text style={styles.heading}>Settings</Text>
-            <View style={styles.row}>
-              <Text style={styles.label}>Dim Unplayable Cards</Text>
-              <Switch value={dimUnplayableCards} onValueChange={setDimUnplayableCards} />
+            <View style={styles.content}>
+              <Text style={styles.heading}>Settings</Text>
+              <View style={styles.row}>
+                <Text style={styles.label}>Dim Unplayable Cards</Text>
+                <Switch value={dimUnplayableCards} onValueChange={setDimUnplayableCards} />
+              </View>
             </View>
             <ModalCloseButton onPress={onClose} style={styles.closeButton} testID="batak-settings-modal-close" />
           </View>
@@ -59,10 +61,18 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
   // No backgroundColor/borderRadius of its own — MODAL_CARD_SMALL_IMAGE (an absoluteFill sibling,
   // painted first) is the entire visible card, gold rim and rounded corners baked in.
-  card: { overflow: 'hidden', padding: 24, justifyContent: 'center' },
+  card: { overflow: 'hidden' },
   // react-native-web's Image falls back to the loaded image's natural pixel size unless width/
   // height are explicit (see DevTuningControls.tsx's own styles.cardImage for the full reasoning).
   cardImage: { width: '100%', height: '100%' },
+  // 2026-08-25: padding lives here, not on `card` — `card` also hosts cardImage's absoluteFill
+  // sibling, and an absolutely-positioned child's 0-offsets resolve against the *padding* edge of
+  // its containing block, not the border edge. Padding directly on `card` was silently shrinking
+  // the background art to the card's inner content box (confirmed via uiautomator: rendered at
+  // cardWidth-48 x cardHeight-48) while the row/close button still measured against the full card,
+  // making them look like they'd overflowed it. Content now lives in its own non-absolutely-
+  // positioned child, so its padding only affects itself.
+  content: { flex: 1, padding: 24, justifyContent: 'center' },
   // Gold/cream, matching this app's established dark-felt palette (e.g. BatakSetupView's title/
   // body text) — the previous #241a10 near-black was tuned for the old light modal-card-small.png
   // and read as near-invisible against the new dark green-felt background (2026-08-15).

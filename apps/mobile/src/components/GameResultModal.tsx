@@ -76,15 +76,17 @@ export function GameResultModal({
             resizeMode="stretch"
             style={[StyleSheet.absoluteFill, styles.cardImage]}
           />
-          <Text style={[styles.headline, headlineColor ? { color: headlineColor } : null]}>{headline}</Text>
-          {Object.keys(scores).map((playerId) => (
-            <Text key={playerId} style={styles.scoreLine}>
-              {(playerNames[playerId] ?? playerId) + ': ' + scores[playerId]}
-            </Text>
-          ))}
-          <View style={styles.actions}>
-            <PlaqueButton label="Play Again" onPress={onPlayAgain} width={ACTION_BUTTON_WIDTH} />
-            <PlaqueButton label="Back to Home" onPress={onBackHome} width={ACTION_BUTTON_WIDTH} />
+          <View style={styles.content}>
+            <Text style={[styles.headline, headlineColor ? { color: headlineColor } : null]}>{headline}</Text>
+            {Object.keys(scores).map((playerId) => (
+              <Text key={playerId} style={styles.scoreLine}>
+                {(playerNames[playerId] ?? playerId) + ': ' + scores[playerId]}
+              </Text>
+            ))}
+            <View style={styles.actions}>
+              <PlaqueButton label="Play Again" onPress={onPlayAgain} width={ACTION_BUTTON_WIDTH} />
+              <PlaqueButton label="Back to Home" onPress={onBackHome} width={ACTION_BUTTON_WIDTH} />
+            </View>
           </View>
         </View>
       </View>
@@ -100,10 +102,16 @@ const styles = StyleSheet.create({
   card: {
     width: CARD_WIDTH,
     minHeight: CARD_MIN_HEIGHT,
-    padding: CARD_PADDING,
-    justifyContent: 'center',
+    overflow: 'hidden',
   },
   cardImage: { width: '100%', height: '100%' },
+  // 2026-08-25: padding lives here, not on `card` — `card` also hosts cardImage's absoluteFill
+  // sibling, and an absolutely-positioned child's 0-offsets resolve against the *padding* edge of
+  // its containing block, not the border edge. Padding directly on `card` was silently shrinking
+  // the background art to the card's inner content box while the actions row still measured
+  // against the full card, making the buttons look like they'd overflowed it (the original report
+  // this pass was chasing) — same root cause as BatakSettingsModal's identical bug.
+  content: { flex: 1, padding: CARD_PADDING, justifyContent: 'center' },
   headline: { fontFamily: DISPLAY_BOLD, fontSize: 24, marginBottom: 12, textAlign: 'center', color: '#f4c542' },
   scoreLine: { fontFamily: BODY_REGULAR, fontSize: 16, marginBottom: 4, textAlign: 'center', color: '#f5f0e6' },
   actions: { flexDirection: 'row', justifyContent: 'center', gap: ACTIONS_GAP, marginTop: 16 },
