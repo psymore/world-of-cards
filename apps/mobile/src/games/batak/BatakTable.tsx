@@ -21,8 +21,6 @@ import { DealFlightOverlay } from '../../table/DealFlightOverlay';
 import type { DealFlightSeat } from '../../table/DealFlightOverlay';
 import type { DealPhase } from '../../hooks/useDealSequence';
 import { PlayerBadge } from '../../table/PlayerBadge';
-import { turnStateForSeat } from '../../table/turnState';
-import type { SeatTurnState } from '../../table/turnState';
 import { OpponentSeatGroup, seatLayoutStyles } from '../../table/OpponentSeatGroup';
 import { assignSeats, splitTwoRows, resolveRevealOrigin } from '../../table/seating';
 import type { Seat } from '../../table/seating';
@@ -124,15 +122,14 @@ interface OpponentSeatProps {
   position: Seat['position'];
   name: string;
   statusText: string;
-  turnState: SeatTurnState;
 }
 
-function OpponentSeatComponent({ position, name, statusText, turnState }: OpponentSeatProps) {
+function OpponentSeatComponent({ position, name, statusText }: OpponentSeatProps) {
   const isSide = position !== 'top';
 
   return (
     <View style={[styles.opponentArea, isSide && seatLayoutStyles.opponentAreaSide]}>
-      <PlayerBadge name={name} statusText={statusText} turnState={turnState} isHuman={false} compact={isSide} />
+      <PlayerBadge name={name} statusText={statusText} isHuman={false} compact={isSide} />
     </View>
   );
 }
@@ -230,13 +227,6 @@ export function BatakTable({
     })),
   ];
   const isHumanTurn = state.players[state.currentPlayerIndex] === humanPlayerId;
-  // Suppresses 'active' to 'idle' while a trick-completing play is staged (pendingPlay != null) —
-  // engine state hasn't advanced past the player who just moved yet, so without this the seat
-  // that just played would keep reading as the active turn until the animation resolves.
-  function opponentTurnState(playerId: string): SeatTurnState {
-    const raw = turnStateForSeat(playerId, state.players, state.currentPlayerIndex);
-    return pendingPlay != null && raw === 'active' ? 'idle' : raw;
-  }
   // No trick-completing pause happens during bidding/trump-selection (pendingPlay is always null
   // there), so this single check correctly gates interactivity across every phase: whenever a
   // trick-completing move (human's own or an AI's) is staged, engine state hasn't advanced past
@@ -513,7 +503,6 @@ export function BatakTable({
             position={seat.position}
             name={playerNames[seat.playerId] ?? seat.playerId}
             statusText={statusTextFor(state, seat.playerId)}
-            turnState={opponentTurnState(seat.playerId)}
           />
         )}
       />
@@ -535,7 +524,6 @@ export function BatakTable({
               position={seat.position}
               name={playerNames[seat.playerId] ?? seat.playerId}
               statusText={statusTextFor(state, seat.playerId)}
-              turnState={opponentTurnState(seat.playerId)}
             />
           )}
         />
@@ -579,7 +567,6 @@ export function BatakTable({
               position={seat.position}
               name={playerNames[seat.playerId] ?? seat.playerId}
               statusText={statusTextFor(state, seat.playerId)}
-              turnState={opponentTurnState(seat.playerId)}
             />
           )}
         />
@@ -595,7 +582,6 @@ export function BatakTable({
         <PlayerBadge
           name={playerNames[humanPlayerId] ?? 'You'}
           statusText={statusTextFor(state, humanPlayerId)}
-          turnState={turnStateForSeat(humanPlayerId, state.players, state.currentPlayerIndex)}
           isHuman
         />
         <HumanHandFan

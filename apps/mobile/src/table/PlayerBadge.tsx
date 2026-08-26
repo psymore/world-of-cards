@@ -21,12 +21,10 @@ import {
   SIDE_NAMEPLATE_GLOW_IMAGE,
 } from '@world-of-cards/ui';
 import { PlayerAvatar } from '../components/PlayerAvatar';
-import type { SeatTurnState } from './turnState';
 
 export interface PlayerBadgeProps {
   name: string;
   statusText: string;
-  turnState: SeatTurnState;
   isHuman: boolean;
   // Width-constrained seats (the 96dp side seats in a 4-player table) need a smaller avatar/pill
   // and tighter spacing so the name/status text still fits without wrapping onto several lines.
@@ -51,11 +49,7 @@ const PILL_HEIGHT_SCALE_COMPACT = 1.05;
 // overlap, "entering" the nameplate rather than just sitting beside it.
 const AVATAR_OVERLAP = 32;
 
-// PlayerAvatar's own turn-state ring (avatar-frame-idle/active.png, cross-faded — see
-// PlayerAvatar.tsx) is now the turn indicator; this badge doesn't additionally glow itself the
-// way it once did for a plain `active` boolean; that would fight the ring for attention instead
-// of complementing it.
-export function PlayerBadge({ name, statusText, turnState, isHuman, compact }: PlayerBadgeProps) {
+export function PlayerBadge({ name, statusText, isHuman, compact }: PlayerBadgeProps) {
   const label = `${name} · ${statusText}`;
 
   if (compact) {
@@ -63,19 +57,21 @@ export function PlayerBadge({ name, statusText, turnState, isHuman, compact }: P
     const pillHeight = (pillWidth / SIDE_NAMEPLATE_GLOW_ASPECT_RATIO) * PILL_HEIGHT_SCALE_COMPACT;
     return (
       <View style={styles.badgeColumn}>
-        <PlayerAvatar accent={isHuman} size="small" turnState={turnState} />
+        <PlayerAvatar accent={isHuman} size="small" />
         <View style={[styles.pill, { width: pillWidth, height: pillHeight }]}>
           <Image
             source={SIDE_NAMEPLATE_GLOW_IMAGE}
             resizeMode="stretch"
             style={[StyleSheet.absoluteFill, styles.pillImage]}
           />
-          <Text
-            style={[styles.playerLabel, styles.playerLabelCompact]}
-            numberOfLines={1}
-            ellipsizeMode="tail">
-            {label}
-          </Text>
+          <View style={[styles.nameplateBounds, { width: pillWidth, height: pillHeight }]}>
+            <Text
+              style={[styles.playerLabel, styles.playerLabelCompact]}
+              numberOfLines={1}
+              ellipsizeMode="tail">
+              {label}
+            </Text>
+          </View>
         </View>
       </View>
     );
@@ -86,7 +82,7 @@ export function PlayerBadge({ name, statusText, turnState, isHuman, compact }: P
   return (
     <View style={styles.badgeRow}>
       <View style={styles.avatarOverlap}>
-        <PlayerAvatar accent={isHuman} size="normal" turnState={turnState} />
+        <PlayerAvatar accent={isHuman} size="normal" />
       </View>
       <View style={[styles.pill, styles.pillRow, { width: pillWidth, height: pillHeight, marginLeft: -AVATAR_OVERLAP }]}>
         <Image
@@ -94,10 +90,13 @@ export function PlayerBadge({ name, statusText, turnState, isHuman, compact }: P
           resizeMode="stretch"
           style={[StyleSheet.absoluteFill, styles.pillImage]}
         />
-        <View style={styles.pillTextRow}>
-          <View style={{ width: AVATAR_OVERLAP }} />
+        <View
+          style={[
+            styles.nameplateBounds,
+            { marginLeft: AVATAR_OVERLAP, width: pillWidth - AVATAR_OVERLAP, height: pillHeight },
+          ]}>
           <Text
-            style={[styles.playerLabel, styles.playerLabelRow, { width: pillWidth - AVATAR_OVERLAP }]}
+            style={[styles.playerLabel, { width: pillWidth - AVATAR_OVERLAP }]}
             numberOfLines={1}
             ellipsizeMode="tail">
             {label}
@@ -132,12 +131,12 @@ const styles = StyleSheet.create({
   // TableShell.tsx's own styles.fill for the same fix) — explicit 100%/100% forces the fill on
   // web while staying a no-op on native.
   pillImage: { width: '100%', height: '100%' },
-  // Row-variant only: a fixed-width spacer (AVATAR_OVERLAP) clears the avatar's overlap footprint,
-  // then the label (given an explicit pillWidth - AVATAR_OVERLAP width, see the row-variant JSX)
-  // fills the rest of the pill so its own textAlign: 'center' centers it in the space actually
-  // left for it — not in the pill's full width, which would put it visibly off-center against the
-  // avatar sitting in the left portion.
-  pillTextRow: { flexDirection: 'row', alignItems: 'center', width: '100%' },
+  // Dedicated container that bounds the nameplate's text and centers it on both axes, independent
+  // of the pill's own background/sizing. Row-variant sizes/offsets it to the space actually left
+  // after the avatar's overlap footprint (see the row-variant JSX) so centering happens against
+  // that space, not the pill's full width, which would put it visibly off-center against the
+  // avatar sitting in the left portion; compact-variant sizes it to the whole pill.
+  nameplateBounds: { alignItems: 'center', justifyContent: 'center' },
   playerLabel: {
     fontFamily: BODY_SEMIBOLD,
     fontSize: 14,
@@ -145,10 +144,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 8,
   },
-  // width is set inline (pillWidth - AVATAR_OVERLAP, see the row-variant JSX) rather than flex: 1
-  // deliberately — a concrete number, not flex-grow, is what actually made textAlign: 'center'
-  // center the text against the avatar (not just against the pill's full, avatar-covered width).
-  playerLabelRow: {},
   // playerLabel's #241a10 was tuned for name-badge-pill.png's light cream interior — SIDE_NAMEPLATE_
   // GLOW_IMAGE (compact's own background) is dark emerald felt instead, so this needs the same
   // light gold/cream text the other dark-felt panels use (BatakSettingsModal, DevTuningModalShell).

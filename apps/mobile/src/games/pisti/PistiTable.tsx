@@ -402,7 +402,6 @@ function LegacyOpponentSeat({
       <PlayerBadge
         name={playerNames[playerId] ?? playerId}
         statusText={capturedStatusText(capturedCount)}
-        turnState={turnStateForSeat(playerId, state.players, state.currentPlayerIndex)}
         isHuman={false}
         compact={isSide}
       />
@@ -907,7 +906,6 @@ export function PistiTable({
           <PlayerBadge
             name={playerNames[humanPlayerId] ?? "You"}
             statusText={capturedStatusText(capturedHuman)}
-            turnState={turnStateForSeat(humanPlayerId, state.players, state.currentPlayerIndex)}
             isHuman
           />
           <PistiHandFan

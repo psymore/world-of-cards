@@ -98,6 +98,12 @@ export { SeatIdentity } from "./SeatIdentity";
 // require('@world-of-cards/ui/assets/table/avatar-frame-idle.png') is not a resolvable subpath.
 export const AVATAR_FRAME_IDLE_IMAGE: number = require("../assets/avatars/avatar-frame-idle.png");
 export const AVATAR_FRAME_ACTIVE_IMAGE: number = require("../assets/avatars/avatar-frame-active.png");
+// A solid wood/brass locket-style frame with its own opaque "glass" photo well — unlike the two
+// hollow-ring images above, this isn't an overlay meant to sit outside the photo; it's a
+// background the photo sits inset inside (see PlayerAvatar.tsx's own FRAME_PLAIN_PHOTO_INSET_SCALE
+// for the inset math). Not turn-state reactive — the idle/active ring overlays still cross-fade on
+// top of it exactly as before.
+export const AVATAR_FRAME_PLAIN_IMAGE: number = require("../assets/avatars/avatar-frame-plain.png");
 // A real portrait, its own circular gold ring already baked in (Photoroom export, portrait
 // deliberately overflowing the ring's top/bottom edge) — apps/mobile's PlayerAvatar.tsx (the
 // avatar actually shown on the live table, not SeatIdentity.tsx's still-dev-only "tableShell"
