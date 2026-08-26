@@ -1,7 +1,8 @@
 import React from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Suit } from '@world-of-cards/engine';
 import { DISPLAY_BOLD, SUIT_COLOR, SuitIcon } from '@world-of-cards/ui';
+import { CenteredDecisionModal } from '../../components/CenteredDecisionModal';
 
 const SUITS: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
 const RED_SUITS: Suit[] = ['hearts', 'diamonds'];
@@ -13,34 +14,33 @@ function suitColor(suit: Suit): string {
 export interface PisYedeliSuitPickerModalProps {
   visible: boolean;
   onSelect: (suit: Suit) => void;
-  onCancel: () => void;
 }
 
-export function PisYedeliSuitPickerModal({ visible, onSelect, onCancel }: PisYedeliSuitPickerModalProps) {
+// No cancel affordance — same as Batak's own trump-suit picker (see BatakTable.tsx's
+// TrumpSuitPicker usage): once a Jack is played, a suit must be declared, so there's nothing to
+// cancel back to.
+export function PisYedeliSuitPickerModal({ visible, onSelect }: PisYedeliSuitPickerModalProps) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <Pressable style={styles.backdrop} onPress={onCancel} testID="pis-yedili-suit-picker-backdrop">
-        <View style={styles.card}>
-          <Text style={styles.title}>Choose a suit</Text>
-          <View style={styles.suitRow}>
-            {SUITS.map((suit) => (
-              <Pressable
-                key={suit}
-                onPress={() => onSelect(suit)}
-                style={styles.suitOption}
-                testID={`pis-yedili-suit-${suit}`}>
-                <SuitIcon suit={suit} size={32} color={suitColor(suit)} />
-              </Pressable>
-            ))}
-          </View>
+    <CenteredDecisionModal visible={visible}>
+      <View style={styles.card}>
+        <Text style={styles.title}>Choose a suit</Text>
+        <View style={styles.suitRow}>
+          {SUITS.map((suit) => (
+            <Pressable
+              key={suit}
+              onPress={() => onSelect(suit)}
+              style={styles.suitOption}
+              testID={`pis-yedili-suit-${suit}`}>
+              <SuitIcon suit={suit} size={32} color={suitColor(suit)} />
+            </Pressable>
+          ))}
         </View>
-      </Pressable>
-    </Modal>
+      </View>
+    </CenteredDecisionModal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
   card: {
     backgroundColor: '#0a2e1f',
     borderRadius: 12,

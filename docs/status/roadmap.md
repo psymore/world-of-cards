@@ -15,11 +15,12 @@ Pişti → Batak → Pis Yedili → Klondike Solitaire → Spider Solitaire → 
 
 - **Pişti** — complete and fully playable end-to-end (2p/4p, free-for-all and partner modes, all three AI difficulties). See `docs/domains/games/pisti/overview.md`.
 - **Batak** — 4-player individual and 3-player gömmeli (buried-kitty) variants are both complete and fully playable end-to-end, including AI and mobile UI. The 4-player "eşli" (partnered) variant has not been started at any layer (rules, AI, or UI). See `docs/domains/games/batak/overview.md`.
+- **Pis Yedili** — engine (rules, AI, registration) and mobile UI (setup + table) are both complete and fully playable end-to-end. Animation/timer polish is explicitly deferred, not built. See `docs/domains/games/pis-yedili/overview.md`.
 - **Animation Playground** (`apps/playground`) — an isolated lab for animation-quality work, ongoing. See `docs/animation/00-DocumentationMap.md` for its own status.
 
 ## Next up (unstarted or in-progress candidates, not yet resequenced by the user)
 
-1. **Pis Yedili** — resume brainstorming (rules-sourcing wasn't yet decided when paused), or resequence behind another priority — the user's call next session.
+1. **Pis Yedili** — engine and mobile UI are now complete and playable (see `docs/domains/games/pis-yedili/overview.md`); animation/timer polish remains unbuilt and unscheduled — the user's call next session on whether/when to pick it up.
 2. **Demo 03's Rapid Play touch-target gap (Option B, deferred)** — cheapest, most immediately actionable item in the animation backlog. See `docs/animation/`'s own tracking.
 3. **Batak trick-center smooth-resize problem** — genuinely unsolved, only worked around (see `docs/domains/games/batak/known-issues.md`). Squarely what the Animation Playground's Demo 05 exists to figure out before porting back.
 4. **Batak bidding-AI miscalibration** — arguably the most urgent Batak-side item, since it affects the already-shipped 4-player game. See `docs/domains/games/batak/known-issues.md`.

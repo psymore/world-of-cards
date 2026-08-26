@@ -1,8 +1,17 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { PlayerId, Suit } from '@world-of-cards/engine';
-import { pisYedeliDescriptor, PisYedeliState, PisYedeliMove } from '@world-of-cards/engine/games/pis-yedili';
-import { BODY_SEMIBOLD, DISPLAY_BOLD, PlayingCard, PressableFeedback, SUIT_COLOR, SuitIcon } from '@world-of-cards/ui';
+import type { PisYedeliState, PisYedeliMove } from '@world-of-cards/engine/games/pis-yedili';
+import {
+  BODY_SEMIBOLD,
+  CARD_DIMS,
+  DISPLAY_BOLD,
+  PlayingCard,
+  PressableFeedback,
+  SUIT_COLOR,
+  SuitIcon,
+  TableFelt,
+} from '@world-of-cards/ui';
 import { PlayerBadge } from '../../table/PlayerBadge';
 import { OpponentSeatGroup, seatLayoutStyles } from '../../table/OpponentSeatGroup';
 import { assignSeats } from '../../table/seating';
@@ -13,6 +22,11 @@ export interface PisYedeliTableProps {
   humanPlayerId: PlayerId;
   opponentPlayerIds: PlayerId[];
   playerNames: Record<PlayerId, string>;
+  // Legal moves for humanPlayerId's current turn, computed by the caller (PisYedeliScreen's
+  // ActiveGame) rather than here — matches Batak's screen-computes/table-receives-as-prop split
+  // (see BatakTable's own legalMoves prop), keeping this component free of any direct dependency
+  // on the engine module.
+  legalMoves: PisYedeliMove[];
   onPerformMove: (move: PisYedeliMove) => void;
 }
 
@@ -26,11 +40,11 @@ export function PisYedeliTable({
   humanPlayerId,
   opponentPlayerIds,
   playerNames,
+  legalMoves,
   onPerformMove,
 }: PisYedeliTableProps) {
   const [pendingJackCardId, setPendingJackCardId] = useState<string | null>(null);
   const seats = assignSeats(opponentPlayerIds);
-  const legalMoves = pisYedeliDescriptor.ruleEngine.getLegalMoves(state, humanPlayerId);
   const legalCardIds = new Set(legalMoves.filter((m) => m.type === 'play').map((m) => m.cardId));
   const canDraw = legalMoves.some((m) => m.type === 'draw');
   const canPass = legalMoves.some((m) => m.type === 'pass');
@@ -44,6 +58,8 @@ export function PisYedeliTable({
   function handleCardTap(cardId: string, rank: string) {
     if (!isHumanTurn || !legalCardIds.has(cardId)) return;
     if (rank === 'J') {
+      // A Jack advances the turn by 2 (see rules.ts's performMove, `advance = rank === 'J' ? 2 : 1`),
+      // so in a 2-player game declaring a suit here immediately hands the turn right back to us.
       setPendingJackCardId(cardId);
       return;
     }
@@ -80,6 +96,7 @@ export function PisYedeliTable({
 
   return (
     <View style={styles.container}>
+      <TableFelt />
       <OpponentSeatGroup
         position="top"
         seats={seats}
@@ -105,6 +122,9 @@ export function PisYedeliTable({
             ) : (
               <View style={styles.emptyDiscard} />
             )}
+            {/* Only really informative after a Jack has been played — a non-Jack play's
+                activeSuit always mirrors the card's own suit, so the badge is redundant-but-
+                harmless the rest of the time. */}
             {state.activeSuit && (
               <View style={styles.activeSuitBadge}>
                 <SuitIcon suit={state.activeSuit} size={18} color={suitColor(state.activeSuit)} />
@@ -156,11 +176,7 @@ export function PisYedeliTable({
         )}
       </View>
 
-      <PisYedeliSuitPickerModal
-        visible={pendingJackCardId != null}
-        onSelect={handleDeclareSuit}
-        onCancel={() => setPendingJackCardId(null)}
-      />
+      <PisYedeliSuitPickerModal visible={pendingJackCardId != null} onSelect={handleDeclareSuit} />
     </View>
   );
 }
@@ -173,8 +189,8 @@ const styles = StyleSheet.create({
   stockCount: { fontFamily: BODY_SEMIBOLD, fontSize: 14, color: '#f5f0e6' },
   discardPile: { position: 'relative' },
   emptyDiscard: {
-    width: 94,
-    height: 132,
+    width: CARD_DIMS.normal.width,
+    height: CARD_DIMS.normal.height,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',

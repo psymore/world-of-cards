@@ -94,6 +94,7 @@ function ActiveGame({ difficulty, aiIds, rng, useSessionStore, onPlayAgain, onBa
   });
 
   const gameOver = pisYedeliDescriptor.ruleEngine.gameOver(state);
+  const legalMoves = pisYedeliDescriptor.ruleEngine.getLegalMoves(state, HUMAN_ID);
 
   return (
     <GameScreenLayout
@@ -108,6 +109,7 @@ function ActiveGame({ difficulty, aiIds, rng, useSessionStore, onPlayAgain, onBa
         humanPlayerId={HUMAN_ID}
         opponentPlayerIds={aiIds}
         playerNames={playerNames}
+        legalMoves={legalMoves}
         onPerformMove={performMove}
       />
       {gameOver && (

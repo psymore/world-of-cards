@@ -30,8 +30,12 @@ proven by Pişti/Batak rather than forking them:
 - `useAITurn` (AI move scheduling)
 - `GameScreenLayout`, `GameResultModal` (screen chrome, end-of-game modal)
 - `assignSeats` / `OpponentSeatGroup` / `PlayerBadge` (seating + nameplates)
-- `PlayingCard`, `HandFrame` (card rendering)
+- `PlayingCard` (card rendering)
 - `DifficultyStars`, `IconButton`, `TableFelt` (setup screen)
+
+`HandFrame` was considered for the hand area too but dropped: it needs per-game `bottomOffset`
+tuning against each hand's own geometry (see Batak's use of it), which is out of scope for this
+feature's simple & functional pass.
 
 New files:
 
