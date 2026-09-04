@@ -15,6 +15,7 @@ This file is a navigation entry point only. It routes you to where knowledge act
 | World of Cards' own Purpose/Quality Attributes | `architecture/world-of-cards-purpose.md` |
 | Standing engineering principles (engine purity, testing policy, build pipeline, etc.) | `docs/governance/engineering-principles.md` |
 | Standing behavioral guardrails (commit/merge, branch workflow, cross-app visual changes, etc.) | `docs/governance/guardrails.md` |
+| What's allowed/forbidden in IAP, ads, and pricing, if monetization work ever starts | `docs/governance/monetization-principles.md` |
 | Whether a recurring problem is architecture-shaped, not just another patch | `docs/governance/architecture-escalation.md` |
 | A domain's stable architecture, why it's built this way, or its current problems | `docs/domains/<domain>/{overview,decisions,known-issues}.md` — domains: `engine`, `mobile-expo`, `ui-visual-system`, `games/pisti`, `games/batak` |
 | Animation work (Playground or in-game) | `docs/animation/00-DocumentationMap.md` |

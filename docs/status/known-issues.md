@@ -17,6 +17,7 @@ If an entry below is ever found holding more than a one-line pointer (except in 
 - [Engine: `GameState.rngState` isn't exercised by any game's mid-game randomness yet](../domains/engine/known-issues.md#rngstate-not-exercised)
 - [UI: navy/gold/wood theme color literals are duplicated across several shared components](../domains/ui-visual-system/known-issues.md#theme-color-duplication)
 - [UI: the "Dim Unplayable Cards" setting only has a gear/settings icon on Batak's screen, not Pişti's](../domains/ui-visual-system/known-issues.md#settings-icon-asymmetry)
+- [UI: no game has any in-app rules explanation or onboarding — first-time players must already know the rules](../domains/ui-visual-system/known-issues.md#no-in-app-rules-or-onboarding-for-any-game)
 - [Pişti: Hard AI has never been profiled on a real device](../domains/games/pisti/known-issues.md#hard-ai-unprofiled-on-device)
 - [Pişti: `GameResultModal`'s tests have a known, deferred `act()` warning](../domains/games/pisti/known-issues.md#gameresultmodal-act-warning)
 - [Animation: the rail-fan animation backlog (deselect stutter, fly discontinuity, landing resize, reflow)](../../docs/animation/00-DocumentationMap.md) — tracked in `docs/animation/`'s own documentation ecosystem, not duplicated here.
