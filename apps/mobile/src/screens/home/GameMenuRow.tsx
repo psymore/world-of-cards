@@ -12,6 +12,7 @@ export interface GameMenuRowProps {
   minPlayers: number;
   maxPlayers: number;
   onPress: () => void;
+  onInfoPress?: () => void;
   entranceDelayMs?: number;
   testID?: string;
 }
@@ -22,6 +23,7 @@ export const GameMenuRow = React.memo(function GameMenuRow({
   minPlayers,
   maxPlayers,
   onPress,
+  onInfoPress,
   entranceDelayMs = 0,
   testID,
 }: GameMenuRowProps) {
@@ -59,6 +61,16 @@ export const GameMenuRow = React.memo(function GameMenuRow({
           <Text style={styles.name}>{displayName}</Text>
           <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
+        {onInfoPress && (
+          <PressableFeedback
+            onPress={onInfoPress}
+            hitSlop={10}
+            style={styles.infoButton}
+            overlayBorderRadius={14}
+            testID={testID ? `${testID}-info` : undefined}>
+            <Text style={styles.infoIcon}>{'ⓘ'}</Text>
+          </PressableFeedback>
+        )}
       </PressableFeedback>
     </Animated.View>
   );
@@ -83,6 +95,8 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
   },
   textBlock: { flex: 1 },
+  infoButton: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  infoIcon: { fontSize: 16, color: '#f5f0e6', opacity: 0.85 },
   // #f2e6ff (lavender) was a leftover from this screen's pre-gold-palette purple design phase —
   // replaced with the same gold/cream pairing established everywhere else (SeatIdentity,
   // BatakSetupView, the modals touched in this same pass).

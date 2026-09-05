@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getGames } from '@world-of-cards/engine';
 import { BODY_REGULAR, TableFelt } from '@world-of-cards/ui';
 import { HeroCard } from './home/HeroCard';
 import { HomeWordmark } from './home/HomeWordmark';
 import { GameMenuRow } from './home/GameMenuRow';
+import { RulesSummaryModal } from '../components/RulesSummaryModal';
+import { gameRules } from '../games/rulesRegistry';
 
 export interface HomeScreenProps {
   onSelectGame: (gameId: string) => void;
@@ -12,6 +14,9 @@ export interface HomeScreenProps {
 
 export function HomeScreen({ onSelectGame }: HomeScreenProps) {
   const games = getGames();
+  const [rulesModalGameId, setRulesModalGameId] = useState<string | null>(null);
+  const activeRules = rulesModalGameId ? gameRules[rulesModalGameId] : null;
+
   return (
     <View style={styles.container}>
       <TableFelt />
@@ -30,6 +35,7 @@ export function HomeScreen({ onSelectGame }: HomeScreenProps) {
                 minPlayers={game.minPlayers}
                 maxPlayers={game.maxPlayers}
                 onPress={() => onSelectGame(game.id)}
+                onInfoPress={gameRules[game.id] ? () => setRulesModalGameId(game.id) : undefined}
                 entranceDelayMs={index * 60}
                 testID={`game-menu-row-${game.id}`}
               />
@@ -37,6 +43,9 @@ export function HomeScreen({ onSelectGame }: HomeScreenProps) {
           )}
         </View>
       </ScrollView>
+      {activeRules && (
+        <RulesSummaryModal rules={activeRules} visible={!!rulesModalGameId} onClose={() => setRulesModalGameId(null)} />
+      )}
     </View>
   );
 }
@@ -45,7 +54,5 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a2e1f' },
   content: { flexGrow: 1, paddingTop: 48, paddingBottom: 40 },
   menu: { paddingHorizontal: 22, marginTop: 20, gap: 12 },
-  // #f2e6ff88 (lavender) was a leftover from this screen's pre-gold-palette purple design phase —
-  // same fix as GameMenuRow's identical leftover, see that file's own comment.
   empty: { fontFamily: BODY_REGULAR, fontSize: 14, color: '#f5f0e688', textAlign: 'center', marginTop: 20 },
 });
