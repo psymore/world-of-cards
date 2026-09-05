@@ -9,7 +9,7 @@ export const pisYedeliRules: GameRules = {
     },
     {
       heading: 'Oynanış',
-      body: 'Sıra sende, ortadaki yığının en üstündeki kartla aynı renk ya da aynı numarada bir kart oynayabilirsin. Vale ve 7 her zaman oynanabilir. Elinde oynayacak uygun kart yoksa desteden bir kart çekersin ya da pas geçersin — pas, oynatılacak kart olmadığında herzaman seçeneğindir.',
+      body: 'Sıra sende, ortadaki yığının en üstündeki kartla aynı renk ya da aynı numarada bir kart oynayabilirsin. Vale ve 7 her zaman oynanabilir. Elinde oynayacak uygun kart yoksa desteden bir kart çekersin ya da pas geçersin — pas, oynatılacak kart olmadığında her zaman seçeneğindir.',
     },
     {
       heading: 'Vale',

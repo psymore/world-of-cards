@@ -13,7 +13,7 @@ export const batakRules: GameRules = {
     },
     {
       heading: 'Gömmeli (3 Kişilik) Farkı',
-      body: '3 kişilik oyunda masada kapalı 4 kartlık bir "kitty" bulunur. İhaleyi kazanan oyuncu koz rengini seçtikten sonra bu 4 kartı eline alır, ancak elinin orijinal 16 kartı arasından istediği 4 kartı görünmeden gömer; kitty kartlarını gömezmez. 4 kişilik oyunda kitty yoktur, koz seçilir seçilmez oyuna başlanır.',
+      body: '3 kişilik oyunda masada kapalı 4 kartlık bir "kitty" bulunur. İhaleyi kazanan oyuncu koz rengini seçtikten sonra bu 4 kartı eline alır, ancak elinin orijinal 16 kartı arasından istediği 4 kartı görünmeden gömer; kitty kartlarını gömemez. 4 kişilik oyunda kitty yoktur, koz seçilir seçilmez oyuna başlanır.',
     },
     {
       heading: 'Elin Oynanışı',
