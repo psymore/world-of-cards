@@ -8,7 +8,10 @@ export interface TravelCardProps {
   // revealOriginOffset(resolveRevealOrigin(playerId, humanPlayerId, seats)). The destination
   // itself is never a prop: the caller controls it entirely by where it renders this component
   // (see BatakTable's TRICK_SLOT_OFFSETS-positioned trickSlot) — this is the one property that
-  // must differ per game, so it's deliberately left outside this component.
+  // must differ per game, so it's deliberately left outside this component. Also used for an
+  // intermediate leg of a multi-leg flight (e.g. Batak's local-departure leg, see
+  // BatakHandCard.tsx) — mechanically no different, since this offset was always relative to
+  // wherever the caller renders the component, not necessarily a flight's final resting spot.
   originOffset: { x: number; y: number };
   // Retriggers the animation whenever it changes (e.g. card.id) — explicit rather than relying
   // on the caller always fully unmounting/remounting between cards, so this stays correct even
@@ -35,6 +38,24 @@ export interface TravelCardProps {
   // the full duration to land on schedule. Defaults to CARD_TRAVEL_DURATION_MS, so every
   // pre-existing consumer is byte-identical to before this prop existed.
   durationMs?: number;
+  // Overrides CARD_TRAVEL_EASING for just this flight — used by Batak's local-departure leg
+  // (BatakHandCard.tsx), which needs Easing.in(Easing.cubic) (ends at max velocity) rather than
+  // this component's own ease-out default (ends at zero velocity), so it hands off to a second
+  // TravelCard's ease-out leg without a dead stop at the seam — see
+  // docs/superpowers/specs/2026-07-22-batak-play-travel-local-departure-design.md's "velocity
+  // discontinuity" follow-up. Defaults to CARD_TRAVEL_EASING, so every pre-existing consumer is
+  // byte-identical to before this prop existed.
+  easing?: EasingFunction;
+  // Fires once, when this flight's animation actually finishes (not just after its nominal
+  // duration elapses) — lets a caller sequence the next phase off a real completion signal.
+  // Unlike useCardMotion's onComplete (a Reanimated worklet bridged via runOnJS, confirmed on
+  // 2026-08-19 to sometimes never fire — see docs/animation/audits/BatakPlayTravelHandoff-
+  // Audit.md), this runs entirely on the JS thread via Animated.timing's own start() callback,
+  // which has no cross-thread delivery gap. Captured via a ref inside the component (not a
+  // useLayoutEffect dependency), so a fresh closure identity on re-render never retriggers the
+  // flight. Not called if the animation is interrupted (finished === false) or under reduced
+  // motion's instant-snap path.
+  onComplete?: () => void;
 }
 
 // Not exported: the reset/timing lifecycle (create the progress value, reset+animate on
@@ -46,9 +67,17 @@ function useAnimatedProgress(
   resetKey: string | number,
   durationMs: number,
   easing: EasingFunction,
+  onComplete: (() => void) | undefined,
 ): Animated.Value {
   const progress = useRef(new Animated.Value(0)).current;
   const reducedMotion = useReducedMotion();
+
+  // Read via a ref, not listed as a useLayoutEffect dependency below — a fresh onComplete closure
+  // identity on every render (the common case for an inline arrow function prop) must not
+  // retrigger the animation, only resetKey/durationMs/easing/reducedMotion actually changing
+  // should. Mirrors useAITurn.ts's own onMoveRef pattern.
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   // useLayoutEffect, not useEffect: this component is frequently mounted mid-flight, taking over
   // from a card that was already moving (e.g. Batak's local-departure handoff — see
@@ -69,18 +98,21 @@ function useAnimatedProgress(
       easing,
       useNativeDriver: true,
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }).start();
+    }).start(({ finished }) => {
+      if (finished) onCompleteRef.current?.();
+    });
   }, [resetKey, durationMs, easing, reducedMotion]);
 
   return progress;
 }
 
 // Animates `children` traveling from `originOffset` to its resting position (wherever the
-// caller renders this component) — opacity fades in alongside the translate. Shared by every
-// game's "just-played card travels from its seat to its resting spot" motion (first use:
-// Batak's trick cross; Pişti's own reveal-to-pile animation is a separate, untouched
-// implementation for now). Rotation/scale interpolation is additive and optional (see
-// TravelCardProps) — omitting them reproduces the original translate-only behavior exactly.
+// caller renders this component). Shared by every game's "just-played card travels from its
+// seat to its resting spot" motion, and by a multi-leg flight's individual legs (e.g. Batak's
+// local-departure leg into TrickCenter's own TravelCard) — both Batak's and Pişti's human-play
+// flights render this component directly (PistiTable.tsx). Rotation/scale interpolation is
+// additive and optional (see TravelCardProps) — omitting them reproduces the original
+// translate-only behavior exactly.
 export function TravelCard({
   originOffset,
   resetKey,
@@ -89,11 +121,14 @@ export function TravelCard({
   originScale = 1,
   restScale = 1,
   durationMs = CARD_TRAVEL_DURATION_MS,
+  easing = CARD_TRAVEL_EASING,
+  onComplete,
 }: TravelCardProps) {
   const progress = useAnimatedProgress(
     resetKey,
     durationMs,
-    CARD_TRAVEL_EASING,
+    easing,
+    onComplete,
   );
 
   return (

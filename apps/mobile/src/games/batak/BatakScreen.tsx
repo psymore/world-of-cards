@@ -66,6 +66,24 @@ const TRICK_COMPLETION_PAUSE_MS = 1100;
 // finished, snapping the card the rest of the way to its resting spot instead of easing in.
 const PLAY_TRAVEL_DELAY_MS = CARD_TRAVEL_DURATION_MS + 40;
 
+// When false (current, chosen deliberately): the human's own play skips the local-departure leg
+// entirely and goes straight to ONE full-distance TravelCard flight, start to finish — a single
+// animation chain, no handoff — the same single-engine path AI plays already use, and the same
+// model Pişti's own human play uses. When true: the old two-leg choreography runs instead (a
+// short local-departure leg, then a second TravelCard for the remainder — see
+// docs/animation/audits/BatakPlayTravelHandoff-Audit.md and BatakHandCard.tsx's departure
+// section for why that leg exists and how it's implemented).
+//
+// On-device confirmation (2026-08-27): Pişti's own radial hand fan (overlap: 0.5,
+// pistiRailFan.ts) already jumps straight to a globally-elevated flight with no local-departure
+// equivalent and reads as smooth; Batak's denser two-row/60°/13-card fan does show the same-row/
+// cross-row "pop" the local-departure leg was originally built to prevent
+// (docs/superpowers/specs/2026-07-22-batak-play-travel-local-departure-design.md) when this flag
+// is false — but it was judged minor enough to accept in exchange for one continuous animation
+// chain rather than a two-stage one. Flip to `true` to restore the local-departure leg if that
+// judgment changes.
+const ENABLE_LOCAL_DEPARTURE = false;
+
 export interface PendingBury {
   playerId: PlayerId;
   cardIds: [string, string, string, string];
@@ -204,17 +222,21 @@ function ActiveGame({
   // Reanimated animation of the same nominal duration. See
   // docs/animation/audits/BatakPlayTravelHandoff-Audit.md.
   const pendingDepartureCompleteRef = useRef<(() => void) | null>(null);
-  // Safety net for pendingDepartureCompleteRef: on-device testing (2026-08-19) confirmed
-  // useCardMotion's onComplete callback can silently fail to fire (Reanimated's withTiming
-  // completion callback has no delivery guarantee — e.g. under UI-thread contention), which
-  // leaves pendingDepartureCompleteRef populated forever and localDeparture permanently non-null,
-  // soft-locking the human's hand (canInteractWithHand requires localDeparture == null) with no
-  // recovery short of restarting the app. This timer fires the same completion logic if
-  // onComplete hasn't already done so by (nominal duration + grace); handleDepartureComplete nulls
-  // pendingDepartureCompleteRef on first invocation, so whichever of the two fires first wins and
-  // the other is a no-op — not a double-fire risk. The onComplete callback stays the primary,
-  // accurate path (this backstop's fixed delay is exactly the guess-based race the audit's fix
-  // was meant to eliminate); it only exists to bound the failure mode when that path is dropped.
+  // Defense-in-depth safety net for pendingDepartureCompleteRef, downgraded from load-bearing to
+  // backstop-only once BatakHandCard's local-departure leg moved off Reanimated onto a TravelCard
+  // (plain Animated, whose Animated.timing start() callback has no cross-thread delivery gap —
+  // see BatakHandCard.tsx's departure section). Originally added because on-device testing
+  // (2026-08-19) confirmed the OLD Reanimated-based leg's onComplete could silently fail to fire
+  // (withTiming's completion callback has no delivery guarantee under UI-thread contention),
+  // which left pendingDepartureCompleteRef populated forever and localDeparture permanently
+  // non-null, soft-locking the human's hand (canInteractWithHand requires localDeparture ==
+  // null) with no recovery short of restarting the app. The grace margin is now generous (not a
+  // tight race against a documented-flaky signal) purely to bound a genuinely exceptional stall
+  // (e.g. the JS thread blocked by something unrelated), not to compete with onComplete for which
+  // one "wins" on the happy path — handleDepartureComplete nulls pendingDepartureCompleteRef on
+  // first invocation, so whichever fires first wins and the other is a no-op. If this timer ever
+  // actually fires (see the __DEV__ warning at its call site below), that's a signal the engine
+  // swap didn't fully close the soft-lock class of bug and needs follow-up.
   const departureBackstopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dealPhase = useDealSequence();
   const reducedMotion = useReducedMotion();
@@ -397,6 +419,7 @@ function ActiveGame({
       // front of).
       const measuredOrigin = originOffset;
       const canLocalDepart =
+        ENABLE_LOCAL_DEPARTURE &&
         playerId === HUMAN_ID &&
         measuredOrigin != null &&
         !reducedMotion &&
@@ -419,14 +442,21 @@ function ActiveGame({
             delay - LOCAL_DEPARTURE_DURATION_MS,
           );
         };
-        // Backstop: see departureBackstopTimeoutRef's own doc comment above. Grace margin is
-        // deliberately generous (not a tight race against the animation's own duration) — its job
-        // is only to bound an already-dropped callback's failure mode, not to compete with
-        // onComplete for which one "wins" on the happy path.
-        departureBackstopTimeoutRef.current = setTimeout(
-          handleDepartureComplete,
-          LOCAL_DEPARTURE_DURATION_MS + 250,
-        );
+        // Backstop: see departureBackstopTimeoutRef's own doc comment above. Grace margin (500ms,
+        // up from the pre-engine-swap 250ms) is deliberately more generous now that the leg it's
+        // backstopping runs on plain Animated rather than a documented-flaky Reanimated callback —
+        // its job is only to bound a genuinely exceptional stall, not to compete with onComplete
+        // for which one "wins" on the happy path. The __DEV__ warning below is the actual
+        // regression signal: if this ever fires, the engine swap didn't fully close the soft-lock
+        // class of bug.
+        departureBackstopTimeoutRef.current = setTimeout(() => {
+          if (__DEV__ && pendingDepartureCompleteRef.current) {
+            console.warn(
+              "[BATAK-PERF] Local-departure backstop timer fired — TravelCard's onComplete did not arrive in time.",
+            );
+          }
+          handleDepartureComplete();
+        }, LOCAL_DEPARTURE_DURATION_MS + 500);
         return;
       }
 

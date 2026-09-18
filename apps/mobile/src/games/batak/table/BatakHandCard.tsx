@@ -1,10 +1,12 @@
 import React, { useEffect, useRef } from 'react';
+import { Easing as RNEasing, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import type { Card } from '@world-of-cards/engine';
 import { PlayingCard, CARD_DIMS } from '@world-of-cards/ui';
 import { useReducedMotion } from '../../../components/useReducedMotion';
 import { useCardMotion } from '../../../table/useCardMotion';
+import { TravelCard } from '../../../table/TravelCard';
 import { LOCAL_DEPARTURE_SCALE } from './trickCardScale';
 
 const CARD_WIDTH = CARD_DIMS.normal.width;
@@ -73,10 +75,11 @@ export interface BatakHandCardProps {
   departureDeltaX: number;
   localDepartureDistance: number;
   localDepartureDurationMs: number;
-  // Fires once the local-departure leg's own animation actually completes (via useCardMotion's
-  // onComplete, not a sibling JS-thread timer) — see BatakScreen.tsx's handleDepartureComplete
-  // and docs/animation/audits/BatakPlayTravelHandoff-Audit.md. Passed uniformly to every hand
-  // card, but only the one actually departing (isDeparting) ever calls it.
+  // Fires once the local-departure leg's own animation actually completes (via the departure
+  // TravelCard's onComplete, a plain-Animated JS-thread callback — not a sibling setTimeout) —
+  // see BatakScreen.tsx's handleDepartureComplete and
+  // docs/animation/audits/BatakPlayTravelHandoff-Audit.md. Passed uniformly to every hand card,
+  // but only the one actually departing (isDeparting) ever calls it.
   onDepartureComplete?: () => void;
   onPress: () => void;
   // Hands the parent this card's own motion controller (setTarget/getValues) once, on mount —
@@ -205,24 +208,25 @@ function BatakHandCardComponent({
   }, [playEntrance, reducedMotion]);
 
   // Local departure: the played card's brief lift-off leg before TrickCenter's TravelCard takes
-  // over — see LOCAL_DEPARTURE_DISTANCE's doc comment (HumanHandFan.tsx). Departs from this
-  // card's real CURRENT committed position (getValues(), which already reflects the selection lift
-  // it's necessarily under — see useCardSelection's own doc comment for why selection is never
-  // cleared before a play), not its resting slot target.
-  const departed = useRef(false);
-  useEffect(() => {
-    if (!isDeparting || departed.current || reducedMotion) return;
-    departed.current = true;
-    const current = motion.getValues();
-    motion.setTarget({
-      x: current.x - departureDeltaX,
-      y: current.y - localDepartureDistance,
-      scale: LOCAL_DEPARTURE_SCALE,
-      timing: { duration: localDepartureDurationMs, easing: Easing.in(Easing.linear) },
-      onComplete: onDepartureComplete,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDeparting, reducedMotion]);
+  // over — see LOCAL_DEPARTURE_DISTANCE's doc comment (HumanHandFan.tsx). Rendered as a TravelCard
+  // (the same plain-Animated primitive TrickCenter's own leg uses) rather than a further
+  // Reanimated retarget of `motion` — replaces a Reanimated withTiming leg whose onComplete
+  // callback (bridged through runOnJS) was confirmed on 2026-08-19 to sometimes never fire,
+  // permanently soft-locking the hand (see docs/animation/audits/BatakPlayTravelHandoff-Audit.md).
+  // TravelCard's own onComplete runs entirely on the JS thread (Animated.timing's start()
+  // callback), with no such cross-thread delivery gap.
+  //
+  // Seeded once from this card's real CURRENT committed position (getValues(), which already
+  // reflects the selection lift it's necessarily under — see useCardSelection's own doc comment
+  // for why selection is never cleared before a play), captured directly during render (not an
+  // effect) so the very first render where isDeparting is true already has a correct origin to
+  // hand TravelCard — an effect would run one tick too late for that first paint.
+  const departureOriginRef = useRef<
+    { x: number; y: number; angleDeg: number; scale: number } | null
+  >(null);
+  if (isDeparting && !reducedMotion && departureOriginRef.current === null) {
+    departureOriginRef.current = motion.getValues();
+  }
 
   function handlePress() {
     if (!interactive) return;
@@ -246,6 +250,46 @@ function BatakHandCardComponent({
       { scale: motion.shared.scale.value },
     ],
   }));
+
+  if (departureOriginRef.current) {
+    // departureEnd: same math the old Reanimated leg targeted (current.x/y minus the departure
+    // delta/distance) — TravelCard's wrapper View is positioned AT that end point, and TravelCard
+    // itself animates from originOffset (the vector back to the real committed start position)
+    // down to (0, 0), landing exactly on the wrapper.
+    const origin = departureOriginRef.current;
+    const departureEnd = {
+      x: origin.x - departureDeltaX,
+      y: origin.y - localDepartureDistance,
+    };
+    return (
+      <GestureDetector gesture={tap}>
+        <View
+          testID={`batak-hand-card-${cardId}`}
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: 0,
+            marginLeft: -CARD_WIDTH / 2,
+            transform: [
+              { translateX: departureEnd.x },
+              { translateY: departureEnd.y },
+            ],
+          }}>
+          <TravelCard
+            originOffset={{ x: departureDeltaX, y: localDepartureDistance }}
+            originRotateDeg={origin.angleDeg}
+            originScale={origin.scale}
+            restScale={LOCAL_DEPARTURE_SCALE}
+            durationMs={localDepartureDurationMs}
+            easing={RNEasing.in(RNEasing.linear)}
+            resetKey={cardId}
+            onComplete={onDepartureComplete}>
+            <PlayingCard card={card} size="normal" highlighted={selected} />
+          </TravelCard>
+        </View>
+      </GestureDetector>
+    );
+  }
 
   return (
     <GestureDetector gesture={tap}>

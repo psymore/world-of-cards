@@ -17,13 +17,15 @@ Rather than building individual card game apps, the goal is to create a reusable
 ### Setup
 
 ```powershell
-git clone https://github.com/<your-org>/world-of-cards.git
+git clone https://github.com/psymore/world-of-cards.git
 cd world-of-cards
 npm install
 npm run mobile
 ```
 
 This starts the Expo dev server for `apps/mobile`. Scan the printed QR code with Expo Go (same Wi-Fi network as your PC) to run the app on your phone, or press `w` in the terminal to open it in a browser.
+
+There's also `npm run playground`, which starts `apps/playground` — an isolated lab app used for animation-quality experiments, separate from the main game app.
 
 ### Windows-specific notes
 
@@ -43,10 +45,11 @@ This starts the Expo dev server for `apps/mobile`. Scan the printed QR code with
 
 Build a production-quality, cross-platform mobile application that includes classic card games from many countries in a single experience.
 
-Examples include:
+Planned build order:
 
 - Pişti
 - Batak
+- Pis Yedili
 - Klondike Solitaire
 - Spider Solitaire
 - FreeCell
@@ -59,6 +62,15 @@ Examples include:
 - ...and many more.
 
 The project is designed to scale beyond **100+ card games**.
+
+---
+
+## Current Status
+
+- **Pişti** — complete and fully playable end-to-end (2p/4p, free-for-all and partner modes, all three AI difficulties).
+- **Batak** — 4-player individual and 3-player gömmeli (buried-kitty) variants are complete and fully playable end-to-end, including AI and mobile UI. The 4-player "eşli" (partnered) variant hasn't been started yet.
+- **Pis Yedili** — engine and mobile UI are complete and fully playable end-to-end; animation/timer polish is deferred.
+- The rest of the roadmap (Klondike onward) hasn't been started.
 
 ---
 
@@ -92,13 +104,15 @@ The project is designed to scale beyond **100+ card games**.
 ## Roadmap
 
 ### Phase 1
-- Shared Card Engine
-- Shared Rule Engine
-- AI abstraction
-- Statistics
-- Local persistence
-- Pişti
-- Solitaire
+- Shared Card Engine ✅
+- Shared Rule Engine ✅
+- AI abstraction ✅
+- Statistics ✅
+- Local persistence ✅
+- Pişti ✅
+- Batak ✅ (4-player individual, 3-player gömmeli; "eşli" partnered variant not started)
+- Pis Yedili ✅
+- Klondike Solitaire
 - Spider Solitaire
 - FreeCell
 - Hearts

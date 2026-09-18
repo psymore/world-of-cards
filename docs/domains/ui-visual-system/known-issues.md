@@ -4,6 +4,12 @@
 
 ---
 
+### King of Spades has no dedicated illustrated court-card art
+
+`packages/ui/src/courtCardArtV2.ts` has dedicated K/Q/J illustrated art for every suit except King of Spades, which stands in with King of Clubs's image (`KING_OF_SPADES_IMAGE = KING_OF_CLUBS_IMAGE`) — the source file's own comment already flags this as temporary. This is live-default-visible: `cardFaceStyleStore.ts` defaults `cardFaceStyle` to `'v3'`. Not a bug in the code — the fallback is deliberate and correct until real art exists — but the art itself is missing.
+
+To match the existing set: 1024×1536 portrait, background + gold frame + portrait baked into one image (not a transparent cutout) — see `packages/ui/assets/card-art/processed/ai-generated/v2/king-of-hearts-v2.1.png` for the exact treatment. Once real art exists, replace `KING_OF_SPADES_IMAGE`'s `require(...)` in `courtCardArtV2.ts` and delete this entry. See `docs/superpowers/specs/2026-09-04-ux-monetization-research-backlog.md` §4.2 for how this was found (Aces are *not* part of this gap — v2/v3 deliberately excludes them, see that same section).
+
 ### Theme color duplication
 
 **Partially resolved, not closed.** `TableWoodCorners`, `TableEdgeRails`, `HeaderWoodFrame`, and `PlatformWoodBackground` no longer duplicate — all four already read their wood gradient/trim/grain values from `packages/ui/src/woodPalette.ts`, which its own header comment states is the single source of truth for that recipe. Two UI visual-theme refinement passes additionally: moved `PistiTable`'s banner text and `PlayerAvatar`'s accent-ring colors from hardcoded `#ffd966` copies to importing `WOOD_TRIM_COLOR` directly; replaced `DecisionPanel`'s hand-decomposed `rgba(255, 217, 102, 0.85)` with a string derived from that same import; and aligned `HomeScreen`'s `BaizeStrip` accent gradient to the actual in-game table green (`#0b6623`, already shared identically by `PistiScreen` and `BatakScreen`) rather than its own separately-chosen dark green (`BaizeStrip` itself was later deleted entirely on 2026-08-07, when HomeScreen moved to sharing `TableFelt` directly — see `docs/superpowers/specs/2026-08-07-home-setup-emerald-felt-design.md`).

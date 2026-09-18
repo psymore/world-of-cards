@@ -98,6 +98,12 @@ export function TrickCenter({
       pendingPlay != null &&
       pendingPlay.playerId === playerId;
     const isHumanPending = isPending && playerId === humanPlayerId;
+    // Only set when BatakHandCard's local-departure leg actually ran (see BatakScreen.tsx's
+    // armPendingPlay) — that leg already did the shrink to TRICK_CARD_SCALE before this
+    // component ever mounts. When it didn't run (ENABLE_LOCAL_DEPARTURE off, or a too-short
+    // measured origin), the card is still at full size at mount time and needs this component to
+    // do the shrink itself instead — see the humanPreShrunk usage below.
+    const humanPreShrunk = pendingPlay?.travelDurationMs != null;
     const zIndex = playerId ? Math.max(playOrder.indexOf(playerId) + 1, 1) : 1;
     const offset = TRICK_SLOT_OFFSETS[position];
 
@@ -119,24 +125,26 @@ export function TrickCenter({
             isHumanPending ? (
               // The human's own played card: keeps its real fan-rotation angle fixed for the
               // whole flight (not straightened out along the way — see TravelCard's
-              // originRotateDeg doc comment), and travels at a constant TRICK_CARD_SCALE — the
-              // card stays size="normal" throughout and is uniformly scaled, never switched to
-              // the real size="small" variant, whose internal proportions (CORNER_INDEX_WIDTH,
-              // WATERMARK_ICON_SIZE in packages/ui/src/PlayingCard.tsx) are independently tuned
-              // rather than a uniform scale of "normal"'s. TRICK_CARD_CONTENT_SCALE compensates
-              // the corner index/watermark so the shrunk card doesn't read with oversized glyphs.
-              // Net effect: visually identical to the resting card it hands off to for the whole
-              // flight, just translating/rotating. See the originScale/restScale props below for
-              // why no scale interpolation is needed here.
+              // originRotateDeg doc comment). The card stays size="normal" throughout and is
+              // uniformly scaled, never switched to the real size="small" variant, whose internal
+              // proportions (CORNER_INDEX_WIDTH, WATERMARK_ICON_SIZE in
+              // packages/ui/src/PlayingCard.tsx) are independently tuned rather than a uniform
+              // scale of "normal"'s. TRICK_CARD_CONTENT_SCALE compensates the corner index/
+              // watermark so the shrunk card doesn't read with oversized glyphs.
               <TravelCard
                 originOffset={
                   pendingPlay?.originOffset ?? revealOriginOffset("bottom")
                 }
                 originRotateDeg={pendingPlay?.originRotateDeg ?? 0}
-                // Held constant, not interpolated: BatakHandCard's own local-departure leg
-                // already did the shrinking (see trickCardScale.ts's LOCAL_DEPARTURE_SCALE doc
-                // comment) before this component ever mounts for a human play.
-                originScale={TRICK_CARD_SCALE}
+                // humanPreShrunk (local-departure ran): held constant — already at
+                // TRICK_CARD_SCALE by the time this component mounts, so no re-interpolation
+                // needed. Otherwise (local-departure skipped, e.g. ENABLE_LOCAL_DEPARTURE off):
+                // the card is still at full size at mount time, so this interpolates 1 →
+                // TRICK_CARD_SCALE itself — the same uniform-within-"normal" interpolation
+                // already proven safe below for AI plays. Without this branch, disabling
+                // local-departure would make the card visibly snap straight to TRICK_CARD_SCALE
+                // the instant it starts flying, instead of shrinking smoothly.
+                originScale={humanPreShrunk ? TRICK_CARD_SCALE : 1}
                 restScale={TRICK_CARD_SCALE}
                 durationMs={pendingPlay?.travelDurationMs}
                 resetKey={card.id}>

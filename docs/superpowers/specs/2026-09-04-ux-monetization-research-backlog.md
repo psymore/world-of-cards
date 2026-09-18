@@ -1,15 +1,17 @@
 # UX & Monetization Research — Backlog Plan
 
-**Type:** Research-grounded backlog plan (not a WKA design Specification — no architecture or code contract is being proposed here). **Status:** Decided 2026-09-05 on all four §2 items — see §0. Superseded as the source of truth for §2.1's text by `docs/governance/monetization-principles.md`, which now holds the accepted version.
+**Type:** Research-grounded backlog plan (not a WKA design Specification — no architecture or code contract is being proposed here). **Status:** Decided 2026-09-05 on all four original §2 items — see §0. A follow-on monetization-model direction and a court-card-art status correction were added 2026-09-08 — see §0 and §4. Superseded as the source of truth for §2.1's text by `docs/governance/monetization-principles.md`, which now holds the accepted version.
 
-## 0. Decisions (2026-09-05)
+## 0. Decisions (2026-09-05, plus 2026-09-08 additions)
 
 - **§2.1 Monetization principles — accepted as drafted, no edits.** Moved verbatim into `docs/governance/monetization-principles.md`.
-- **§1.1 Onboarding known-issue — proceeding to a plan now**, via `superpowers:brainstorming` → `superpowers:writing-plans`, rather than staying parked.
+- **§1.1 Onboarding known-issue — proceeding to a plan now**, via `superpowers:brainstorming` → `superpowers:writing-plans`, rather than staying parked. (Since done — see `docs/superpowers/specs/2026-09-05-how-to-play-rules-summary-design.md`.)
 - **§2.2 Analytics SDK — deferred, no SDK adopted.** Explicit decision, not a default: stay local-stats-only until there's a real audience to measure. Revisit by re-reading this section, not by re-deriving it.
 - **§2.3 Octalysis-lite idea — accepted onto the backlog.** Added as `docs/status/roadmap.md` item 12 ("Next up" list), unscoped and unscheduled.
 - **§2.4 GDC talk bookmarks — no action taken**, left as a passive bookmark per the original text.
-**Owning Domain:** Cross-cutting — touches `ui-visual-system` (onboarding), a not-yet-existing `monetization`/`analytics` concern, and general product direction. Not assigned to a single domain.
+- **2026-09-08: Monetization model direction — accepted.** See §4 below for the full reasoning; added as `docs/status/roadmap.md` item 14.
+- **2026-09-08: Illustrated court-card art — status correction, not a new decision.** `docs/status/roadmap.md` item 7 previously said "not started"; it's actually substantially built (`courtCardArtV2.ts`, live by default under `cardFaceStyle: 'v3'`). One concrete art gap remains (King of Spades stand-in art) — see §4.
+**Owning Domain:** Cross-cutting — touches `ui-visual-system` (onboarding, court-card art), a not-yet-existing `monetization`/`analytics` concern, and general product direction. Not assigned to a single domain.
 **Origin:** 2026-09-04 conversation — the user asked for free/credible mobile card-game UX and monetization research, it was compiled into two artifacts (below), then the user asked for whichever parts of an integration plan could be done solo while they were away from the keyboard, with the explicit instruction to *plan* the parts that are really theirs to decide rather than deciding them unilaterally.
 **Companion artifacts (published, not part of this repo):**
 - [Kart Kataloğu](https://claude.ai/code/artifact/7364c818-20d8-4ae5-b98f-50e6614943cd) — the underlying research catalog (books, papers, industry blogs, KPI benchmarks) this plan draws on. Citations below use its call numbers (e.g. `AK-01`, `BE-03`, `KPI-02`).
@@ -92,3 +94,25 @@ Two talks from Kart Kataloğu (`END-02`, `END-03`) worth a watch when there's ti
 4. §2.3 and §2.4 — low-stakes, can be decided in passing.
 
 Per `docs/governance/guardrails.md` rule 1: once you're ready to keep this doc, it's worth committing early rather than leaving it untracked — nothing here has been committed yet.
+
+---
+
+## 4. 2026-09-08 addendum — monetization model direction, and a court-card-art finding
+
+### 4.1 Monetization model direction (accepted)
+
+Three concrete models were compared against `docs/governance/monetization-principles.md` and the existing codebase:
+
+- **A. One-time "support the developer" tip.** Lowest engineering cost (a single IAP SKU, no entitlement/inventory system), but the lowest ceiling and no integration with actual gameplay.
+- **B. Cosmetic packs (card-back skins, table themes) — Content/Customization channel.** `packages/ui/assets/table/{themes,default,alternatives}` already holds multiple generated-but-unwired theme images (`green.png`, `wooden-frame-long-Photoroom.png`, the `NEW-TABLE-DEFAULT-*` set, the `gemini-table-design*` alternates), and `packages/ui/src/cardFaceStyleStore.ts` already establishes the pattern (a Zustand store selecting between rendering styles) a theme-selection store would extend. Highest potential, but needs a store UI and an unlock/purchase mechanism that doesn't exist yet.
+- **C. Rewarded-ad free-unlock, opt-in.** The free-path complement to B — "watch a rewarded ad to unlock this theme" — directly satisfies `monetization-principles.md` #3 (rewarded-only, opt-in, no forced interstitials).
+
+**Accepted: B + C together**, not A alone. Reasoning: A doesn't integrate with the product at all; B alone excludes players unwilling/unable to pay; B+C converts art that's already sitting in the repo unused into an actual feature, and matches both Luton's Content/Convenience/Customization framing and Tenjin's 2025 finding that rewarded video is the one ad format most players view positively — both already cited in `docs/governance/monetization-principles.md`. Added to `docs/status/roadmap.md` as item 14. **Not scoped, not scheduled, no SKU or store UI designed** — this is a direction decision only, same status as every other item in this doc.
+
+### 4.2 Illustrated court-card art — status was stale, now corrected
+
+While researching asset options for the Customization channel above, a repo grep turned up that `docs/status/roadmap.md` item 7 ("Illustrated court-card art — not started") no longer matches reality: `packages/ui/src/courtCardArtV2.ts` (introduced 2026-08-25) has dedicated illustrated King/Queen/Jack art for all four suits, and it's the **live default** — `cardFaceStyleStore.ts` defaults `cardFaceStyle` to `'v3'`, not the older `'v1'`. Roadmap item 7 has been corrected in place rather than left stale.
+
+One concrete, immediately actionable gap remains: **King of Spades has no dedicated art** — `courtCardArtV2.ts` stands it in with King of Clubs's image, and the source file's own comment already flags this as temporary ("When king-of-spades art is generated, replace `KING_OF_SPADES_IMAGE`'s require below"). By contrast, **Aces intentionally have no illustrated art under v2/v3** — the same source file states both styles deliberately keep the plain suit-glyph watermark for every non-face rank rather than mixing in the older v1 Ace art. Extending illustrated treatment to Aces would be a new scope decision, not a gap-fill, and is not proposed here.
+
+Style reference for anyone generating the King of Spades replacement: existing v2 art is 1024×1536 portrait, background+gold-frame+portrait baked into one image (not a transparent cutout) — see `packages/ui/assets/card-art/processed/ai-generated/v2/king-of-hearts-v2.1.png` for the exact treatment to match.
